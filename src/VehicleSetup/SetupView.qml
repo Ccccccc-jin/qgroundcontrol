@@ -277,6 +277,7 @@ Rectangle {
 
             SubMenuButton {
                 id:                 vehicleSelectorButton
+                imageResource:      "/qmlimages/AirframeComponentIcon.png"
                 exclusiveGroup:     setupButtonGroup
                 visible:            QGroundControl.multiVehicleManager.activeVehicle
                 text:               qsTr("Vehicle")
