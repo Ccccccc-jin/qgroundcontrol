@@ -46,7 +46,7 @@ void VehicleSelectorController::changeVehicle(void)
 
     qgcApp()->setOverrideCursor(Qt::WaitCursor);
 
-    Fact* vehicleFact  = getParameterFact(-1, "SYSID_SW_TYPE");
+    Fact* vehicleFact = getParameterFact(-1, "SYSID_SW_TYPE");
 
     // We need to wait for the vehicleUpdated signals to come back before we reboot
     connect(vehicleFact, &Fact::vehicleUpdated, this, &VehicleSelectorController::_rebootAfterStackUnwind);
@@ -58,7 +58,7 @@ void VehicleSelectorController::changeVehicle(void)
 
 void VehicleSelectorController::_rebootAfterStackUnwind(void)
 {
-    _vehicle->sendMavCommand(_vehicle->defaultComponentId(), MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, true /* showError */, 1.0f);
+    _vehicle->rebootVehicle();
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
     for (unsigned i = 0; i < 2000; i++) {
         QGC::SLEEP::usleep(500);
