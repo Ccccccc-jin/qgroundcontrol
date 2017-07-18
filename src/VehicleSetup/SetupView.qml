@@ -85,6 +85,11 @@ Rectangle {
         panelLoader.setSource("PX4FlowSensor.qml")
     }
 
+    function showVehicleSelectorPanel()
+    {
+        panelLoader.setSource("SetupVehicleSelector.qml")
+    }
+
     function showVehicleComponentPanel(vehicleComponent)
     {
         if (QGroundControl.multiVehicleManager.activeVehicle.armed && !vehicleComponent.allowSetupWhileArmed) {
@@ -268,6 +273,16 @@ Rectangle {
                 Layout.fillWidth:   true
 
                 onClicked: showFirmwarePanel()
+            }
+
+            SubMenuButton {
+                id:                 vehicleSelectorButton
+                exclusiveGroup:     setupButtonGroup
+                visible:            QGroundControl.multiVehicleManager.activeVehicle
+                text:               qsTr("Vehicle")
+                Layout.fillWidth:   true
+
+                onClicked:      showVehicleSelectorPanel()
             }
 
             SubMenuButton {
