@@ -151,9 +151,25 @@ bool FirmwarePlugin::supportsJSButton(void)
 
 bool FirmwarePlugin::adjustIncomingMavlinkMessage(Vehicle* vehicle, mavlink_message_t* message)
 {
-    Q_UNUSED(vehicle);
-    Q_UNUSED(message);
-    // Generic plugin does no message adjustment
+    if (message->msgid == MAVLINK_MSG_ID_STATUSTEXT) {
+        mavlink_statustext_t statusText;
+        mavlink_msg_statustext_decode(message, &statusText);
+        QByteArray b;
+        QString messageText;
+
+        b.resize(MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        mavlink_msg_statustext_get_text(message, b.data());
+
+        // Ensure NUL-termination
+        b[b.length()-1] = '\0';
+        messageText = b;
+
+        if (messageText.contains("Linux")) {
+            qDebug() << "Found Linux Board";
+            vehicle->setLinuxFirmware(true);
+        }
+    }
+
     return true;
 }
 
