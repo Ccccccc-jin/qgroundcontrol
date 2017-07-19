@@ -26,6 +26,8 @@
 
 class Vehicle;
 
+static const QRegExp LINUX_REXP("Linux");
+
 /// This is the base class for Firmware specific plugins
 ///
 /// The FirmwarePlugin class represents the methods and objects which are specific to a certain Firmware flight stack.

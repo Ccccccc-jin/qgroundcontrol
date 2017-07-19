@@ -164,7 +164,7 @@ bool FirmwarePlugin::adjustIncomingMavlinkMessage(Vehicle* vehicle, mavlink_mess
         b[b.length()-1] = '\0';
         messageText = b;
 
-        if (messageText.contains("Linux")) {
+        if (messageText.contains(LINUX_REXP)) {
             qDebug() << "Found Linux Board";
             vehicle->setLinuxFirmware(true);
         }
