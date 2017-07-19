@@ -267,6 +267,7 @@ public:
     Q_PROPERTY(bool                 px4Firmware             READ px4Firmware                                            NOTIFY firmwareTypeChanged)
     Q_PROPERTY(bool                 apmFirmware             READ apmFirmware                                            NOTIFY firmwareTypeChanged)
     Q_PROPERTY(bool                 soloFirmware            READ soloFirmware           WRITE setSoloFirmware           NOTIFY soloFirmwareChanged)
+    Q_PROPERTY(bool                 linuxFirmware           READ linuxFirmware          WRITE setLinuxFirmware          NOTIFY linuxFirmwareChanged)
     Q_PROPERTY(bool                 genericFirmware         READ genericFirmware                                        CONSTANT)
     Q_PROPERTY(bool                 connectionLost          READ connectionLost                                         NOTIFY connectionLostChanged)
     Q_PROPERTY(bool                 connectionLostEnabled   READ connectionLostEnabled  WRITE setConnectionLostEnabled  NOTIFY connectionLostEnabledChanged)
@@ -645,6 +646,9 @@ public:
     bool soloFirmware(void) const { return _soloFirmware; }
     void setSoloFirmware(bool soloFirmware);
 
+    bool linuxFirmware(void) const { return _linuxFirmware; }
+    void setLinuxFirmware(bool linuxFirmware);
+
     int defaultComponentId(void) { return _defaultComponentId; }
 
     /// Sets the default component id for an offline editing vehicle
@@ -710,6 +714,7 @@ signals:
     void guidedModeChanged(bool guidedMode);
     void prearmErrorChanged(const QString& prearmError);
     void soloFirmwareChanged(bool soloFirmware);
+    void linuxFirmwareChanged(bool linuxFirmware);
     void unhealthySensorsChanged(void);
     void defaultCruiseSpeedChanged(double cruiseSpeed);
     void defaultHoverSpeedChanged(double hoverSpeed);
@@ -866,6 +871,7 @@ private:
     AutoPilotPlugin*    _autopilotPlugin;
     MAVLinkProtocol*    _mavlink;
     bool                _soloFirmware;
+    bool                _linuxFirmware;
     SettingsManager*    _settingsManager;
 
     QList<LinkInterface*> _links;

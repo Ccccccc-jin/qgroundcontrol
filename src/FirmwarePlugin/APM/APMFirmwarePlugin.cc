@@ -31,6 +31,7 @@ static const QRegExp APM_SUB_REXP("^(ArduSub|APM:Sub)");
 static const QRegExp APM_PX4NUTTX_REXP("^PX4: .*NuttX: .*");
 static const QRegExp APM_FRAME_REXP("^Frame: ");
 static const QRegExp APM_SYSID_REXP("^PX4v2 ");
+static const QRegExp APM_LINUX_REXP("^Linux");
 
 // Regex to parse version text coming from APM, gives out firmware type, major, minor and patch level numbers
 static const QRegExp VERSION_REXP("^(APM:Copter|APM:Plane|APM:Rover|APM:Sub|ArduCopter|ArduPlane|ArduRover|ArduSub) +[vV](\\d*)\\.*(\\d*)*\\.*(\\d*)*");
@@ -398,6 +399,11 @@ bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_mess
     if (messageText.contains(APM_COPTER_REXP) || messageText.contains(APM_PLANE_REXP) || messageText.contains(APM_ROVER_REXP) || messageText.contains(APM_SUB_REXP) ||
             messageText.contains(APM_PX4NUTTX_REXP) || messageText.contains(APM_FRAME_REXP) || messageText.contains(APM_SYSID_REXP)) {
         _setInfoSeverity(message);
+    }
+
+    if (messageText.contains(APM_LINUX_REXP)) {
+        qDebug() << "Found Linux Board";
+        vehicle->setLinuxFirmware(true);
     }
 
     if (messageText.contains(APM_SOLO_REXP)) {

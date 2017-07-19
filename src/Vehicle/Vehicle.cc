@@ -79,6 +79,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _autopilotPlugin(NULL)
     , _mavlink(NULL)
     , _soloFirmware(false)
+    , _linuxFirmware(false)
     , _settingsManager(qgcApp()->toolbox()->settingsManager())
     , _joystickMode(JoystickModeRC)
     , _joystickEnabled(false)
@@ -244,6 +245,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _autopilotPlugin(NULL)
     , _mavlink(NULL)
     , _soloFirmware(false)
+    , _linuxFirmware(false)
     , _settingsManager(qgcApp()->toolbox()->settingsManager())
     , _joystickMode(JoystickModeRC)
     , _joystickEnabled(false)
@@ -2356,6 +2358,14 @@ void Vehicle::setSoloFirmware(bool soloFirmware)
     if (soloFirmware != _soloFirmware) {
         _soloFirmware = soloFirmware;
         emit soloFirmwareChanged(soloFirmware);
+    }
+}
+
+void Vehicle::setLinuxFirmware(bool linuxFirmware)
+{
+    if (linuxFirmware != _linuxFirmware) {
+        _linuxFirmware = linuxFirmware;
+        emit linuxFirmwareChanged(linuxFirmware);
     }
 }
 
