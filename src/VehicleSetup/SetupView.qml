@@ -279,7 +279,7 @@ Rectangle {
                 id:                 vehicleSelectorButton
                 imageResource:      "/qmlimages/AirframeComponentIcon.png"
                 exclusiveGroup:     setupButtonGroup
-                visible:            QGroundControl.multiVehicleManager.activeVehicle
+                visible:            QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.linuxFirmware : false
                 text:               qsTr("Vehicle")
                 Layout.fillWidth:   true
 
@@ -289,7 +289,7 @@ Rectangle {
             SubMenuButton {
                 id:                 px4FlowButton
                 exclusiveGroup:     setupButtonGroup
-                visible:            QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.genericFirmware : false
+                visible:            QGroundControl.multiVehicleManager.activeVehicle ? (QGroundControl.multiVehicleManager.activeVehicle.genericFirmware && !QGroundControl.multiVehicleManager.activeVehicle.linuxFirmware) : false
                 setupIndicator:     false
                 text:               qsTr("PX4Flow")
                 Layout.fillWidth:   true
