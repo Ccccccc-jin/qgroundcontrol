@@ -20,8 +20,11 @@ import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 
 SetupPage {
-    id:             vehiclePage
-    pageComponent:  vehiclePageComponent
+    id:              vehiclePage
+    pageComponent:   vehiclePageComponent
+    pageName:        qsTr("Vehicle")
+    pageDescription: qsTr("Vehicle setup is used to select vehicle.")
+
 
     VehicleSelectorController {
         id:        controller
