@@ -28,6 +28,7 @@
 #include "APMLightsComponent.h"
 #include "APMSubFrameComponent.h"
 #include "ESP8266Component.h"
+#include "WiFiSetupComponent.h"
 
 /// This is the AutoPilotPlugin implementatin for the MAV_AUTOPILOT_ARDUPILOT type.
 APMAutoPilotPlugin::APMAutoPilotPlugin(Vehicle* vehicle, QObject* parent)
@@ -46,6 +47,7 @@ APMAutoPilotPlugin::APMAutoPilotPlugin(Vehicle* vehicle, QObject* parent)
     , _tuningComponent(NULL)
     , _airframeFacts(new APMAirframeLoader(this, vehicle->uas(), this))
     , _esp8266Component(NULL)
+    , _wifiComponent(NULL)
 {
     APMAirframeLoader::loadAirframeFactMetaData();
 }
@@ -102,6 +104,10 @@ const QVariantList& APMAutoPilotPlugin::vehicleComponents(void)
             _cameraComponent = new APMCameraComponent(_vehicle, this);
             _cameraComponent->setupTriggerSignals();
             _components.append(QVariant::fromValue((VehicleComponent*)_cameraComponent));
+
+            _wifiComponent = new WiFiSetupComponent(_vehicle, this);
+            _wifiComponent->setupTriggerSignals();
+            _components.append(QVariant::fromValue((VehicleComponent*)_wifiComponent));
 
             if (_vehicle->sub()) {
                 _lightsComponent = new APMLightsComponent(_vehicle, this);
