@@ -635,6 +635,10 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         _handleCameraImageCaptured(message);
         break;
 
+    case MAVLINK_MSG_ID_WIFI_NETWORK_INFORMATION:
+        emit mavlinkWifiNetworkInformation(message);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
     {
         mavlink_serial_control_t ser;
