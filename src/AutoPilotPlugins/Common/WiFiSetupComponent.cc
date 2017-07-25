@@ -13,7 +13,7 @@
 
 WiFiSetupComponent::WiFiSetupComponent(Vehicle* vehicle, AutoPilotPlugin* autopilot, QObject* parent)
     : VehicleComponent(vehicle, autopilot, parent)
-    , _name(tr("Wi-Fi Setup"))
+    , _name(tr("Wi-Fi"))
 {
 
 }
@@ -25,7 +25,7 @@ QString WiFiSetupComponent::name(void) const
 
 QString WiFiSetupComponent::description(void) const
 {
-    return tr("The WiFi Setup Component is used to setup the WiFi link.");
+    return tr("The Wi-Fi Setup Component is used to setup the WiFi link.");
 }
 
 QString WiFiSetupComponent::iconResource(void) const
