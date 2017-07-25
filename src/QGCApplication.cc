@@ -53,6 +53,7 @@
 #include "RCChannelMonitorController.h"
 #include "SyslinkComponentController.h"
 #include "VehicleSelectorController.h"
+#include "WiFiSetupComponentController.h"
 #include "AutoPilotPlugin.h"
 #include "VehicleComponent.h"
 #include "FirmwarePluginManager.h"
@@ -380,6 +381,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
     qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
     qmlRegisterType<VehicleSelectorController>      ("QGroundControl.Controllers", 1, 0, "VehicleSelectorController");
+    qmlRegisterType<WiFiSetupComponentController>   ("QGroundControl.Controllers", 1, 0, "WiFiSetupComponentController");
 
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
