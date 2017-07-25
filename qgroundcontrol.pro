@@ -844,6 +844,7 @@ HEADERS+= \
     src/AutoPilotPlugins/Common/SyslinkComponent.h \
     src/AutoPilotPlugins/Common/SyslinkComponentController.h \
     src/AutoPilotPlugins/Common/WiFiSetupComponent.h \
+    src/AutoPilotPlugins/Common/WiFiSetupComponentController.h \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.h \
     src/FirmwarePlugin/CameraMetaData.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
@@ -946,6 +947,7 @@ SOURCES += \
     src/AutoPilotPlugins/Common/SyslinkComponent.cc \
     src/AutoPilotPlugins/Common/SyslinkComponentController.cc \
     src/AutoPilotPlugins/Common/WiFiSetupComponent.cc \
+    src/AutoPilotPlugins/Common/WiFiSetupComponentController.cc \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.cc \
     src/FirmwarePlugin/CameraMetaData.cc \
     src/FirmwarePlugin/FirmwarePlugin.cc \
