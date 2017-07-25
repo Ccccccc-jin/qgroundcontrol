@@ -26,6 +26,8 @@ public:
 
     Q_PROPERTY(QStringList networks MEMBER _networks CONSTANT)
     Q_PROPERTY(QStringList protocolTypes MEMBER _protocolTypes CONSTANT)
+    Q_PROPERTY(QString connectionName MEMBER _connectionName CONSTANT)
+    Q_PROPERTY(QString connectionType MEMBER _connectionType CONSTANT)
 
     Q_INVOKABLE void startAPMode();
 
@@ -41,6 +43,9 @@ private slots:
 private:
     QStringList _protocolTypes;
     QStringList _networks;
+
+    QString _connectionName;
+    QString _connectionType;
 };
 
 #endif // WiFiSetupComponentController_H

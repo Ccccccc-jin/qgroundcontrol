@@ -13,6 +13,8 @@
 #include "QGCApplication.h"
 
 WiFiSetupComponentController::WiFiSetupComponentController()
+    : _connectionName("")
+    , _connectionType("")
 {
     _protocolTypes.append("OPEN");
     _protocolTypes.append("WEP");
@@ -91,4 +93,9 @@ void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message
     QString name = QString(wifiNetworkInformation.ssid);
 
     _networks << name;
+
+    if (wifiNetworkInformation.state) {
+        _connectionName = name;
+        _connectionType = _protocolTypes[wifiNetworkInformation.security_type];
+    }
 }
