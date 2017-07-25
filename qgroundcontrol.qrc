@@ -26,6 +26,8 @@
         <file alias="ESP8266Component.qml">src/AutoPilotPlugins/Common/ESP8266Component.qml</file>
         <file alias="ESP8266ComponentSummary.qml">src/AutoPilotPlugins/Common/ESP8266ComponentSummary.qml</file>
         <file alias="SyslinkComponent.qml">src/AutoPilotPlugins/Common/SyslinkComponent.qml</file>
+        <file alias="WiFiSetupComponent.qml">src/AutoPilotPlugins/Common/WiFiSetupComponent.qml</file>
+        <file alias="WiFiSetupComponentSummary.qml">src/AutoPilotPlugins/Common/WiFiSetupComponentSummary.qml</file>
         <file alias="FirmwareUpgrade.qml">src/VehicleSetup/FirmwareUpgrade.qml</file>
         <file alias="FlightDisplayViewDummy.qml">src/FlightDisplay/FlightDisplayViewDummy.qml</file>
         <file alias="FlightDisplayViewUVC.qml">src/FlightDisplay/FlightDisplayViewUVC.qml</file>
