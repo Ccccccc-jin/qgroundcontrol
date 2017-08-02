@@ -24,7 +24,7 @@ public:
     WiFiSetupComponentController(void);
     ~WiFiSetupComponentController(void);
 
-    Q_PROPERTY(QStringList networks MEMBER _networks CONSTANT)
+    Q_PROPERTY(QStringList networks MEMBER _networks NOTIFY _networksChanged)
     Q_PROPERTY(QStringList protocolTypes MEMBER _protocolTypes CONSTANT)
     Q_PROPERTY(QString connectionName MEMBER _connectionName CONSTANT)
     Q_PROPERTY(QString connectionType MEMBER _connectionType CONSTANT)
@@ -37,10 +37,15 @@ public:
 
     Q_INVOKABLE void removeNetwork(const QString name);
 
+signals:
+    void _networksChanged();
+
 private slots:
     void _handleWiFiNetworkInformation(mavlink_message_t message);
 
 private:
+    void update_network_list();
+
     QStringList _protocolTypes;
     QStringList _networks;
 

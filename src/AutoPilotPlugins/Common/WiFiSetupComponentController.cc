@@ -23,13 +23,20 @@ WiFiSetupComponentController::WiFiSetupComponentController()
 
     connect(_vehicle, &Vehicle::mavlinkWifiNetworkInformation, this, &WiFiSetupComponentController::_handleWiFiNetworkInformation);
 
-    // Request for list of networks
-    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
+    update_network_list();
 }
 
 WiFiSetupComponentController::~WiFiSetupComponentController()
 {
 
+}
+
+void WiFiSetupComponentController::update_network_list()
+{
+    _networks.clear();
+
+    // Request for list of networks
+    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
 }
 
 void WiFiSetupComponentController::startAPMode()
@@ -83,6 +90,7 @@ void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message
     QString name = QString(wifiNetworkInformation.ssid);
 
     _networks << name;
+    emit _networksChanged();
 
     if (wifiNetworkInformation.state) {
         _connectionName = name;
