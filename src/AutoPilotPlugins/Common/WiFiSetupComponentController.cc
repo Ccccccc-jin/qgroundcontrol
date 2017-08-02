@@ -41,48 +41,38 @@ void WiFiSetupComponentController::connectToNetwork(const QString name)
 {
     mavlink_message_t msg;
 
-    const char *mav_name;
+    mavlink_msg_wifi_network_connect_pack(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
+                                          qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
+                                          &msg,
+                                          name.toStdString().c_str());
 
-    mav_name = name.toStdString().c_str();
-
-    mavlink_msg_wifi_network_connect_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
-                                               qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
-                                               _vehicle->priorityLink()->mavlinkChannel(),
-                                               &msg,
-                                               mav_name);
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 }
 
 void WiFiSetupComponentController::addNetwork(const QString name, const int type, const QString psw)
 {
     mavlink_message_t msg;
 
-    const char *mav_name, *mav_psw;
+    mavlink_msg_wifi_network_add_pack(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
+                                      qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
+                                      &msg,
+                                      name.toStdString().c_str(),
+                                      type,
+                                      psw.toStdString().c_str());
 
-    mav_name = name.toStdString().c_str();
-    mav_psw = psw.toStdString().c_str();
-
-    mavlink_msg_wifi_network_add_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
-                                           qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
-                                           _vehicle->priorityLink()->mavlinkChannel(),
-                                           &msg,
-                                           mav_name,
-                                           type,
-                                           mav_psw);
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 }
 
 void WiFiSetupComponentController::removeNetwork(const QString name)
 {
     mavlink_message_t msg;
 
-    const char *mav_name;
+    mavlink_msg_wifi_network_delete_pack(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
+                                         qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
+                                         &msg,
+                                         name.toStdString().c_str());
 
-    mav_name = name.toStdString().c_str();
-
-    mavlink_msg_wifi_network_delete_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
-                                              qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
-                                              _vehicle->priorityLink()->mavlinkChannel(),
-                                              &msg,
-                                              mav_name);
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 }
 
 void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message_t message)
