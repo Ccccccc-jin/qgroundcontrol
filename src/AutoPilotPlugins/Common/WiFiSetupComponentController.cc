@@ -68,6 +68,7 @@ void WiFiSetupComponentController::addNetwork(const QString name, const int type
                                       psw.toStdString().c_str());
 
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
+    update_network_list();
 }
 
 void WiFiSetupComponentController::removeNetwork(const QString name)
@@ -80,6 +81,7 @@ void WiFiSetupComponentController::removeNetwork(const QString name)
                                          name.toStdString().c_str());
 
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
+    update_network_list();
 }
 
 void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message_t message)
