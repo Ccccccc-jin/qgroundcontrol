@@ -2405,7 +2405,6 @@ void Vehicle::setLinuxFirmware(bool linuxFirmware)
     }
 }
 
-// Temporarily removed, waiting for new command implementation
 void Vehicle::motorTest(int motor, int percent, int timeoutSecs)
 {
     sendMavCommand(_defaultComponentId, MAV_CMD_DO_MOTOR_TEST, false, motor, MOTOR_TEST_THROTTLE_PERCENT, percent, timeoutSecs);
