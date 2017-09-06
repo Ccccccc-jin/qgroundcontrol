@@ -63,7 +63,7 @@ SetupPage {
 
                         QGCLabel {
                             anchors.horizontalCenter:   parent.horizontalCenter
-                            text:                       index + 1
+                            text:                       String.fromCharCode(index + 0x41)
                         }
 
                         QGCSlider {
@@ -97,14 +97,14 @@ SetupPage {
                     }
                 } // Column
 
-                MultiRotorMotorDisplay {
+                /*MultiRotorMotorDisplay {
                     anchors.top:    parent.top
                     anchors.bottom: parent.bottom
                     width:          height
                     motorCount:     controller.vehicle.motorCount
                     xConfig:        controller.vehicle.xConfigMotors
                     coaxial:        controller.vehicle.coaxialMotors
-                }
+                }*/
 
             } // Row
 
