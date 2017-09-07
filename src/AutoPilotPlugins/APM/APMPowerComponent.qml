@@ -38,6 +38,7 @@ SetupPage {
                 Repeater {
                     model: [
                         [
+                            "Power module 1",
                             "BATT_AMP_PERVOLT",
                             "BATT_CAPACITY",
                             "BATT_CURR_PIN",
@@ -46,6 +47,7 @@ SetupPage {
                             "BATT_VOLT_PIN"
                         ],
                         [
+                            "Power module 2",
                             "BATT2_AMP_PERVOL",
                             "BATT2_CAPACITY",
                             "BATT2_CURR_PIN",
@@ -58,12 +60,12 @@ SetupPage {
                     Column {
                         spacing: _margins
 
-                        property Fact battAmpPerVolt:   controller.getParameterFact(-1,modelData[0])
-                        property Fact battCapacity:     controller.getParameterFact(-1,modelData[1])
-                        property Fact battCurrPin:      controller.getParameterFact(-1,modelData[2])
-                        property Fact battMonitor:      controller.getParameterFact(-1,modelData[3])
-                        property Fact battVoltMult:     controller.getParameterFact(-1,modelData[4])
-                        property Fact battVoltPin:      controller.getParameterFact(-1,modelData[5])
+                        property Fact battAmpPerVolt:   controller.getParameterFact(-1, modelData[1])
+                        property Fact battCapacity:     controller.getParameterFact(-1, modelData[2])
+                        property Fact battCurrPin:      controller.getParameterFact(-1, modelData[3])
+                        property Fact battMonitor:      controller.getParameterFact(-1, modelData[4])
+                        property Fact battVoltMult:     controller.getParameterFact(-1, modelData[5])
+                        property Fact battVoltPin:      controller.getParameterFact(-1, modelData[6])
 
                         property real _margins:         ScreenTools.defaultFontPixelHeight / 2
                         property bool _showAdvanced:    sensorCombo.currentIndex == sensorModel.count - 1
@@ -86,7 +88,10 @@ SetupPage {
 
                         QGCPalette { id: palette; colorGroupEnabled: true }
 
-
+                        QGCLabel {
+                            id:   powerModuleHeader
+                            text: modelData[0]
+                        }
 
                         ListModel {
                             id: sensorModel
