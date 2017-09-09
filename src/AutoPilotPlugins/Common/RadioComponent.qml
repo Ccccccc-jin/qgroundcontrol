@@ -187,9 +187,10 @@ SetupPage {
                     // Center point
                     Rectangle {
                         anchors.horizontalCenter:   parent.horizontalCenter
-                        width:                      defaultTextWidth / 2
-                        height:                     parent.height
-                        color:                      qgcPal.window
+                        anchors.verticalCenter:     parent.verticalCenter
+                        width:                      defaultTextWidth / 4
+                        height:                     parent.height / 2
+                        color:                      qgcPal.primaryButton
                     }
 
                     // Indicator
