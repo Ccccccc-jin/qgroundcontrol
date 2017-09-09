@@ -103,7 +103,7 @@ FactPanel {
             target: controller
 
             onChannelRCValueChanged: {
-                if (channelMonitorRepeater.itemAt(channel)) {
+                if (channelMonitorRepeater.itemAt(channel) && rcValue !== 0) {
                     channelMonitorRepeater.itemAt(channel).loader.item.rcValue = rcValue
                 }
             }
