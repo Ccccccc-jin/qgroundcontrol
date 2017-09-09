@@ -57,9 +57,10 @@ FactPanel {
             // Center point
             Rectangle {
                 anchors.horizontalCenter:   parent.horizontalCenter
-                width:                      ScreenTools.defaultTextWidth / 2
-                height:                     parent.height
-                color:                      qgcPal.window
+                anchors.verticalCenter:     parent.verticalCenter
+                width:                      ScreenTools.defaultFontPixelWidth / 3
+                height:                     parent.height / 2
+                color:                      qgcPal.primaryButton
             }
 
             // Indicator
@@ -103,7 +104,7 @@ FactPanel {
             target: controller
 
             onChannelRCValueChanged: {
-                if (channelMonitorRepeater.itemAt(channel) && rcValue !== 0) {
+                if (channelMonitorRepeater.itemAt(channel) && rcValue >= 800) {
                     channelMonitorRepeater.itemAt(channel).loader.item.rcValue = rcValue
                 }
             }
@@ -121,8 +122,10 @@ FactPanel {
                 property Item loader: theLoader
 
                 QGCLabel {
-                    id:     channelLabel
-                    text:   modelData + 1
+                    id:                  channelLabel
+                    width:               ScreenTools.defaultFontPixelWidth * 3
+                    horizontalAlignment: Text.AlignHCenter
+                    text:                modelData + 1
                 }
 
                 Loader {
