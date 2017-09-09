@@ -235,6 +235,14 @@ SetupPage {
                     spacing:    5
                     QGCLabel { text: qsTr("Attitude Controls") }
 
+                    QtObject {
+                        id: rcValueController
+
+                        function changeRcValue(context, rcValue) {
+                            if (rcValue >= 800) context.item.rcValue = rcValue
+                        }
+                    }
+
                     Item {
                         width:  parent.width
                         height: defaultTextHeight * 2
@@ -260,7 +268,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onRollChannelRCValueChanged: rollLoader.item.rcValue = rcValue
+                            onRollChannelRCValueChanged: rcValueController.changeRcValue(rollLoader, rcValue)
                         }
                     }
 
@@ -290,7 +298,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onPitchChannelRCValueChanged: pitchLoader.item.rcValue = rcValue
+                            onPitchChannelRCValueChanged: rcValueController.changeRcValue(pitchLoader, rcValue)
                         }
                     }
 
@@ -320,7 +328,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onYawChannelRCValueChanged: yawLoader.item.rcValue = rcValue
+                            onYawChannelRCValueChanged: rcValueController.changeRcValue(yawLoader, rcValue)
                         }
                     }
 
@@ -350,7 +358,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onThrottleChannelRCValueChanged: throttleLoader.item.rcValue = rcValue
+                            onThrottleChannelRCValueChanged: rcValueController.changeRcValue(throttleLoader, rcValue)
                         }
                     }
                 } // Column - Attitude Control labels
