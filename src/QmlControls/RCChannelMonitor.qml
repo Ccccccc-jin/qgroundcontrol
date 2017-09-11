@@ -104,9 +104,8 @@ FactPanel {
             target: controller
 
             onChannelRCValueChanged: {
-                if (channelMonitorRepeater.itemAt(channel) && rcValue >= 800) {
-                    channelMonitorRepeater.itemAt(channel).loader.item.rcValue = rcValue
-                }
+                channelMonitorRepeater.itemAt(channel).loader.item.rcValue =
+                        (channelMonitorRepeater.itemAt(channel) && rcValue >= 800) ? rcValue : 1500;
             }
         }
 

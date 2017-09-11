@@ -240,7 +240,7 @@ SetupPage {
                         id: rcValueController
 
                         function changeRcValue(context, rcValue) {
-                            if (rcValue >= 800) context.item.rcValue = rcValue
+                            context.item.rcValue = rcValue >= 800 ? rcValue : 1500
                         }
                     }
 
