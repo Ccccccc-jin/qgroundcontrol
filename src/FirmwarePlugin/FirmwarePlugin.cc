@@ -181,6 +181,11 @@ void FirmwarePlugin::adjustOutgoingMavlinkMessage(Vehicle* vehicle, LinkInterfac
     // Generic plugin does no message adjustment
 }
 
+void FirmwarePlugin::requestDataStreams(Vehicle* vehicle)
+{
+    Q_UNUSED(vehicle);
+}
+
 void FirmwarePlugin::initializeVehicle(Vehicle* vehicle)
 {
     Q_UNUSED(vehicle);

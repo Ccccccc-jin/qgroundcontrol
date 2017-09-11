@@ -67,6 +67,9 @@ public:
     /// @return The AutoPilotPlugin associated with this firmware plugin. Must be overridden.
     virtual AutoPilotPlugin* autopilotPlugin(Vehicle* vehicle);
 
+    /// Called when Vehicle was connected after long time (for recover data streams)
+    virtual void requestDataStreams(Vehicle* vehicle);
+
     /// Called when Vehicle is first created to perform any firmware specific setup.
     virtual void initializeVehicle(Vehicle* vehicle);
 
