@@ -27,17 +27,36 @@ FactPanel {
     property Fact battCapacity: controller.getParameterFact(-1, "BATT_CAPACITY")
     property Fact battMonitor:  controller.getParameterFact(-1, "BATT_MONITOR")
 
+    property var _getCapacity: function( battnum ) {
+        var cap = controller.getParameterFact(-1, "BATT%1_CAPACITY".arg(battnum === 1? "" : battnum ))
+        return cap.valueString + "" + cap.units
+    }
+
+    property var _getMonitor: function(battnum) {
+        return controller
+            .getParameterFact(-1, "BATT%1_MONITOR".arg(battnum === 1 ? "" : battnum)).enumStringValue
+    }
+
     Column {
         anchors.fill:       parent
 
-        VehicleSummaryRow {
-            labelText: qsTr("Battery monitor:")
-            valueText: battMonitor.enumStringValue
-        }
+        Repeater {
+            model: [
+                { name: "Power module 1:", value: "" },
+                { name: "    monitor: ",   value: _getMonitor(1)  },
+                { name: "    capacity: ",  value: _getCapacity(1) },
 
-        VehicleSummaryRow {
-            labelText: qsTr("Battery capacity:")
-            valueText: battCapacity.valueString + " " + battCapacity.units
+                { name: "" , value: "" },
+
+                { name: "Power module 2:", value: "" },
+                { name: "    monitor: ",   value: _getMonitor(2)  },
+                { name: "    capacity: ",  value: _getCapacity(2) }
+            ]
+
+            VehicleSummaryRow {
+                labelText: qsTr(modelData.name)
+                valueText: modelData.value
+            }
         }
-    }
+    } //Column
 }
