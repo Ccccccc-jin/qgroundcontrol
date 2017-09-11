@@ -97,6 +97,7 @@ public:
     RallyPointManager*  newRallyPointManager            (Vehicle* vehicle) final { return new APMRallyPointManager(vehicle); }
     QString             brandImageIndoor                (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
     QString             brandImageOutdoor               (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
+    void                requestDataStreams              (Vehicle* vehicle) override final;
 
 protected:
     /// All access to singleton is through stack specific implementation
