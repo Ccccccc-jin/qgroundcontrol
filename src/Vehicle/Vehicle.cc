@@ -1935,6 +1935,8 @@ void Vehicle::_connectionActive(void)
         _connectionLost = false;
         emit connectionLostChanged(false);
         _say(QString("%1 communication regained").arg(_vehicleIdSpeech()));
+
+        _firmwarePlugin->requestDataStreams(this);
     }
 }
 
