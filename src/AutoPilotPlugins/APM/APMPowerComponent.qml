@@ -23,19 +23,20 @@ SetupPage {
     id:             powerPage
     pageComponent:  powerPageComponent
 
-    Component {
-        id: powerPageComponent
-
-        Item {
             FactPanelController {
                 id:         controller
                 factPanel:  powerPage.viewPanel
             }
 
-            Row {
+    Component {
+        id: powerPageComponent
+
+            Flow {
+                width:   availableWidth
                 spacing: ScreenTools.defaultFontPixelHeight
 
                 Repeater {
+                    id:    repeater
                     model: [
                         [
                             "Power module 1",
@@ -387,7 +388,6 @@ SetupPage {
                         }
                     } // Column
                 } //Repeater
-            } //Row
-        } // Item
+            } // Flow
     } // Component
 } // SetupPage
