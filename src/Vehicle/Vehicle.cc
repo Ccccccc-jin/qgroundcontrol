@@ -9,6 +9,7 @@
 
 
 #include "Vehicle.h"
+#include "VehicleBatteries.h"
 #include "MAVLinkProtocol.h"
 #include "FirmwarePluginManager.h"
 #include "LinkManager.h"
@@ -56,10 +57,10 @@ const char* Vehicle::_flightDistanceFactName =      "flightDistance";
 const char* Vehicle::_flightTimeFactName =          "flightTime";
 const char* Vehicle::_distanceToHomeFactName =      "distanceToHome";
 
-const char* Vehicle::_gpsFactGroupName =        "gps";
-const char* Vehicle::_batteryFactGroupName =    "battery";
-const char* Vehicle::_windFactGroupName =       "wind";
-const char* Vehicle::_vibrationFactGroupName =  "vibration";
+const char* Vehicle::_gpsFactGroupName =         "gps";
+const char* Vehicle::_vehicleBatteriesName =     "batteries";
+const char* Vehicle::_windFactGroupName =        "wind";
+const char* Vehicle::_vibrationFactGroupName =   "vibration";
 const char* Vehicle::_temperatureFactGroupName = "temperature";
 
 Vehicle::Vehicle(LinkInterface*             link,
@@ -162,7 +163,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
     , _gpsFactGroup(this)
-    , _batteryFactGroup(this)
+    , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
     , _temperatureFactGroup(this)
@@ -325,7 +326,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
     , _gpsFactGroup(this)
-    , _batteryFactGroup(this)
+    , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
 {
@@ -347,6 +348,11 @@ void Vehicle::_commonInit(void)
     connect(_missionManager, &MissionManager::newMissionItemsAvailable, this, &Vehicle::_clearTrajectoryPoints);
     connect(_missionManager, &MissionManager::sendComplete,             this, &Vehicle::_clearCameraTriggerPoints);
     connect(_missionManager, &MissionManager::sendComplete,             this, &Vehicle::_clearTrajectoryPoints);
+
+    // Batteries
+    connect(this, &Vehicle::batteryStatusReceived, _vehicleBatteries, &VehicleBatteries::handleBatteryStatus);
+    connect(this, &Vehicle::sysStatusReceived,     _vehicleBatteries, &VehicleBatteries::handleSysStatus);
+    connect(this, &Vehicle::battery2Received,      _vehicleBatteries, &VehicleBatteries::handleBattery2);
 
     _parameterManager = new ParameterManager(this);
     connect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
@@ -381,7 +387,6 @@ void Vehicle::_commonInit(void)
     _addFact(&_distanceToHomeFact,      _distanceToHomeFactName);
 
     _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
-    _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
     _addFactGroup(&_windFactGroup,      _windFactGroupName);
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
     _addFactGroup(&_temperatureFactGroup, _temperatureFactGroupName);
@@ -544,9 +549,13 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         _handleRCChannelsRaw(message);
         break;
     case MAVLINK_MSG_ID_BATTERY_STATUS:
-        _handleBatteryStatus(message);
+        emit batteryStatusReceived(message);
+        break;
+    case MAVLINK_MSG_ID_BATTERY2:
+        emit battery2Received(message);
         break;
     case MAVLINK_MSG_ID_SYS_STATUS:
+        emit sysStatusReceived(message);
         _handleSysStatus(message);
         break;
     case MAVLINK_MSG_ID_RAW_IMU:
@@ -916,19 +925,6 @@ void Vehicle::_handleSysStatus(mavlink_message_t& message)
     mavlink_sys_status_t sysStatus;
     mavlink_msg_sys_status_decode(&message, &sysStatus);
 
-    if (sysStatus.current_battery == -1) {
-        _batteryFactGroup.current()->setRawValue(VehicleBatteryFactGroup::_currentUnavailable);
-    } else {
-        // Current is in Amps, current_battery is 10 * milliamperes (1 = 10 milliampere)
-        _batteryFactGroup.current()->setRawValue((float)sysStatus.current_battery / 100.0f);
-    }
-    if (sysStatus.voltage_battery == UINT16_MAX) {
-        _batteryFactGroup.voltage()->setRawValue(VehicleBatteryFactGroup::_voltageUnavailable);
-    } else {
-        _batteryFactGroup.voltage()->setRawValue((double)sysStatus.voltage_battery / 1000.0);
-    }
-    _batteryFactGroup.percentRemaining()->setRawValue(sysStatus.battery_remaining);
-
     if (sysStatus.battery_remaining > 0 &&
             sysStatus.battery_remaining < _settingsManager->appSettings()->batteryPercentRemainingAnnounce()->rawValue().toInt() &&
             sysStatus.battery_remaining < _lastAnnouncedLowBatteryPercent) {
@@ -938,42 +934,13 @@ void Vehicle::_handleSysStatus(mavlink_message_t& message)
 
     _onboardControlSensorsPresent = sysStatus.onboard_control_sensors_present;
     _onboardControlSensorsEnabled = sysStatus.onboard_control_sensors_enabled;
-    _onboardControlSensorsHealth = sysStatus.onboard_control_sensors_health;
+    _onboardControlSensorsHealth  = sysStatus.onboard_control_sensors_health;
 
     uint32_t newSensorsUnhealthy = _onboardControlSensorsEnabled & ~_onboardControlSensorsHealth;
     if (newSensorsUnhealthy != _onboardControlSensorsUnhealthy) {
         _onboardControlSensorsUnhealthy = newSensorsUnhealthy;
         emit unhealthySensorsChanged();
     }
-}
-
-void Vehicle::_handleBatteryStatus(mavlink_message_t& message)
-{
-    mavlink_battery_status_t bat_status;
-    mavlink_msg_battery_status_decode(&message, &bat_status);
-
-    if (bat_status.temperature == INT16_MAX) {
-        _batteryFactGroup.temperature()->setRawValue(VehicleBatteryFactGroup::_temperatureUnavailable);
-    } else {
-        _batteryFactGroup.temperature()->setRawValue((double)bat_status.temperature / 100.0);
-    }
-    if (bat_status.current_consumed == -1) {
-        _batteryFactGroup.mahConsumed()->setRawValue(VehicleBatteryFactGroup::_mahConsumedUnavailable);
-    } else {
-        _batteryFactGroup.mahConsumed()->setRawValue(bat_status.current_consumed);
-    }
-
-    int cellCount = 0;
-    for (int i=0; i<10; i++) {
-        if (bat_status.voltages[i] != UINT16_MAX) {
-            cellCount++;
-        }
-    }
-    if (cellCount == 0) {
-        cellCount = -1;
-    }
-
-    _batteryFactGroup.cellCount()->setRawValue(cellCount);
 }
 
 void Vehicle::_setHomePosition(QGeoCoordinate& homeCoord)
@@ -2669,47 +2636,6 @@ void Vehicle::_updateDistanceToHome(void)
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-
-const char* VehicleBatteryFactGroup::_voltageFactName =                     "voltage";
-const char* VehicleBatteryFactGroup::_percentRemainingFactName =            "percentRemaining";
-const char* VehicleBatteryFactGroup::_mahConsumedFactName =                 "mahConsumed";
-const char* VehicleBatteryFactGroup::_currentFactName =                     "current";
-const char* VehicleBatteryFactGroup::_temperatureFactName =                 "temperature";
-const char* VehicleBatteryFactGroup::_cellCountFactName =                   "cellCount";
-
-const char* VehicleBatteryFactGroup::_settingsGroup =                       "Vehicle.battery";
-
-const double VehicleBatteryFactGroup::_voltageUnavailable =           -1.0;
-const int    VehicleBatteryFactGroup::_percentRemainingUnavailable =  -1;
-const int    VehicleBatteryFactGroup::_mahConsumedUnavailable =       -1;
-const int    VehicleBatteryFactGroup::_currentUnavailable =           -1;
-const double VehicleBatteryFactGroup::_temperatureUnavailable =       -1.0;
-const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1.0;
-
-VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
-    : FactGroup(1000, ":/json/Vehicle/BatteryFact.json", parent)
-    , _voltageFact                  (0, _voltageFactName,                   FactMetaData::valueTypeDouble)
-    , _percentRemainingFact         (0, _percentRemainingFactName,          FactMetaData::valueTypeInt32)
-    , _mahConsumedFact              (0, _mahConsumedFactName,               FactMetaData::valueTypeInt32)
-    , _currentFact                  (0, _currentFactName,                   FactMetaData::valueTypeFloat)
-    , _temperatureFact              (0, _temperatureFactName,               FactMetaData::valueTypeDouble)
-    , _cellCountFact                (0, _cellCountFactName,                 FactMetaData::valueTypeInt32)
-{
-    _addFact(&_voltageFact,                 _voltageFactName);
-    _addFact(&_percentRemainingFact,        _percentRemainingFactName);
-    _addFact(&_mahConsumedFact,             _mahConsumedFactName);
-    _addFact(&_currentFact,                 _currentFactName);
-    _addFact(&_temperatureFact,             _temperatureFactName);
-    _addFact(&_cellCountFact,               _cellCountFactName);
-
-    // Start out as not available
-    _voltageFact.setRawValue            (_voltageUnavailable);
-    _percentRemainingFact.setRawValue   (_percentRemainingUnavailable);
-    _mahConsumedFact.setRawValue        (_mahConsumedUnavailable);
-    _currentFact.setRawValue            (_currentUnavailable);
-    _temperatureFact.setRawValue        (_temperatureUnavailable);
-    _cellCountFact.setRawValue          (_cellCountUnavailable);
-}
 
 const char* VehicleWindFactGroup::_directionFactName =      "direction";
 const char* VehicleWindFactGroup::_speedFactName =          "speed";

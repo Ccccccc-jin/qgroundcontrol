@@ -43,6 +43,7 @@ class VideoStreamManager;
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
 class Vehicle;
+class VehicleBatteries;
 
 class VehicleVibrationFactGroup : public FactGroup
 {
@@ -139,53 +140,6 @@ private:
     Fact        _lockFact;
 };
 
-class VehicleBatteryFactGroup : public FactGroup
-{
-    Q_OBJECT
-
-public:
-    VehicleBatteryFactGroup(QObject* parent = NULL);
-
-    Q_PROPERTY(Fact* voltage            READ voltage            CONSTANT)
-    Q_PROPERTY(Fact* percentRemaining   READ percentRemaining   CONSTANT)
-    Q_PROPERTY(Fact* mahConsumed        READ mahConsumed        CONSTANT)
-    Q_PROPERTY(Fact* current            READ current            CONSTANT)
-    Q_PROPERTY(Fact* temperature        READ temperature        CONSTANT)
-    Q_PROPERTY(Fact* cellCount          READ cellCount          CONSTANT)
-
-    Fact* voltage                   (void) { return &_voltageFact; }
-    Fact* percentRemaining          (void) { return &_percentRemainingFact; }
-    Fact* mahConsumed               (void) { return &_mahConsumedFact; }
-    Fact* current                   (void) { return &_currentFact; }
-    Fact* temperature               (void) { return &_temperatureFact; }
-    Fact* cellCount                 (void) { return &_cellCountFact; }
-
-
-    static const char* _voltageFactName;
-    static const char* _percentRemainingFactName;
-    static const char* _mahConsumedFactName;
-    static const char* _currentFactName;
-    static const char* _temperatureFactName;
-    static const char* _cellCountFactName;
-
-    static const char* _settingsGroup;
-
-    static const double _voltageUnavailable;
-    static const int    _percentRemainingUnavailable;
-    static const int    _mahConsumedUnavailable;
-    static const int    _currentUnavailable;
-    static const double _temperatureUnavailable;
-    static const int    _cellCountUnavailable;
-
-private:
-    Fact            _voltageFact;
-    Fact            _percentRemainingFact;
-    Fact            _mahConsumedFact;
-    Fact            _currentFact;
-    Fact            _temperatureFact;
-    Fact            _cellCountFact;
-};
-
 class VehicleTemperatureFactGroup : public FactGroup
 {
     Q_OBJECT
@@ -236,6 +190,7 @@ public:
 
     ~Vehicle();
 
+    Q_PROPERTY(VehicleBatteries*    batteries               READ batteries                                              CONSTANT)
     Q_PROPERTY(int                  id                      READ id                                                     CONSTANT)
     Q_PROPERTY(AutoPilotPlugin*     autopilot               MEMBER _autopilotPlugin                                     CONSTANT)
     Q_PROPERTY(QGeoCoordinate       coordinate              READ coordinate                                             NOTIFY coordinateChanged)
@@ -348,11 +303,12 @@ public:
     Q_PROPERTY(Fact* flightDistance     READ flightDistance     CONSTANT)
     Q_PROPERTY(Fact* distanceToHome     READ distanceToHome     CONSTANT)
 
+
     Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
-    Q_PROPERTY(FactGroup* battery     READ batteryFactGroup     CONSTANT)
     Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
     Q_PROPERTY(FactGroup* temperature READ temperatureFactGroup CONSTANT)
+
 
     Q_PROPERTY(int      firmwareMajorVersion        READ firmwareMajorVersion       NOTIFY firmwareVersionChanged)
     Q_PROPERTY(int      firmwareMinorVersion        READ firmwareMinorVersion       NOTIFY firmwareVersionChanged)
@@ -440,6 +396,8 @@ public:
     // Property accessors
 
     QGeoCoordinate coordinate(void) { return _coordinate; }
+
+    VehicleBatteries* batteries(void) { return _vehicleBatteries; }
 
     typedef enum {
         JoystickModeRC,         ///< Joystick emulates an RC Transmitter
@@ -609,10 +567,10 @@ public:
     Fact* distanceToHome    (void) { return &_distanceToHomeFact; }
 
     FactGroup* gpsFactGroup         (void) { return &_gpsFactGroup; }
-    FactGroup* batteryFactGroup     (void) { return &_batteryFactGroup; }
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
     FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
+
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
 
@@ -702,6 +660,9 @@ signals:
     void joystickEnabledChanged(bool enabled);
     void activeChanged(bool active);
     void mavlinkMessageReceived(const mavlink_message_t& message);
+    void sysStatusReceived(const mavlink_message_t& message);
+    void batteryStatusReceived(const mavlink_message_t& message);
+    void battery2Received(const mavlink_message_t& message);
     void homePositionChanged(const QGeoCoordinate& homePosition);
     void armedChanged(bool armed);
     void flightModeChanged(const QString& flightMode);
@@ -827,7 +788,6 @@ private:
     void _handleRadioStatus(mavlink_message_t& message);
     void _handleRCChannels(mavlink_message_t& message);
     void _handleRCChannelsRaw(mavlink_message_t& message);
-    void _handleBatteryStatus(mavlink_message_t& message);
     void _handleSysStatus(mavlink_message_t& message);
     void _handleWindCov(mavlink_message_t& message);
     void _handleWind(mavlink_message_t& message);
@@ -1030,7 +990,7 @@ private:
     Fact _distanceToHomeFact;
 
     VehicleGPSFactGroup         _gpsFactGroup;
-    VehicleBatteryFactGroup     _batteryFactGroup;
+    VehicleBatteries*           _vehicleBatteries;
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
     VehicleTemperatureFactGroup _temperatureFactGroup;
@@ -1048,7 +1008,7 @@ private:
     static const char* _distanceToHomeFactName;
 
     static const char* _gpsFactGroupName;
-    static const char* _batteryFactGroupName;
+    static const char* _vehicleBatteriesName;
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
     static const char* _temperatureFactGroupName;
