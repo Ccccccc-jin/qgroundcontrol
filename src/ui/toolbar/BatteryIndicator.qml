@@ -27,31 +27,55 @@ Item {
 
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 
-    function getBatteryColor() {
+    function _getBattery(batteryId) {
+       return _activeVehicle.batteries.get(batteryId);
+    }
+
+    function getBatteryColor(batteryId) {
         if(_activeVehicle) {
-            if(_activeVehicle.battery.percentRemaining.value > 75) {
+            var percentRemaining = _getBattery(batteryId).percentRemaining.value;
+
+            if (percentRemaining > 75.0) {
                 return qgcPal.text
-            }
-            if(_activeVehicle.battery.percentRemaining.value > 50) {
+            } else if (percentRemaining > 50.0) {
                 return qgcPal.colorOrange
-            }
-            if(_activeVehicle.battery.percentRemaining.value > 0.1) {
+            } else {
                 return qgcPal.colorRed
             }
         }
         return qgcPal.colorGrey
     }
 
-    function getBatteryPercentageText() {
+    function getBatteryPercentageText(batteryId) {
         if(_activeVehicle) {
-            if(_activeVehicle.battery.percentRemaining.value > 98.9) {
-                return "100%"
+            var battery = _getBattery(batteryId);
+
+            if (battery.percentRemaining.value > 0.01) {
+               return battery.percentRemaining.value > 98.9 ?
+                   "100%" : battery.percentRemaining.valueString + battery.percentRemaining.units;
+            } else if (battery.voltage.value >= 0) {
+                return battery.voltage.valueString + battery.voltage.units
             }
-            if(_activeVehicle.battery.percentRemaining.value > 0.1) {
-                return _activeVehicle.battery.percentRemaining.valueString + _activeVehicle.battery.percentRemaining.units
+        }
+        return "N/A"
+    }
+
+    function getBatteryVoltage(batteryId) {
+        if (_activeVehicle) {
+            var voltageFact = _getBattery(batteryId).voltage;
+            if (voltageFact.value != -1.0) {
+                return voltageFact.valueString + " " + voltageFact.units
             }
-            if(_activeVehicle.battery.voltage.value >= 0) {
-                return _activeVehicle.battery.voltage.valueString + _activeVehicle.battery.voltage.units
+        }
+
+        return "N/A"
+    }
+
+    function getMahConsumed(batteryId) {
+        if (_activeVehicle) {
+            var mahConsumedFact = _getBattery(batteryId).mahConsumed
+            if (mahConsumedFact.value !== -1) {
+                return mahConsumedFact.valueString + " " + mahConsumedFact.units
             }
         }
         return "N/A"
@@ -70,29 +94,42 @@ Item {
             Column {
                 id:                 battCol
                 spacing:            ScreenTools.defaultFontPixelHeight * 0.5
-                width:              Math.max(battGrid.width, battLabel.width)
+                width:              Math.max(batteryStatusColumn.width, batteryStatusHeader.width)
                 anchors.margins:    ScreenTools.defaultFontPixelHeight
                 anchors.centerIn:   parent
 
                 QGCLabel {
-                    id:             battLabel
-                    text:           qsTr("Battery Status")
-                    font.family:    ScreenTools.demiboldFontFamily
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    id:                        batteryStatusHeader
+                    text:                      qsTr("Battery Status")
+                    font.family:               ScreenTools.demiboldFontFamily
+                    anchors.horizontalCenter:  parent.horizontalCenter
                 }
 
-                GridLayout {
-                    id:                 battGrid
-                    anchors.margins:    ScreenTools.defaultFontPixelHeight
-                    columnSpacing:      ScreenTools.defaultFontPixelWidth
-                    columns:            2
-                    anchors.horizontalCenter: parent.horizontalCenter
+                Column {
+                    id:       batteryStatusColumn
+                    spacing:  20
 
-                    QGCLabel { text: qsTr("Voltage:") }
-                    QGCLabel { text: (_activeVehicle && _activeVehicle.battery.voltage.value != -1) ? (_activeVehicle.battery.voltage.valueString + " " + _activeVehicle.battery.voltage.units) : "N/A" }
-                    QGCLabel { text: qsTr("Accumulated Consumption:") }
-                    QGCLabel { text: (_activeVehicle && _activeVehicle.battery.mahConsumed.value != -1) ? (_activeVehicle.battery.mahConsumed.valueString + " " + _activeVehicle.battery.mahConsumed.units) : "N/A" }
-                }
+                    Repeater {
+                        model: _activeVehicle ? _activeVehicle.batteries.count.value : 0
+
+                            GridLayout {
+                                anchors.left:      parent.left
+                                columns:           2
+
+                                QGCLabel {
+                                    Layout.columnSpan:  parent.columns
+                                    text:               "Power module " + (index + 1)
+                                    color:              "#909090"
+                                }
+
+                                QGCLabel { text: qsTr("Voltage:") }
+                                QGCLabel { text: getBatteryVoltage(index) }
+
+                                QGCLabel { text: qsTr("Accumulated Consumption:") }
+                                QGCLabel { text: getMahConsumed(index) }
+                            }
+                    }
+                }//Column
             }
 
             Component.onCompleted: {
@@ -107,7 +144,7 @@ Item {
         id:             batteryIndicatorRow
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        opacity:        (_activeVehicle && _activeVehicle.battery.voltage.value >= 0) ? 1 : 0.5
+
         QGCColoredImage {
             anchors.top:        parent.top
             anchors.bottom:     parent.bottom
@@ -117,13 +154,23 @@ Item {
             fillMode:           Image.PreserveAspectFit
             color:              qgcPal.text
         }
-        QGCLabel {
-            text:                   getBatteryPercentageText()
-            font.pointSize:         ScreenTools.mediumFontPointSize
-            color:                  getBatteryColor()
+
+        Column {
             anchors.verticalCenter: parent.verticalCenter
+
+            Repeater {
+                // Only two power modules percentage need to show
+                model: _activeVehicle ? _activeVehicle.batteries.count.value : 0
+
+                QGCLabel {
+                    text:                   getBatteryPercentageText(_activeVehicle.batteries.get(index))
+                    font.pointSize:         ScreenTools.mediumFontPointSize
+                    color:                  getBatteryColor(_activeVehicle.batteries.get(index))
+                }
+            }
         }
     }
+
     MouseArea {
         anchors.fill:   parent
         onClicked:      mainWindow.showPopUp(batteryInfo, mapToItem(toolBar, x, y).x + (width / 2))
