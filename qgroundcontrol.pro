@@ -392,11 +392,13 @@ HEADERS += \
     src/api/QGCCorePlugin.h \
     src/api/QGCOptions.h \
     src/api/QGCSettings.h \
+    src/Vehicle/VehicleBatteries.h
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
+    src/Vehicle/VehicleBatteries.cc
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
