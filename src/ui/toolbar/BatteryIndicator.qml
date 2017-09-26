@@ -28,7 +28,7 @@ Item {
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 
     function _getBattery(batteryId) {
-       return _activeVehicle.batteries.get(batteryId);
+       return _activeVehicle.batteries.getFactGroup(batteryId);
     }
 
     function getBatteryColor(batteryId) {
@@ -47,7 +47,7 @@ Item {
     }
 
     function getBatteryPercentageText(batteryId) {
-        if(_activeVehicle) {
+        if (_activeVehicle) {
             var battery = _getBattery(batteryId);
 
             if (battery.percentRemaining.value > 0.01) {
@@ -110,7 +110,7 @@ Item {
                     spacing:  20
 
                     Repeater {
-                        model: _activeVehicle ? _activeVehicle.batteries.count.value : 0
+                        model: _activeVehicle ? _activeVehicle.batteries.factGroupNames : 0
 
                             GridLayout {
                                 anchors.left:      parent.left
@@ -118,15 +118,15 @@ Item {
 
                                 QGCLabel {
                                     Layout.columnSpan:  parent.columns
-                                    text:               "Power module " + (index + 1)
+                                    text:               modelData
                                     color:              "#909090"
                                 }
 
                                 QGCLabel { text: qsTr("Voltage:") }
-                                QGCLabel { text: getBatteryVoltage(index) }
+                                QGCLabel { text: getBatteryVoltage(modelData) }
 
                                 QGCLabel { text: qsTr("Accumulated Consumption:") }
-                                QGCLabel { text: getMahConsumed(index) }
+                                QGCLabel { text: getMahConsumed(modelData) }
                             }
                     }
                 }//Column
@@ -160,12 +160,12 @@ Item {
 
             Repeater {
                 // Only two power modules percentage need to show
-                model: _activeVehicle ? _activeVehicle.batteries.count.value : 0
+                model: _activeVehicle.batteries.factGroupNames
 
                 QGCLabel {
-                    text:                   getBatteryPercentageText(_activeVehicle.batteries.get(index))
+                    text:                   getBatteryPercentageText(modelData)
                     font.pointSize:         ScreenTools.mediumFontPointSize
-                    color:                  getBatteryColor(_activeVehicle.batteries.get(index))
+                    color:                  getBatteryColor(modelData)
                 }
             }
         }
