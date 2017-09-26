@@ -38,19 +38,16 @@ Fact* FactGroup::getFact(const QString& name)
     Fact* fact = NULL;
 
     if (name.contains(".")) {
-        QStringList parts = name.split(".");
-        if (parts.count() != 2) {
-            qWarning() << "Only single level of hierarchy supported";
-            return NULL;
-        }
+        QString topLevelFactGroup = name.section('.', 0, 0);
+        QString tail              = name.section('.', 1);
 
-        FactGroup * factGroup = getFactGroup(parts[0]);
+        FactGroup * factGroup = getFactGroup(topLevelFactGroup);
         if (!factGroup) {
-            qWarning() << "Unknown FactGroup" << parts[0];
+            qWarning() << "Unknown FactGroup" << topLevelFactGroup;
             return NULL;
         }
 
-        return factGroup->getFact(parts[1]);
+        return factGroup->getFact(tail);
     }
 
     if (_nameToFactMap.contains(name)) {
