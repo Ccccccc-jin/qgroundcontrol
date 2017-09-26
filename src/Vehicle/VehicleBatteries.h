@@ -62,18 +62,12 @@ private:
 };
 
 
-class VehicleBatteries : public QObject
+class VehicleBatteriesFactGroup : public FactGroup
 {
     Q_OBJECT
 public:
-    VehicleBatteries(QObject *parent = nullptr);
-    ~VehicleBatteries(void);
-
-    Q_PROPERTY(Fact* count READ count CONSTANT)
-
-    Q_INVOKABLE FactGroup* get(int batteryId) { return _batteryFactGroups.value(batteryId, _defaultBattery); }
-
-    Fact* count(void) { return &_batteriesCount; }
+    VehicleBatteriesFactGroup(QObject *parent = nullptr);
+    ~VehicleBatteriesFactGroup(void);
 
 public slots:
     void handleBatteryStatus (const mavlink_message_t& message);
@@ -81,13 +75,8 @@ public slots:
     void handleBattery2      (const mavlink_message_t& message);
 
 private:
-    void _appendBatteryIfNotPresent(int batteryId);
-
-    QHash<int, VehicleBatteryFactGroup*>  _batteryFactGroups;
-    Fact                                  _batteriesCount;
-
-    static const char*              _batteriesCountFactName;
-    static VehicleBatteryFactGroup* _defaultBattery;
+    QString _getBatteryName(int batteryId);
+    void _appendBatteryIfNotPresent(QString const& batteryId);
 };
 
 #endif // VEHICLEBATTERIES_H
