@@ -125,7 +125,7 @@ void VehicleBatteriesFactGroup::handleBattery2(const mavlink_message_t& message)
 
 QString VehicleBatteriesFactGroup::_getBatteryName(int batteryId)
 {
-   return QStringLiteral("battery %1").arg(batteryId + 1);
+   return QStringLiteral("Battery %1").arg(batteryId + 1);
 }
 
 void VehicleBatteriesFactGroup::_appendBatteryIfNotPresent(QString const& batteryName)

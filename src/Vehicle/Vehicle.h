@@ -43,7 +43,7 @@ class VideoStreamManager;
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
 class Vehicle;
-class VehicleBatteries;
+class VehicleBatteriesFactGroup;
 
 class VehicleVibrationFactGroup : public FactGroup
 {
@@ -190,7 +190,6 @@ public:
 
     ~Vehicle();
 
-    Q_PROPERTY(VehicleBatteries*    batteries               READ batteries                                              CONSTANT)
     Q_PROPERTY(int                  id                      READ id                                                     CONSTANT)
     Q_PROPERTY(AutoPilotPlugin*     autopilot               MEMBER _autopilotPlugin                                     CONSTANT)
     Q_PROPERTY(QGeoCoordinate       coordinate              READ coordinate                                             NOTIFY coordinateChanged)
@@ -307,6 +306,7 @@ public:
     Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
     Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
+    Q_PROPERTY(FactGroup* batteries   READ batteriesFactGroup   CONSTANT)
     Q_PROPERTY(FactGroup* temperature READ temperatureFactGroup CONSTANT)
 
 
@@ -397,7 +397,6 @@ public:
 
     QGeoCoordinate coordinate(void) { return _coordinate; }
 
-    VehicleBatteries* batteries(void) { return _vehicleBatteries; }
 
     typedef enum {
         JoystickModeRC,         ///< Joystick emulates an RC Transmitter
@@ -568,6 +567,7 @@ public:
 
     FactGroup* gpsFactGroup         (void) { return &_gpsFactGroup; }
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
+    FactGroup* batteriesFactGroup   (void) { return (FactGroup*)_vehicleBatteries; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
     FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
 
@@ -990,7 +990,7 @@ private:
     Fact _distanceToHomeFact;
 
     VehicleGPSFactGroup         _gpsFactGroup;
-    VehicleBatteries*           _vehicleBatteries;
+    VehicleBatteriesFactGroup*  _vehicleBatteries;
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
     VehicleTemperatureFactGroup _temperatureFactGroup;
@@ -1008,7 +1008,7 @@ private:
     static const char* _distanceToHomeFactName;
 
     static const char* _gpsFactGroupName;
-    static const char* _vehicleBatteriesName;
+    static const char* _batteriesFactGroupName;
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
     static const char* _temperatureFactGroupName;
