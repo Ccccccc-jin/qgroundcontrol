@@ -45,6 +45,8 @@ public:
     
     /// @return Filename for .bin file
     QString binFilename(void) const { return _binFilename; }
+
+    void setBinFilename(QString const& filename) { _binFilename = filename; }
     
     /// @return Block count from .ihx image
     uint16_t ihxBlockCount(void) const;
