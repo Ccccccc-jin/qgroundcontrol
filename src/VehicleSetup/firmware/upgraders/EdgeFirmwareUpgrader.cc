@@ -1,5 +1,6 @@
 #include <QtRemoteObjects>
 #include <memory>
+#include <libusb-1.0/libusb.h>
 
 #include "EdgeFirmwareUpgrader.h"
 #include "rep_FirmwareUpgraderWatcher_replica.h"
@@ -18,17 +19,27 @@ public:
         OpenImageFailed,
         OpenDeviceFailed,
         ImageReadingFailed,
-        DeviceWritingFailed
+        DeviceWritingFailed,
+        CheckingCorrectness,
+        ImageUncorrectlyWrote,
+        ImageCorrectlyWrote
     };
 
-    EdgeFirmwareUpgraderPrivate() {}
     EdgeFirmwareUpgraderPrivate(EdgeFirmwareUpgraderPrivate const& )      = delete;
     EdgeFirmwareUpgraderPrivate(EdgeFirmwareUpgraderPrivate&& )           = delete;
     EdgeFirmwareUpgraderPrivate& operator=(EdgeFirmwareUpgrader const&)   = delete;
     EdgeFirmwareUpgraderPrivate& operator=(EdgeFirmwareUpgrader&&)        = delete;
 
+    EdgeFirmwareUpgraderPrivate()
+        : checksumEnabled(true),
+          image(nullptr)
+    {  }
+
+    bool checksumEnabled;
     QProcess fwUpgraderProcess;
-    std::unique_ptr<FirmwareUpgraderWatcherReplica> watcher;
+    QRemoteObjectNode node;
+    FirmwareImage* image;
+    FirmwareUpgraderWatcherReplica* watcher;
 };
 
 
@@ -40,50 +51,128 @@ EdgeFirmwareUpgrader::EdgeFirmwareUpgrader(QObject* parent)
 
 EdgeFirmwareUpgrader::~EdgeFirmwareUpgrader(void)
 {
+    _pimpl->fwUpgraderProcess.kill();
+    _pimpl->fwUpgraderProcess.waitForFinished();
+
     delete _pimpl;
 }
 
 
-void EdgeFirmwareUpgrader::flash(FirmwareImage const* fwImg)
+bool EdgeFirmwareUpgrader::deviceAvailable() const
 {
-    static auto const fwUpgraderBinary = QStringLiteral("");
+    auto const requiredVid = 0x0a5c;
+    auto requiredPids = QList<int>({ 0x2764, 0x2763 });
 
-    auto& upgraderProcess = _pimpl-> fwUpgraderProcess;
+    libusb_context *context = 0;
+    libusb_device **list = 0;
+    int ret = 0;
+    ssize_t count = 0;
+    int bootable = 0;
 
-    upgraderProcess.start(fwUpgraderBinary, QStringList({fwImg->binFilename()}));
-    QObject::connect(&upgraderProcess, &QProcess::errorOccurred,
+    ret = libusb_init(&context);
+    Q_ASSERT(ret == 0);
+
+    count = libusb_get_device_list(context, &list);
+    Q_ASSERT(count > 0);
+
+    for (ssize_t idx = 0; idx < count; ++idx) {
+        libusb_device *device = list[idx];
+        struct libusb_device_descriptor desc;
+
+        ret = libusb_get_device_descriptor(device, &desc);
+        Q_ASSERT(ret == 0);
+
+        if (desc.idVendor == requiredVid && requiredPids.contains(desc.idProduct)) {
+           bootable++;
+        }
+    }
+
+    libusb_exit(context);
+    return bootable > 0;
+}
+
+
+void EdgeFirmwareUpgrader::cancel(void)
+{
+    _pimpl->watcher->cancel();
+}
+
+
+void EdgeFirmwareUpgrader::enableChecksum(bool checksumEnabled)
+{
+    _pimpl-> checksumEnabled = checksumEnabled;
+}
+
+
+bool EdgeFirmwareUpgrader::checksumEnabled(void) const
+{
+    return _pimpl-> checksumEnabled;
+}
+
+
+void EdgeFirmwareUpgrader::reboot(void)
+{
+
+}
+
+
+FirmwareImage* EdgeFirmwareUpgrader::image(void) const
+{
+    return _pimpl->image;
+}
+
+
+void EdgeFirmwareUpgrader::flash(FirmwareImage* fwImg)
+{
+    _pimpl->image = fwImg;
+    static auto const fwUpgraderBinary = QStringLiteral("/home/vladimir.provalov/dev/qgcflasher/build-firmwareupgrader-fwupgrader-Debug/fwupgrader");
+
+
+    _pimpl->fwUpgraderProcess.start("gksudo " + fwUpgraderBinary);
+    qInfo() << fwImg->binFilename();
+
+    QObject::connect(&_pimpl->fwUpgraderProcess, &QProcess::errorOccurred,
                      this, &EdgeFirmwareUpgrader::_fwUpgraderProcessErrrorOcurred);
 
-    QRemoteObjectNode clientNode;
-    auto successful = clientNode.connectToNode(QUrl("local:fiw_upgrader"));
+    QObject::connect(&_pimpl->fwUpgraderProcess, &QProcess::stateChanged,
+                     this, &EdgeFirmwareUpgrader::_onProcessStateChanged);
+
+    _pimpl->fwUpgraderProcess.waitForStarted();
+
+    auto successful = _pimpl->node.connectToNode(QUrl("local:fwupg_socket"));
 
     if (!successful) {
         emit errorMessageReceived("Can not connect to firmware upgrader process");
         return;
     }
-    emit statusMessageReceived("Successfully connected to firmware upgrader process");
 
-    auto& watcher = _pimpl->watcher;
+    _pimpl->watcher = _pimpl->node.acquire<FirmwareUpgraderWatcherReplica>();
+    QObject::connect(_pimpl->watcher, &FirmwareUpgraderWatcherReplica::initialized,
+         this, &EdgeFirmwareUpgrader::_onWatcherInitialized);
 
-    watcher.reset(clientNode.acquire<FirmwareUpgraderWatcherReplica>());
-    QObject::connect(watcher.get(), &FirmwareUpgraderWatcherReplica::initialized,
-                     this, &EdgeFirmwareUpgrader::_onWatcherInitialized);
 }
 
 
 void EdgeFirmwareUpgrader::_onWatcherInitialized(void)
 {
-    auto& watcher = _pimpl->watcher;
+    emit statusMessageReceived("Firmware upgrader successfully initialized");
 
-    QObject::connect(watcher.get(), &FirmwareUpgraderWatcherReplica::subsystemStateChanged,
+    QObject::connect(_pimpl->watcher, &FirmwareUpgraderWatcherReplica::subsystemStateChanged,
                      this, &EdgeFirmwareUpgrader::_onWatcherSubsystemStateChanged);
 
-    QObject::connect(watcher.get()  ,&FirmwareUpgraderWatcherReplica::flasherProgressChanged,
+    QObject::connect(_pimpl->watcher  ,&FirmwareUpgraderWatcherReplica::flasherProgressChanged,
                      this, &EdgeFirmwareUpgrader::flasherProgressChanged);
 
-    watcher->start();
+    QObject::connect(_pimpl-> watcher, &FirmwareUpgraderWatcherReplica::finished,
+         [this] () {
+             emit statusMessageReceived("Firmware upgrading completed.");
+         }
+    );
 
-    emit statusMessageReceived("Firmware upgrader successfully initialized");
+    QObject::connect(this, &EdgeFirmwareUpgrader::start,
+                     _pimpl->watcher, &FirmwareUpgraderWatcherReplica::start);
+
+    emit start(_pimpl->image->binFilename(), _pimpl->checksumEnabled);
 }
 
 
@@ -104,6 +193,24 @@ void EdgeFirmwareUpgrader::_fwUpgraderProcessErrrorOcurred(QProcess::ProcessErro
 }
 
 
+void EdgeFirmwareUpgrader::_onProcessStateChanged(QProcess::ProcessState state)
+{
+    switch(state) {
+        case QProcess::NotRunning:
+            emit statusMessageReceived("Firmware upgrader not running.");
+            break;
+
+        case QProcess::Starting:
+            emit statusMessageReceived("Firmware upgrader starting.");
+            break;
+
+        case QProcess::Running:
+            emit statusMessageReceived("Firmware upgrader running");
+            break;
+    }
+}
+
+
 void EdgeFirmwareUpgrader::_onWatcherSubsystemStateChanged(QString subsystem, uint state)
 {
 
@@ -115,47 +222,63 @@ void EdgeFirmwareUpgrader::_onWatcherSubsystemStateChanged(QString subsystem, ui
 
     switch(state) {
         case EdgeFirmwareUpgraderPrivate::Started: {
-            emit statusMessageReceived(subsystem + ": started.");
+            emit statusMessageReceived(subsystem + " : started...");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::Finished: {
-            emit statusMessageReceived(subsystem + ": finished.");
+            emit statusMessageReceived(subsystem + " : succesfully finished.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::DeviceNotFound: {
+            emit errorMessageReceived(subsystem + " : device not found.");
             emit deviceNotFound();
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::DeviceFound: {
-            emit statusMessageReceived(subsystem + ": device found.");
+            emit statusMessageReceived(subsystem + " : device found.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::OpenImageFailed: {
-            emit errorMessageReceived(subsystem + ": can not open image.");
+            emit errorMessageReceived(subsystem + " : can not open image.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::OpenDeviceFailed: {
-            emit errorMessageReceived(subsystem + ": can not open device.");
+            emit errorMessageReceived(subsystem + " : can not open device.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::ImageReadingFailed: {
-            emit errorMessageReceived(subsystem + ": image reading failed.");
+            emit errorMessageReceived(subsystem + " : image reading failed.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::DeviceWritingFailed: {
-            emit errorMessageReceived(subsystem + ": writing to device failed.");
+            emit errorMessageReceived(subsystem + " : device writing failed.");
             break;
         }
 
         case EdgeFirmwareUpgraderPrivate::UnexpectedError: {
-            emit errorMessageReceived(subsystem + ": unexpected error.");
+            emit errorMessageReceived(subsystem + " : unexpected error.");
+            break;
+        }
+
+        case EdgeFirmwareUpgraderPrivate::CheckingCorrectness: {
+            emit statusMessageReceived(subsystem + " : checking correctness of flashing...");
+            break;
+        }
+
+        case EdgeFirmwareUpgraderPrivate::ImageUncorrectlyWrote: {
+            emit errorMessageReceived(subsystem + " : image uncorrectly wrote.");
+            break;
+        }
+
+        case EdgeFirmwareUpgraderPrivate::ImageCorrectlyWrote: {
+            emit statusMessageReceived(subsystem + " : image correctly wrote.");
             break;
         }
 

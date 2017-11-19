@@ -9,7 +9,7 @@
 class EdgeFirmwareUpgraderPrivate;
 
 
-class EdgeFirmwareUpgrader : public FirmwareUpgraderInterface
+class EdgeFirmwareUpgrader : public FirmwareUpgrader
 {
     Q_OBJECT
 public:
@@ -17,16 +17,22 @@ public:
 
     ~EdgeFirmwareUpgrader(void);
 
+    bool deviceAvailable(void) const override final;
+
     void cancel(void) override final;
 
     void reboot(void) override final;
 
-    void flash(FirmwareImage const* image) override final;
+    void enableChecksum(bool checksumEnabled) override final;
+
+    bool checksumEnabled(void) const override final;
 
     FirmwareImage* image(void) const override final;
 
+    void flash(FirmwareImage* image) override final;
+
 signals:
-    void start(void);
+    void start(QString firmwareImage, bool checksumEnabled);
 
 private slots:
     void _onWatcherInitialized(void);
@@ -34,6 +40,8 @@ private slots:
     void _onWatcherSubsystemStateChanged(QString subsystem, uint state);
 
     void _fwUpgraderProcessErrrorOcurred(QProcess::ProcessError err);
+
+    void _onProcessStateChanged(QProcess::ProcessState state);
 
 private:
     void _sendStatusMessage(QString const& message);
