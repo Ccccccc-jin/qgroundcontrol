@@ -3,17 +3,28 @@
 
 #include <QObject>
 #include "FirmwareImage.h"
+#include <memory>
 
 class FirmwareUpgrader : public QObject
 {
     Q_OBJECT
-
 public:
+
+    static std::unique_ptr<FirmwareUpgrader> instance(void);
+
+    virtual ~FirmwareUpgrader(void);
+
+    virtual bool deviceAvailable(void) const = 0;
+
     virtual void cancel(void) = 0;
 
     virtual void reboot(void) = 0;
 
-    virtual void flash(FirmwareImage const* image) = 0;
+    virtual void enableChecksum(bool checksumEnabled) = 0;
+
+    virtual bool checksumEnabled(void) const = 0;
+
+    virtual void flash(FirmwareImage* image) = 0;
 
     virtual FirmwareImage* image(void) const = 0;
 
@@ -31,7 +42,6 @@ signals:
 protected:
     explicit FirmwareUpgrader(QObject* parent = NULL);
 
-    virtual ~FirmwareUpgrader(void) = 0;
 };
 
 #endif // FIRMWAREUPGRADERINTERFACE_H
