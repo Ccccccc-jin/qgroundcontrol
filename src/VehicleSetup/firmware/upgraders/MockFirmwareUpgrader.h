@@ -17,7 +17,7 @@ public:
 
     void reboot(void) override final;
 
-    void flash(FirmwareImage const* image) override final;
+    void flash(FirmwareImage* image) override final;
 
     FirmwareImage* image(void) const override final;
 

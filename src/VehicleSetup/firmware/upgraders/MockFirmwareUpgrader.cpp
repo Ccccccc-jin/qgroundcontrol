@@ -29,7 +29,7 @@ void MockFirmwareUpgrader::reboot(void)
 }
 
 
-void MockFirmwareUpgrader::flash(const FirmwareImage *image)
+void MockFirmwareUpgrader::flash(FirmwareImage *image)
 {
     Q_UNUSED(image);
 
