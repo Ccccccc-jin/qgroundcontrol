@@ -853,13 +853,14 @@ HEADERS+= \
     FIRMWARE_DIR = src/VehicleSetup/firmware
 
     HEADERS += \
-        $$FIRMWARE_DIR/FirmwareImage.h \
         $$FIRMWARE_DIR/FirmwareUpgradeController.h \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
-        $$FIRMWARE_DIR/upgraders/Bootloader.h \
-        $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.h \
-        $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.h \
-        $$FIRMWARE_DIR/upgraders/MockFirmwareUpgrader.h \
+        $$FIRMWARE_DIR/upgraders/States.h \
+        $$FIRMWARE_DIR/upgraders/MessageHandler.h \
+        $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
+        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
+        $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
+        $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
 }
 
 SOURCES += \
@@ -884,13 +885,12 @@ SOURCES += \
     LIBS += -lusb-1.0
 
     SOURCES += \
-        $$FIRMWARE_DIR/FirmwareImage.cc \
         $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
-        $$FIRMWARE_DIR/upgraders/Bootloader.cc \
-        $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.cc \
-        $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.cc \
-        $$FIRMWARE_DIR/upgraders/MockFirmwareUpgrader.cpp \
+        $$FIRMWARE_DIR/upgraders/MessageHandler.cc \
+        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
+        $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
+
 
      REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
 }

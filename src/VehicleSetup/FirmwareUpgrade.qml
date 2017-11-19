@@ -45,14 +45,95 @@ QGCView {
         }
     }
 
+    function disabledVisible(button) {
+        button.visible = true
+        button.enabled = false
+    }
+
+    function enabledVisible(button) {
+        button.visible = true
+        button.enabled = true
+    }
+
+    function notVisible(button) {
+        button.visible = false
+    }
+
+
     FirmwareUpgradeController {
         id: fwUpgradeController
 
+        function initialState() {
+            disabledVisible(connectButton)
+            notVisible(cancelButton)
+
+            progressBar.changeProgressBarValue(0)
+        }
+
+        function deviceAvailableState() {
+            enabledVisible(connectButton)
+            notVisible(cancelButton)
+
+            var msg = "Emlid edge device found. Press \"Connect\" to continue."
+            statusTextArea.appendInfoMessage(msg)
+        }
+
+        function flashingFinishedState() {
+            if (fwUpgradeController.deviceAvailable()) {
+                enabledVisible(connectButton)
+            } else {
+                disabledVisible(connectButton)
+            }
+
+            notVisible(cancelButton)
+        }
+
+        function flashingCancelledState() {
+            var msg = "Firmware Upgrading cancelled."
+            statusTextArea.appendInfoMessage(msg)
+        }
+
+        function flashingStartedState() {
+            notVisible(connectButton)
+            enabledVisible(cancelButton)
+        }
+
+        function flashingSuccessfullyFinishedState() {
+            notVisible(connectButton)
+            disabledVisible(cancelButton)
+
+            var msg = "Firmware upgrading finished. Please unplug your device."
+            statusTextArea.appendInfoMessage(msg)
+        }
+
+        function flashingFailedState() {
+            notVisible(connectButton)
+            disabledVisible(cancelButton)
+
+            var msg = "An error ocurred while flashing device." +
+                      "Make sure that you did not disconnect your device."
+            statusTextArea.appendErrorMessage(msg)
+        }
+
         onDeviceFound: {
+            deviceAvailableState()
+        }
+
+        onStarted: {
             var dialogTitle = "Firmware settings"
+
             showDialog(firmwareUpgraderDialogComponent,
                        dialogTitle, qgcView.showDialogDefaultWidth,
                        StandardButton.Ok | StandardButton.Cancel)
+        }
+
+        onFinished: {
+            flashingFinishedState()
+        }
+
+        onFlashingFinished: {
+            status ? flashingSuccessfullyFinishedState()
+                   : flashingFailedState()
         }
 
         onFlasherProgressChanged: {
@@ -67,7 +148,12 @@ QGCView {
             statusTextArea.appendErrorMessage(message);
         }
 
+        onWarnMsgReceived: {
+            statusTextArea.appendWarnMessage(message);
+        }
+
         Component.onCompleted: {
+            initialState()
             fwUpgradeController.searchDevice()
         }
     }
@@ -89,7 +175,7 @@ QGCView {
             anchors.top:         titleLabel.bottom
             minimumValue:        0
             maximumValue:        100
-            width:               parent.width - cancelButton.width - 2 * ScreenTools.defaultFontPixelWidth
+            width:               parent.width - Math.max(cancelButton.width, connectButton.width) - 2 * ScreenTools.defaultFontPixelWidth
 
             function changeProgressBarValue(value) {
                 progressBar.value = value
@@ -97,8 +183,8 @@ QGCView {
         }
 
         QGCButton {
-            id:                  cancelButton
-            text:                "Cancel"
+            id:                  connectButton
+            text:                "Connect"
 
             enabled:             false
             height:              progressBar.height
@@ -109,8 +195,29 @@ QGCView {
             anchors.right:       parent.right
             anchors.top:         titleLabel.bottom
 
+
             onClicked: {
-                fwUpgradeController.cancelFlashing();
+                fwUpgradeController.start()
+                fwUpgradeController.initialState()
+            }
+        }
+
+        QGCButton {
+            id:                  cancelButton
+            text:                "Cancel"
+
+            visible:             false
+            height:              progressBar.height
+
+            anchors.leftMargin:  ScreenTools.defaultFontPixelWidth
+            anchors.rightMargin: ScreenTools.defaultFontPixelWidth
+            anchors.topMargin:   ScreenTools.defaultFontPixelHeight
+            anchors.right:       parent.right
+            anchors.top:         titleLabel.bottom
+
+            onClicked: {
+                fwUpgradeController.cancel()
+                fwUpgradeController.flashingCancelledState()
             }
         }
 
@@ -127,19 +234,19 @@ QGCView {
             text:               welcomeText
 
             function appendInfoMessage(message) {
-                colouredMessage("info", "green", message);
+                colouredMessage("info", "green", message)
             }
 
             function appendWarnMessage(message) {
-                colouredMessage("warning", "orange", message);
+                colouredMessage("warning", "orange", message)
             }
 
             function appendErrorMessage(message) {
-                colouredMessage("error", "red", message);
+                colouredMessage("error", "red", message)
             }
 
             function colouredMessage(type, color, message) {
-                statusTextArea.append("<font color=\"" + color + "\">" + type + "</font> : " + message + "\n");
+                statusTextArea.append("<font color=\"" + color + "\">" + type + "</font> : " + message + "\n")
             }
 
             style: TextAreaStyle {
@@ -157,20 +264,67 @@ QGCView {
               id: firmwareUpgraderDialog
               anchors.fill: parent
 
+              function reject() {
+                  hideDialog();
+                  fwUpgradeController.cancel()
+                  fwUpgradeController.initialState()
+              }
+
+              function accept() {
+                  if (fwUpgradeController.firmwareFilename != "") {
+                      hideDialog()
+                      fwUpgradeController.flash()
+                      fwUpgradeController.flashingStartedState()
+                  } else {
+                      statusTextArea.appendWarnMessage("Incorrect firmware file.")
+                  }
+              }
+
               Column {
+                  anchors.fill: parent
+                  spacing: ScreenTools.defaultFontPixelHeight
+
                   QGCLabel {
-                      id:   header
-                      text: "Found Emlid Edge device"
+                      anchors.horizontalCenter: parent.horizontalCenter
+                      id:   firmwareVersion
+                      text: "Current firmware version: " + fwUpgradeController.firmwareVersion;
+                  }
+
+                  Row {
+                      spacing: ScreenTools.defaultFontPixelHeight
+
+                      QGCLabel {
+                          id: checkBoxTitle
+                          text: "Enable checksum"
+                      }
+
+                      QGCCheckBox {
+                          id:      checksumCheckbox
+                          checked: true
+
+                          onClicked: {
+                              fwUpgradeController.checksumEnabled = checksumCheckbox.checked;
+                          }
+
+                      }
+
                   }
 
                   QGCButton {
+                      id: browseButton
+                      anchors.horizontalCenter: parent.horizontalCenter
                       text: "Browse image file"
 
                       onClicked: {
-                          fwUpgradeController.askForFirmwareFile();
-                          hideDialog();
-                          cancelButton.enabled = true;
+                          fwUpgradeController.askForFirmwareFile()
+                          selectedFirmwareFile.text = fwUpgradeController.firmwareFilename
                       }
+                  }
+
+                  QGCLabel {
+                      id: selectedFirmwareFile
+                      anchors.horizontalCenter: parent.horizontalCenter
+                      text: ""
                   }
               }
         }

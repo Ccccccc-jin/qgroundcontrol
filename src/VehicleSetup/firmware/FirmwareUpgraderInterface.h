@@ -2,42 +2,36 @@
 #define FIRMWAREUPGRADERINTERFACE_H
 
 #include <QObject>
-#include "FirmwareImage.h"
+#include <FlasherParameters.h>
 #include <memory>
 
 class FirmwareUpgrader : public QObject
 {
     Q_OBJECT
 public:
-
     static std::unique_ptr<FirmwareUpgrader> instance(void);
-
     virtual ~FirmwareUpgrader(void);
 
     virtual bool deviceAvailable(void) const = 0;
-
-    virtual void cancel(void) = 0;
-
-    virtual void reboot(void) = 0;
-
-    virtual void enableChecksum(bool checksumEnabled) = 0;
-
-    virtual bool checksumEnabled(void) const = 0;
-
-    virtual void flash(FirmwareImage* image) = 0;
-
-    virtual FirmwareImage* image(void) const = 0;
+    virtual void flash(FlasherParameters const& image) = 0;
 
 signals:
-    void errorMessageReceived(QString const& msg);
+    void started(void);
+    void finished(void);
+    void cancelled(void);
+    void flashingFinished(bool status);
 
-    void statusMessageReceived(QString const& msg);
+    void progressChanged(uint value);
+    void firmwareVersionAvailable(QString const& version);
 
-    void deviceNotFound(void);
+    void errorMessageReceived (QString const& msg);
+    void infoMessageReceived  (QString const& msg);
+    void warnMessageReceived  (QString const& msg);
 
-    void flasherProgressChanged(uint value);
-
-    void flashingCompleted(void);
+public slots:
+    virtual void start(void)  = 0;
+    virtual void cancel(void) = 0;
+    virtual void finish(void) = 0;
 
 protected:
     explicit FirmwareUpgrader(QObject* parent = NULL);

@@ -7,14 +7,25 @@
 
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
-    : _fwUpgrader(std::move(FirmwareUpgrader::instance()))
+    : _firmwareFilename(""),
+      _firmwareVersion(""),
+      _checksumEnabled(true),
+      _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
     _connectToFirmwareUpgrader();
 }
 
 
 FirmwareUpgradeController::~FirmwareUpgradeController(void)
-{  }
+{
+    qInfo() << "FirmwareUpgradeController destructed.";
+}
+
+
+void FirmwareUpgradeController::start(void)
+{
+    _fwUpgrader->start();
+}
 
 
 bool FirmwareUpgradeController::deviceAvailable(void) const
@@ -25,21 +36,53 @@ bool FirmwareUpgradeController::deviceAvailable(void) const
 
 bool FirmwareUpgradeController::checksumEnabled(void) const
 {
-    return _fwUpgrader->checksumEnabled();
+    return _checksumEnabled;
+}
+
+
+void FirmwareUpgradeController::enableChecksum(bool checksumEnabled)
+{
+    _checksumEnabled = checksumEnabled;
 }
 
 
 void FirmwareUpgradeController::_connectToFirmwareUpgrader(void) {
     auto fwUpgraderPtr = _fwUpgrader.get();
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::statusMessageReceived,
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::infoMessageReceived,
                      this,          &FirmwareUpgradeController::infoMsgReceived);
 
     QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::errorMessageReceived,
                      this,          &FirmwareUpgradeController::errorMsgReceived);
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::flasherProgressChanged,
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::warnMessageReceived,
+                     this,          &FirmwareUpgradeController::warnMsgReceived);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::progressChanged,
                      this,          &FirmwareUpgradeController::flasherProgressChanged);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::flashingFinished,
+                     this,          &FirmwareUpgradeController::flashingFinished);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::finished,
+                     this,          &FirmwareUpgradeController::finished);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::firmwareVersionAvailable,
+        [this] (QString const& firmwareVersion) {
+            _firmwareVersion = firmwareVersion;
+            emit firmwareVersionAvailable(firmwareVersion);
+
+        }
+    );
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::started,
+                     this,          &FirmwareUpgradeController::started);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::cancelled,
+                     this,          &FirmwareUpgradeController::cancelled);
+
+    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::finished,
+                     this,          &FirmwareUpgradeController::finished);
 }
 
 
@@ -66,12 +109,6 @@ void FirmwareUpgradeController::_onTimeout(void)
 }
 
 
-void FirmwareUpgradeController::enableChecksum(bool checksumEnabled)
-{
-    _fwUpgrader-> enableChecksum(checksumEnabled);
-}
-
-
 void FirmwareUpgradeController::searchDevice(void)
 {
     qInfo() << "Polling started...";
@@ -79,17 +116,16 @@ void FirmwareUpgradeController::searchDevice(void)
 }
 
 
-void FirmwareUpgradeController::flash(QString const& firmwareFilename)
+void FirmwareUpgradeController::flash(void)
 {
-    auto image = new FirmwareImage();
-    image->setBinFilename(firmwareFilename);
-    _fwUpgrader->flash(image);
+    FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
+    _fwUpgrader->flash(params);
 }
 
 
-void FirmwareUpgradeController::cancelFlashing(void)
+void FirmwareUpgradeController::cancel(void)
 {
-    _fwUpgrader->cancel();
+    _fwUpgrader->finish();
 }
 
 
@@ -99,10 +135,8 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
     auto filesFormat   = QStringLiteral("Firmware Files (*.img)");
     auto firstLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
-    auto firmwareFilename = QGCQFileDialog::
+    _firmwareFilename = QGCQFileDialog::
             getOpenFileName(nullptr, dialogTitle, firstLocation, filesFormat);
 
-    emit infoMsgReceived("Selected file: " + firmwareFilename);
-
-    flash(firmwareFilename);
+    emit infoMsgReceived("Selected file: " + _firmwareFilename);
 }

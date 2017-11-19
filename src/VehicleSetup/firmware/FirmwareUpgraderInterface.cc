@@ -1,6 +1,5 @@
 #include "FirmwareUpgraderInterface.h"
-#include "MockFirmwareUpgrader.h"
-#include "EdgeFirmwareUpgrader.h"
+#include "FirmwareUpgraderClient.h"
 
 
 
@@ -14,5 +13,5 @@ FirmwareUpgrader::~FirmwareUpgrader(void)
 
 
 std::unique_ptr<FirmwareUpgrader> FirmwareUpgrader::instance() {
-    return std::unique_ptr<FirmwareUpgrader>(new EdgeFirmwareUpgrader());
+    return std::unique_ptr<FirmwareUpgrader>(new FirmwareUpgraderClient());
 }
