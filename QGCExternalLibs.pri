@@ -60,6 +60,7 @@ DEFINES += NOMINMAX
 # [REQUIRED] QWT plotting library dependency. Provides plotting capabilities.
 #
 !MobileBuild {
+include(libs/fwupgrader.pri)
 include(libs/qwt.pri)
 DEPENDPATH += libs/qwt
 INCLUDEPATH += libs/qwt
