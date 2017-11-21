@@ -10,9 +10,11 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
     : _firmwareFilename(""),
       _firmwareVersion(""),
       _checksumEnabled(true),
+      _deviceBootAsMassStorage(false),
+      _deviceObserver(1),
       _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
-    _connectToFirmwareUpgrader();
+    _initConnections();
 }
 
 
@@ -46,73 +48,44 @@ void FirmwareUpgradeController::enableChecksum(bool checksumEnabled)
 }
 
 
-void FirmwareUpgradeController::_connectToFirmwareUpgrader(void) {
+void FirmwareUpgradeController::_initConnections(void)
+{
+    using FWUpgrader = FirmwareUpgrader;
+    using Controller = FirmwareUpgradeController;
+
     auto fwUpgraderPtr = _fwUpgrader.get();
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::infoMessageReceived,
-                     this,          &FirmwareUpgradeController::infoMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::infoMessageReceived,  this, &Controller::infoMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::errorMessageReceived, this, &Controller::errorMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::warnMessageReceived,  this, &Controller::warnMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::progressChanged,      this, &Controller::flasherProgressChanged);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::flashingFinished,     this, &Controller::flashingFinished);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::ready,                this, &Controller::ready);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,            this, &Controller::cancelled);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::finished,             this, &Controller::finished);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::initialzed,          [this] () { _deviceObserver.stop(); } );
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::errorMessageReceived,
-                     this,          &FirmwareUpgradeController::errorMsgReceived);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::warnMessageReceived,
-                     this,          &FirmwareUpgradeController::warnMsgReceived);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::progressChanged,
-                     this,          &FirmwareUpgradeController::flasherProgressChanged);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::flashingFinished,
-                     this,          &FirmwareUpgradeController::flashingFinished);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::finished,
-                     this,          &FirmwareUpgradeController::finished);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::firmwareVersionAvailable,
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::firmwareVersionAvailable,
         [this] (QString const& firmwareVersion) {
             _firmwareVersion = firmwareVersion;
             emit firmwareVersionAvailable(firmwareVersion);
-
         }
     );
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::started,
-                     this,          &FirmwareUpgradeController::started);
+    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
+    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
 
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::cancelled,
-                     this,          &FirmwareUpgradeController::cancelled);
-
-    QObject::connect(fwUpgraderPtr, &FirmwareUpgrader::finished,
-                     this,          &FirmwareUpgradeController::finished);
-}
-
-
-void FirmwareUpgradeController::_startPolling(void)
-{
-    _pollingTimer.setInterval(1); // 1 sec
-    _pollingTimer.setSingleShot(false);
-
-    QObject::connect(&_pollingTimer, &QTimer::timeout,
-                     this,           &FirmwareUpgradeController::_onTimeout);
-
-    _pollingTimer.start();
-}
-
-
-void FirmwareUpgradeController::_onTimeout(void)
-{
-    if (!_fwUpgrader->deviceAvailable()) {
-        return;
-    }
-
-    _pollingTimer.stop();
-    emit deviceFound();
 }
 
 
 void FirmwareUpgradeController::searchDevice(void)
 {
     qInfo() << "Polling started...";
-    _startPolling();
+    _deviceObserver.setDeviceAvailablePredicate(
+        [this] () { return _fwUpgrader->deviceAvailable(); }
+    );
+
+    _deviceObserver.observe();
 }
 
 

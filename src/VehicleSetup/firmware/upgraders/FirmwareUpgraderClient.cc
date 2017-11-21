@@ -2,34 +2,37 @@
 #include <libusb-1.0/libusb.h>
 
 
-int const         FirmwareUpgraderClient::EDGE_VID = 0x0a5c;
-QList<int> const  FirmwareUpgraderClient::EDGE_PIDS = QList<int>({0x2763, 0x2764});
-QString const     FirmwareUpgraderClient::FW_UPG_BINARY_FILE =
-                     "/home/vladimir.provalov/dev/qgcflasher/build-firmwareupgrader-fwupgrader-Debug/fwupgrader";
+int const         FirmwareUpgraderClient::EDGE_VID           = 0x0a5c;
+QList<int> const  FirmwareUpgraderClient::EDGE_PIDS          = QList<int>({0x2763, 0x2764});
 QString const     FirmwareUpgraderClient::GRAPHICAL_SUDO_BIN = "pkexec";
 QString const     FirmwareUpgraderClient::SERVER_NODE_NAME   = "local:fwupg_socket";
 QString const     FirmwareUpgraderClient::EDGE_VERSION_FILE  = "/issue.txt";
 
 
 FirmwareUpgraderClient::FirmwareUpgraderClient(QObject *parent)
-    : FirmwareUpgrader(parent)
+    : FirmwareUpgrader(parent),
+      FW_UPG_BINARY_FILE(QCoreApplication::applicationDirPath() + "/bin/fwupgrader")
 {
-    _attachToMessageHandler();
-    _attachToProcess();
-    _processLog.attach(_fwUpgProcess);
+    _initConnections();
 }
 
 
 FirmwareUpgraderClient::~FirmwareUpgraderClient(void)
 {
-    if (_watcher) {
-        _watcher->finish();
-    }
+    _finalizeFirmwareUpgraderProcess();
+}
 
-    if (_fwUpgProcess.state() == QProcess::Running) {
-        _fwUpgProcess.kill();
-        _fwUpgProcess.waitForFinished();
-    }
+
+void FirmwareUpgraderClient::_initConnections(void)
+{
+    using FwUpg   = FirmwareUpgraderClient;
+    // after our process started, we need to initialise "watcher" replica
+    QObject::connect(&_fwUpgProcess, &QProcess::started, this, &FwUpg::_initWatcher);
+
+    // attach other
+    _attachToMessageHandler();
+    _attachToProcess();
+    _processLog.attach(_fwUpgProcess);
 }
 
 
@@ -38,8 +41,7 @@ void FirmwareUpgraderClient::_attachToProcess(void)
     QObject::connect(&_fwUpgProcess,
         static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
         [this](int exitCode, QProcess::ExitStatus stat) {
-            Q_UNUSED(exitCode);
-            Q_UNUSED(stat);
+            Q_UNUSED(exitCode); Q_UNUSED(stat);
             emit finished();
         }
     );
@@ -49,19 +51,11 @@ void FirmwareUpgraderClient::_attachToProcess(void)
 void FirmwareUpgraderClient::_attachToMessageHandler(void)
 {
     using MsgHandler = MessageHandler;
-    using FwUpg = FirmwareUpgraderClient;
+    using FwUpg      = FirmwareUpgraderClient;
 
-    QObject::connect(&_messageHandler, &MsgHandler::errorMessageReceived,
-                     this,             &FwUpg::errorMessageReceived);
-
-    QObject::connect(&_messageHandler, &MsgHandler::infoMessageReceived,
-                     this,             &FwUpg::infoMessageReceived);
-
-    QObject::connect(&_messageHandler, &MsgHandler::warnMessageReceived,
-                     this,             &FwUpg::warnMessageReceived);
-
-    QObject::connect(&_fwUpgProcess, &QProcess::started,
-                     this,           &FwUpg::_initWatcher);
+    QObject::connect(&_messageHandler, &MsgHandler::errorMessageReceived, this, &FwUpg::errorMessageReceived);
+    QObject::connect(&_messageHandler, &MsgHandler::infoMessageReceived,  this, &FwUpg::infoMessageReceived);
+    QObject::connect(&_messageHandler, &MsgHandler::warnMessageReceived,  this, &FwUpg::warnMessageReceived);
 }
 
 
@@ -72,28 +66,42 @@ void FirmwareUpgraderClient::_attachToWatcher(void)
 
     auto watcherPtr = _watcher.get();
 
+    QObject::connect(watcherPtr, &Watcher::flasherProgressChanged, this, &FwUpg::progressChanged);
+    QObject::connect(watcherPtr, &Watcher::deviceMountpoints,      this, &FwUpg::_onDeviceMountpointsAvailable);
+    QObject::connect(watcherPtr, &Watcher::flasherFinished,        this, &FwUpg::flashingFinished);
+    QObject::connect(watcherPtr, &Watcher::finished,               this, &FwUpg::finished);
+
+    // after watcher initilized, we need to run rpiboot in _onWatcherInitilized slot
+    QObject::connect(watcherPtr, &Watcher::initialized,     this, &FwUpg::_onWatcherInitialized);
+    // after rpiboot finished, we need to run device scanner(which return device mountpoints)
     QObject::connect(watcherPtr, &Watcher::rpiBootFinished,
-                     this,       &FwUpg::_onRpiBootFinished);
-
+        [this] (bool status) {
+            qInfo() << "Rpiboot status: " << status;
+            if (status) _watcher->runDeviceScannerStep();
+        }
+    );
+    // after device scanning firmware upgrader is ready to flash device (emit 'ready' signal)
     QObject::connect(watcherPtr, &Watcher::deviceScannerFinished,
-                     this,       &FwUpg::_onDeviceScannerFinished);
-
-    QObject::connect(watcherPtr, &Watcher::flasherFinished,
-                     this,       &FwUpg::_onFlasherFinished);
-
-    QObject::connect(watcherPtr, &Watcher::flasherProgressChanged,
-                     this,       &FwUpg::progressChanged);
-
-    QObject::connect(watcherPtr, &Watcher::deviceMountpoints,
-                     this,       &FwUpg::_onDeviceMountpointsAvailable);
-
-    QObject::connect(watcherPtr, &Watcher::cancelled,
-                     this,       &FwUpg::cancelled);
-
-    QObject::connect(watcherPtr, &Watcher::finished,
-                     this,       &FwUpg::finished);
+        [this] (bool status) {
+            qInfo() << "DeviceScanner status: " << status;
+            if (status) emit ready();
+        }
+    );
 
     _messageHandler.attach(_watcher);
+}
+
+
+void FirmwareUpgraderClient::_finalizeFirmwareUpgraderProcess(void)
+{
+    if (_watcher != nullptr && _watcher->isInitialized()) {
+        _watcher->finish();
+    }
+
+    if (_fwUpgProcess.state() != QProcess::NotRunning) {
+        _fwUpgProcess.kill();
+        _fwUpgProcess.waitForFinished();
+    }
 }
 
 
@@ -141,6 +149,12 @@ void FirmwareUpgraderClient::_startProcess(void)
 {
     using FwUpg = FirmwareUpgraderClient;
 
+    if (QCoreApplication::applicationDirPath().isEmpty()) {
+        emit warnMessageReceived(QString("Can not start firmware upgrading.") +
+                                 "You should start the program through qgroundcontrol-start.sh");
+        return;
+    }
+
     _fwUpgProcess.start(FwUpg::GRAPHICAL_SUDO_BIN + " " +
                         FwUpg::FW_UPG_BINARY_FILE);
 }
@@ -160,20 +174,18 @@ void FirmwareUpgraderClient::_initWatcher(void)
     }
 
     _watcher.reset(_node.acquire<Watcher>());
-
-    QObject::connect(_watcher.get(), &Watcher::initialized,
-                     this,           &FwUpg::_onWatcherInitialized);
+    _attachToWatcher();
 }
 
 
 void FirmwareUpgraderClient::_onWatcherInitialized(void)
 {
     // attach all clients
+    emit initialzed();
     qInfo() << "Watcher initialized.";
-    _attachToWatcher();
 
-    _watcher->setFilterParams(FirmwareUpgraderClient::EDGE_VID,
-                              FirmwareUpgraderClient::EDGE_PIDS);
+    _watcher->setVidPid(FirmwareUpgraderClient::EDGE_VID,
+                        FirmwareUpgraderClient::EDGE_PIDS);
 
     _watcher->runRpiBootStep();
 }
@@ -219,55 +231,23 @@ void FirmwareUpgraderClient::
         }
     }
 
-    qInfo() << "Boot path: " << bootPath;
     QString version = _edgeVersionExtractor(bootPath);
+    qInfo() << "Boot path: "  << bootPath;
     qInfo() << "Fw version: " << version;
 
     emit firmwareVersionAvailable(version);
 }
 
 
-void FirmwareUpgraderClient::_onRpiBootFinished(bool status)
-{
-    if (!status) {
-        qDebug() << "RpiBoot failed.";
-        return;
-    }
-
-    _watcher->runDeviceScannerStep();
-}
-
-
-void FirmwareUpgraderClient::_onDeviceScannerFinished(bool status)
-{
-    if (!status) {
-        qDebug() << "Device scanner failed.";
-        return;
-    }
-
-    emit started();
-}
-
-
-void FirmwareUpgraderClient::_onFlasherFinished(bool status)
-{
-    if (!status) {
-       qCritical() << "Flasher failed";
-    }
-
-    emit flashingFinished(status);
-}
-
-
 void FirmwareUpgraderClient::cancel(void)
 {
-    _watcher->cancel();
+    _finalizeFirmwareUpgraderProcess();
 }
 
 
 void FirmwareUpgraderClient::finish(void)
 {
-    _watcher->finish();
+    _finalizeFirmwareUpgraderProcess();
 }
 
 

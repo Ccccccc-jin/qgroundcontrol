@@ -240,6 +240,8 @@ Rectangle {
             Repeater {
                 model:                  _corePlugin ? _corePlugin.settingsPages : []
                 visible:                _corePlugin && _corePlugin.options.combineSettingsAndSetup
+                enabled:                !_corePlugin.vehicleSetupDisabled
+
                 SubMenuButton {
                     imageResource:      modelData.icon
                     setupIndicator:     false
@@ -259,6 +261,7 @@ Rectangle {
                 exclusiveGroup:     setupButtonGroup
                 text:               qsTr("Summary")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked: showSummaryPanel()
             }
@@ -271,6 +274,7 @@ Rectangle {
                 visible:            !ScreenTools.isMobile && _corePlugin.options.showFirmwareUpgrade
                 text:               qsTr("Firmware")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked: showFirmwarePanel()
             }
@@ -293,6 +297,7 @@ Rectangle {
                 setupIndicator:     false
                 text:               qsTr("PX4Flow")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked:      showPX4FlowPanel()
             }
@@ -305,6 +310,7 @@ Rectangle {
                 visible:            _fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
                 text:               qsTr("Joystick")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked: showJoystickPanel()
             }
@@ -321,6 +327,7 @@ Rectangle {
                     text:               modelData.name
                     visible:            modelData.setupSource.toString() != ""
                     Layout.fillWidth:   true
+                    enabled:            !_corePlugin.vehicleSetupDisabled
 
                     onClicked: showVehicleComponentPanel(modelData)
                 }
@@ -332,6 +339,7 @@ Rectangle {
                 visible:            QGroundControl.multiVehicleManager && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable && _corePlugin.showAdvancedUI
                 text:               qsTr("Parameters")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked: showParametersPanel()
             }

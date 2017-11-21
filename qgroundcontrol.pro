@@ -861,6 +861,7 @@ HEADERS+= \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
         $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
+        $$FIRMWARE_DIR/DeviceObserver.h \
 }
 
 SOURCES += \
@@ -890,6 +891,7 @@ SOURCES += \
         $$FIRMWARE_DIR/upgraders/MessageHandler.cc \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
+        $$FIRMWARE_DIR/DeviceObserver.cc
 
 
      REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep

@@ -31,22 +31,23 @@ private slots:
     void _onWatcherInitialized(void);
     void _onDeviceMountpointsAvailable(QStringList mountpoints);
 
-    void _onRpiBootFinished       (bool status);
-    void _onDeviceScannerFinished (bool status);
-    void _onFlasherFinished       (bool status);
-
 private:
-    void _attachToMessageHandler(void);
-    void _attachToWatcher(void);
-    void _attachToProcess(void);
+    void _initConnections (void);
+    void _attachToWatcher (void);
+    void _attachToProcess (void);
+
+    void _attachToMessageHandler          (void);
+    void _finalizeFirmwareUpgraderProcess (void);
+
     QString _edgeVersionExtractor(QString const& bootPath);
 
     static const int        EDGE_VID;
     static const QList<int> EDGE_PIDS;
-    static const QString    FW_UPG_BINARY_FILE;
     static const QString    GRAPHICAL_SUDO_BIN;
     static const QString    SERVER_NODE_NAME;
     static const QString    EDGE_VERSION_FILE;
+
+    const QString    FW_UPG_BINARY_FILE;
 
     MessageHandler      _messageHandler;
     ProcessStateLog     _processLog;

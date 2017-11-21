@@ -16,9 +16,11 @@ public:
     virtual void flash(FlasherParameters const& image) = 0;
 
 signals:
-    void started(void);
-    void finished(void);
-    void cancelled(void);
+    void initialzed(void);
+    void ready     (void);
+    void finished  (void);
+    void cancelled (void);
+
     void flashingFinished(bool status);
 
     void progressChanged(uint value);

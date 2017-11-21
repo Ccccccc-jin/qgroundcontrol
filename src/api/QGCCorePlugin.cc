@@ -86,6 +86,7 @@ QGCCorePlugin::QGCCorePlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _showTouchAreas(false)
     , _showAdvancedUI(true)
     , _showVideoSettings(false)
+    , _vehicleSetupDisabled(false)
 {
     _p = new QGCCorePlugin_p;
 }
@@ -209,6 +210,14 @@ void QGCCorePlugin::setShowVideoSettings(bool show)
     if (show != _showVideoSettings) {
         _showVideoSettings = show;
         emit showVideoSettingsChanged(show);
+    }
+}
+
+void QGCCorePlugin::disableVehicleSetup(bool disable)
+{
+    if (disable != _vehicleSetupDisabled) {
+        _vehicleSetupDisabled = disable;
+        emit vehicleSetupDisabledChanged(disable);
     }
 }
 

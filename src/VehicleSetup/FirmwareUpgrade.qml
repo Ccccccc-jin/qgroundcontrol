@@ -30,6 +30,8 @@ QGCView {
     readonly property string welcomeText:       qsTr("%1 can upgrade the firmware on Emlid Edge device.\n").arg(QGroundControl.appName) +
                                                 qsTr("Plug in your device and wait for auto detection.")
 
+    property var corePlugin: QGroundControl.corePlugin
+
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
     Component {
@@ -59,15 +61,37 @@ QGCView {
         button.visible = false
     }
 
+    function enableVehicleSetupButtons() {
+        corePlugin.vehicleSetupDisabled = false
+    }
+
+    function disableVehicleSetup() {
+        corePlugin.vehicleSetupDisabled = true
+    }
+
 
     FirmwareUpgradeController {
         id: fwUpgradeController
+
+        /* States functions. These function was defined for switching between window states.
+           This is not best solution. Perfectly, this code should be re-wrote with qml StateMachine. */
 
         function initialState() {
             disabledVisible(connectButton)
             notVisible(cancelButton)
 
             progressBar.changeProgressBarValue(0)
+        }
+
+        function deviceUnpluggedState() {
+            initialState()
+            var msg = "Device unplugged."
+            statusTextArea.appendInfoMessage(msg)
+        }
+
+        function askForPriviledgesState() {
+            initialState()
+            disableVehicleSetup()
         }
 
         function deviceAvailableState() {
@@ -86,11 +110,13 @@ QGCView {
             }
 
             notVisible(cancelButton)
+            enableVehicleSetupButtons()
         }
 
         function flashingCancelledState() {
             var msg = "Firmware Upgrading cancelled."
             statusTextArea.appendInfoMessage(msg)
+            enableVehicleSetupButtons()
         }
 
         function flashingStartedState() {
@@ -104,6 +130,7 @@ QGCView {
 
             var msg = "Firmware upgrading finished. Please unplug your device."
             statusTextArea.appendInfoMessage(msg)
+            enableVehicleSetupButtons()
         }
 
         function flashingFailedState() {
@@ -113,13 +140,18 @@ QGCView {
             var msg = "An error ocurred while flashing device." +
                       "Make sure that you did not disconnect your device."
             statusTextArea.appendErrorMessage(msg)
+            enableVehicleSetupButtons()
         }
 
-        onDeviceFound: {
+        onDevicePlugged: {
             deviceAvailableState()
         }
 
-        onStarted: {
+        onDeviceUnplugged: {
+            deviceUnpluggedState()
+        }
+
+        onReady: {
             var dialogTitle = "Firmware settings"
 
             showDialog(firmwareUpgraderDialogComponent,
@@ -198,7 +230,7 @@ QGCView {
 
             onClicked: {
                 fwUpgradeController.start()
-                fwUpgradeController.initialState()
+                fwUpgradeController.askForPriviledgesState()
             }
         }
 
@@ -292,6 +324,7 @@ QGCView {
 
                   Row {
                       spacing: ScreenTools.defaultFontPixelHeight
+                      anchors.horizontalCenter: parent.horizontalCenter
 
                       QGCLabel {
                           id: checkBoxTitle

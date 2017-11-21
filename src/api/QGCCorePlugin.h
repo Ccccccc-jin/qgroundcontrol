@@ -40,8 +40,9 @@ public:
     Q_PROPERTY(int          defaultSettings     READ defaultSettings    CONSTANT)
     Q_PROPERTY(QGCOptions*  options             READ options            CONSTANT)
 
-    Q_PROPERTY(bool         showTouchAreas      READ showTouchAreas     WRITE setShowTouchAreas    NOTIFY showTouchAreasChanged)
-    Q_PROPERTY(bool         showAdvancedUI      READ showAdvancedUI     WRITE setShowAdvancedUI    NOTIFY showAdvancedUIChanged)
+    Q_PROPERTY(bool         showTouchAreas       READ showTouchAreas       WRITE setShowTouchAreas      NOTIFY showTouchAreasChanged)
+    Q_PROPERTY(bool         showAdvancedUI       READ showAdvancedUI       WRITE setShowAdvancedUI      NOTIFY showAdvancedUIChanged)
+    Q_PROPERTY(bool         vehicleSetupDisabled READ vehicleSetupDisabled WRITE disableVehicleSetup    NOTIFY vehicleSetupDisabledChanged)
     Q_PROPERTY(QString                  showAdvancedUIMessage           READ showAdvancedUIMessage          CONSTANT)
 
     Q_PROPERTY(QString      brandImageIndoor    READ brandImageIndoor   CONSTANT)
@@ -92,26 +93,31 @@ public:
     /// Allows the plugin to override the creation of the root (native) window.
     virtual QQmlApplicationEngine* createRootWindow(QObject* parent);
 
-    bool showTouchAreas(void) const { return _showTouchAreas; }
-    bool showAdvancedUI(void) const { return _showAdvancedUI; }
-    void setShowTouchAreas(bool show);
-    void setShowAdvancedUI(bool show);
-    bool showVideoSettings(void) const { return _showVideoSettings; }
+    bool showTouchAreas       (void) const { return _showTouchAreas; }
+    bool showAdvancedUI       (void) const { return _showAdvancedUI; }
+    bool vehicleSetupDisabled (void) const { return _vehicleSetupDisabled; }
+    bool showVideoSettings    (void) const { return _showVideoSettings; }
+
+    void setShowTouchAreas   (bool show);
+    void setShowAdvancedUI   (bool show);
     void setShowVideoSettings(bool show);
+    void disableVehicleSetup (bool disable);
 
     // Override from QGCTool
     void                            setToolbox              (QGCToolbox* toolbox);
 
 signals:
-    void settingsPagesChanged   (void);
-    void showTouchAreasChanged  (bool showTouchAreas);
-    void showAdvancedUIChanged  (bool showAdvancedUI);
-    void showVideoSettingsChanged (bool showVideoSettings);
+    void settingsPagesChanged        (void);
+    void showTouchAreasChanged       (bool showTouchAreas);
+    void showAdvancedUIChanged       (bool showAdvancedUI);
+    void vehicleSetupDisabledChanged (bool vehicleSetupDisabled);
+    void showVideoSettingsChanged    (bool showVideoSettings);
 
 protected:
     bool                _showTouchAreas;
     bool                _showAdvancedUI;
     bool                _showVideoSettings;
+    bool                _vehicleSetupDisabled;
 
 private:
     QGCCorePlugin_p*    _p;

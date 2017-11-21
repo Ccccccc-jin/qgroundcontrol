@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <memory>
+#include "DeviceObserver.h"
 
 
 class FirmwareUpgrader;
@@ -26,65 +27,57 @@ class FirmwareUpgradeController : public QObject
 {
     Q_OBJECT
 public:
-    Q_PROPERTY(bool checksumEnabled
-               READ checksumEnabled WRITE enableChecksum)
-
-    Q_PROPERTY(QString firmwareVersion
-               READ firmwareVersion NOTIFY firmwareVersionAvailable)
-
-    Q_PROPERTY(QString firmwareFilename
-               READ firmwareFilename WRITE setFirmwareFilename)
-
     explicit FirmwareUpgradeController(void);
     ~FirmwareUpgradeController();
 
-    Q_INVOKABLE bool deviceAvailable(void) const;
+    Q_PROPERTY(bool    checksumEnabled  READ checksumEnabled  WRITE enableChecksum)
+    Q_PROPERTY(QString firmwareVersion  READ firmwareVersion  NOTIFY firmwareVersionAvailable)
+    Q_PROPERTY(QString firmwareFilename READ firmwareFilename WRITE setFirmwareFilename)
 
     Q_INVOKABLE void start(void);
-
     Q_INVOKABLE void flash(void);
-    Q_INVOKABLE void askForFirmwareFile(void);
 
-    QString firmwareVersion(void) { return _firmwareVersion; }
+    Q_INVOKABLE bool deviceAvailable(void) const;
+    Q_INVOKABLE void askForFirmwareFile(void);
 
     bool checksumEnabled(void) const;
     void enableChecksum(bool checksumEnabled);
 
+    QString const& firmwareVersion(void)  const { return _firmwareVersion; }
     QString const& firmwareFilename(void) const { return _firmwareFilename; }
     void setFirmwareFilename(QString const& firmwareFilename) { _firmwareFilename = firmwareFilename; }
 
 public slots:
-    void searchDevice(void);
-    void cancel(void);
+    void searchDevice (void);
+    void cancel       (void);
 
 signals:
-    void deviceFound(void);
-    void deviceNotFound(void);
+    void devicePlugged   (void);
+    void deviceUnplugged (void);
+
+    void ready     (void);
+    void finished  (void);
+    void cancelled (void);
+
     void flashingFinished(bool status);
-
-    void started();
-    void finished();
-    void cancelled();
-
-    void firmwareVersionAvailable(QString const& verison);
     void flasherProgressChanged(uint progress);
+    void firmwareVersionAvailable(QString const& verison);
 
     void infoMsgReceived  (QString const& message);
     void errorMsgReceived (QString const& message);
     void warnMsgReceived  (QString const& message);
 
-private slots:
-    void _onTimeout(void);
-
 private:
     void _startPolling(void);
-    void _connectToFirmwareUpgrader(void);
+    void _initConnections(void);
 
     QString _firmwareFilename;
     QString _firmwareVersion;
-    bool _checksumEnabled;
+    bool    _checksumEnabled;
+    bool    _deviceBootAsMassStorage;
+
+    DeviceObserver _deviceObserver;
     std::unique_ptr<FirmwareUpgrader> _fwUpgrader;
-    QTimer _pollingTimer;
 };
 
 #endif
