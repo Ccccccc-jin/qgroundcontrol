@@ -111,5 +111,10 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
     _firmwareFilename = QGCQFileDialog::
             getOpenFileName(nullptr, dialogTitle, firstLocation, filesFormat);
 
-    emit infoMsgReceived("Selected file: " + _firmwareFilename);
+    if (_firmwareFilename.isEmpty()) {
+        emit warnMsgReceived("File not selected.");
+    } else {
+        emit infoMsgReceived("Selected file: " + _firmwareFilename);
+    }
+
 }

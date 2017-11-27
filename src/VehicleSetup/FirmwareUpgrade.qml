@@ -350,15 +350,9 @@ QGCView {
 
                       onClicked: {
                           fwUpgradeController.askForFirmwareFile()
-                          selectedFirmwareFile.text = fwUpgradeController.firmwareFilename
                       }
                   }
 
-                  QGCLabel {
-                      id: selectedFirmwareFile
-                      anchors.horizontalCenter: parent.horizontalCenter
-                      text: ""
-                  }
               }
         }
 

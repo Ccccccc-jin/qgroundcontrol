@@ -97,11 +97,6 @@ void FirmwareUpgraderClient::_finalizeFirmwareUpgraderProcess(void)
     if (_watcher != nullptr && _watcher->isInitialized()) {
         _watcher->finish();
     }
-
-    if (_fwUpgProcess.state() != QProcess::NotRunning) {
-        _fwUpgProcess.kill();
-        _fwUpgProcess.waitForFinished();
-    }
 }
 
 
