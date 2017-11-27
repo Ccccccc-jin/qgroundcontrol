@@ -22,7 +22,7 @@ VehicleSelectorController::VehicleSelectorController(void)
     imgSources << "qrc:/qmlimages/Airframe/QuadRotorX";
     imgSources << "qrc:/qmlimages/Airframe/Helicopter";
     imgSources << "qrc:/qmlimages/Airframe/Rover";
-    imgSources << "qrc:/qmlimages/Airframe/AirframeUnknown";
+    imgSources << "qrc:/qmlimages/subVehicleArrowOpaque.png";
     vehicleIDs << 0 << 10 << 11 << 20 << 30;
 
     for (int i=0; i<names.length(); i++) {
