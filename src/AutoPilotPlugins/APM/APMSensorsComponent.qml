@@ -153,13 +153,6 @@ SetupPage {
                 }
             }
 
-            Component.onCompleted: {
-                var usingUDP = controller.usingUDPLink()
-                if (usingUDP) {
-                    showMessage("Sensor Calibration", "Performing sensor calibration over a WiFi connection can be unreliable. If you run into problems try using a direct USB connection instead.", StandardButton.Ok)
-                }
-            }
-
             QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
             Component {
