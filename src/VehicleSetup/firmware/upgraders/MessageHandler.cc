@@ -27,6 +27,9 @@ void MessageHandler::
     QObject::connect(watcherPtr, &Watcher::flasherStateChanged,
                      this,       &MsgHandler::onFlasherStateChanged);
 
+    QObject::connect(watcherPtr, &Watcher::checkingCorrectnessStateChanged,
+                     this,       &MsgHandler::onCheckingCorrectnessStateChange);
+
     qDebug() << "MessageHandler attached.";
 }
 
@@ -34,29 +37,35 @@ void MessageHandler::
 void MessageHandler::onRpiBootStateChanged(uint state, uint type)
 {
     auto rpiBootState = static_cast<states::RpiBootState>(state);
-    auto messageSignal = _getMessageSignal(type);
+    auto messageSignal =  [this, type] (QString const& msg) {
+        _getMessageSignal(type)(QString("RpiBoot : ") + msg);
+    };
 
     using RBState = states::RpiBootState;
 
     switch (rpiBootState) {
         case RBState::RpiBootDeviceFound:
-            emit messageSignal("RpiBoot : device not found.");
+            emit messageSignal("device not found.");
             break;
 
         case RBState::RpiBootDeviceNotFound:
-            emit messageSignal("RpiBoot : device found.");
+            emit messageSignal("device found.");
             break;
 
         case RBState::RpiBootFailed:
-            emit messageSignal("RpiBoot : failed.");
+            emit messageSignal("failed.");
             break;
 
         case RBState::RpiBootFinished:
-            emit messageSignal("RpiBoot : successfully finished.");
+            emit messageSignal("successfully finished.");
             break;
 
         case RBState::RpiBootStarted:
-            emit messageSignal("RpiBoot : running...");
+            emit messageSignal("running... please wait...");
+            break;
+
+        case RBState::RpiBootCancelled:
+            emit messageSignal("cancelled.");
             break;
 
         default:
@@ -69,29 +78,35 @@ void MessageHandler::onRpiBootStateChanged(uint state, uint type)
 void MessageHandler::onDeviceScannerStateChanged(uint state, uint type)
 {
     auto deviceScannerState = static_cast<states::DeviceScannerState>(state);
-    auto messageSignal = _getMessageSignal(type);
+    auto messageSignal =  [this, type] (QString const& msg) {
+        _getMessageSignal(type)(QString("DeviceScanner : ") + msg);
+    };
 
     using ScannerState = states::DeviceScannerState;
 
     switch (deviceScannerState) {
         case ScannerState::ScannerDeviceFound:
-            emit messageSignal("DeviceScanner : device found.");
+            emit messageSignal("device found.");
             break;
 
         case ScannerState::ScannerDeviceNotFound:
-            emit messageSignal("DeviceScanner : device not found.");
+            emit messageSignal("device not found.");
             break;
 
         case ScannerState::ScannerStarted:
-            emit messageSignal("DeviceScanner : running...");
+            emit messageSignal("running... please wait...");
             break;
 
         case ScannerState::ScannerFinished:
-            emit messageSignal("DeviceScanner : successfully finished.");
+            emit messageSignal("successfully finished.");
             break;
 
         case ScannerState::ScannerFailed:
-            emit messageSignal("DeviceScanner : failed.");
+            emit messageSignal("failed.");
+            break;
+
+        case ScannerState::ScannerCancelled:
+            emit messageSignal("cancelled.");
             break;
 
         default:
@@ -104,49 +119,88 @@ void MessageHandler::onDeviceScannerStateChanged(uint state, uint type)
 void MessageHandler::onFlasherStateChanged(uint state, uint type)
 {
     auto flasherState = static_cast<states::FlasherState>(state);
-    auto messageSignal = _getMessageSignal(type);
+    auto messageSignal =  [this, type] (QString const& msg) {
+        _getMessageSignal(type)(QString("Flasher : ") + msg);
+    };
 
     using FlasherState = states::FlasherState;
 
     switch (flasherState) {
         case FlasherState::FlasherStarted:
-            emit messageSignal("Flasher : running... ");
+            emit messageSignal("running... please wait...");
             break;
 
         case FlasherState::FlasherOpenDeviceFailed:
-            emit messageSignal("Flasher : open device file failed.");
+            emit messageSignal("open device file failed.");
             break;
 
         case FlasherState::FlasherOpenImageFailed:
-            emit messageSignal("Flasher : open image file failed.");
+            emit messageSignal("open image file failed.");
             break;
 
         case FlasherState::FlasherFinished:
-            emit messageSignal("Flasher : successfully finished.");
+            emit messageSignal("successfully finished.");
             break;
 
         case FlasherState::FlasherFailed:
-            emit messageSignal("Flasher : failed.");
+            emit messageSignal("failed.");
             break;
 
         case FlasherState::FlasherImageReadingFailed:
-            emit messageSignal("Flasher : image reading failed.");
+            emit messageSignal("image reading failed.");
             break;
 
         case FlasherState::FlasherDeviceWritingFailed:
-            emit messageSignal("Flasher : writing to device failed.");
+            emit messageSignal("writing to device failed.");
             break;
 
-        case FlasherState::FlasherCheckingCorrectnessStarted:
-            emit messageSignal("Flasher : checking correctness, compute checksum...");
+        case FlasherState::FlasherCancelled:
+            emit messageSignal("cancelled.");
             break;
 
-        case FlasherState::FlasherImageCorrectlyWrote:
-            emit messageSignal("Flasher : image correctly wrote.");
+        default:
+            emit errorMessageReceived("Undefined error.");
+            break;
+    }
+}
+
+
+void MessageHandler::onCheckingCorrectnessStateChange(uint state, uint type)
+{
+    auto checksumCalcState = static_cast<states::CheckingCorrectnessState>(state);
+    auto messageSignal =  [this, type] (QString const& msg) {
+        _getMessageSignal(type)(QString("Checksum : ") + msg);
+    };
+
+    using Checksum = states::CheckingCorrectnessState;
+
+    switch (checksumCalcState) {
+        case Checksum::CheckingCorrectnessStarted:
+            emit messageSignal("running... please wait...");
             break;
 
-        case FlasherState::FlasherImageUncorrectlyWrote:
-            emit messageSignal("Flasher : image uncorretly wrote.");
+        case Checksum::ComputeDeviceChecksum:
+            emit messageSignal("compute device checksum...");
+            break;
+
+        case Checksum::ComputeImageChecksum:
+            emit messageSignal("compute image checksum....");
+            break;
+
+        case Checksum::ReadingFailed:
+            emit messageSignal("reading failed");
+            break;
+
+        case Checksum::ImageCorrectlyWrote:
+            emit messageSignal("image correctly wrote.");
+            break;
+
+        case Checksum::ImageUncorrectlyWrote:
+            emit messageSignal("image uncorrectly wrote.");
+            break;
+
+        case Checksum::CheckingCancelled:
+            emit messageSignal("cancelled.");
             break;
 
         default:

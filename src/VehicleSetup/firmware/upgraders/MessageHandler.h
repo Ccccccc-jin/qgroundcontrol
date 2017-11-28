@@ -33,6 +33,8 @@ public slots:
 
     void onFlasherStateChanged(uint state, uint type);
 
+    void onCheckingCorrectnessStateChange(uint state, uint type);
+
 private:
 
     MessageSignal_t _getMessageSignal(uint messageType);

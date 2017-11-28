@@ -1,17 +1,17 @@
-#include "FirmwareUpgraderClient.h"
 #include <libusb-1.0/libusb.h>
+#include "FirmwareUpgraderClient.h"
 
 
-int const         FirmwareUpgraderClient::EDGE_VID           = 0x0a5c;
-QList<int> const  FirmwareUpgraderClient::EDGE_PIDS          = QList<int>({0x2763, 0x2764});
-QString const     FirmwareUpgraderClient::GRAPHICAL_SUDO_BIN = "pkexec";
-QString const     FirmwareUpgraderClient::SERVER_NODE_NAME   = "local:fwupg_socket";
-QString const     FirmwareUpgraderClient::EDGE_VERSION_FILE  = "/issue.txt";
+int const         FirmwareUpgraderClient::EDGE_VID                = 0x0a5c;
+QList<int> const  FirmwareUpgraderClient::EDGE_PIDS               = QList<int>({0x2763, 0x2764});
+QString const     FirmwareUpgraderClient::GRAPHICAL_SUDO_CMD_NAME = "pkexec";
+QString const     FirmwareUpgraderClient::SERVER_NODE_NAME        = "local:fwupg_socket";
+QString const     FirmwareUpgraderClient::EDGE_VERSION_FILE       = "/issue.txt";
 
 
 FirmwareUpgraderClient::FirmwareUpgraderClient(QObject *parent)
     : FirmwareUpgrader(parent),
-      FW_UPG_BINARY_FILE(QCoreApplication::applicationDirPath() + "/bin/fwupgrader")
+      FW_UPG_BINARY_FILENAME(QCoreApplication::applicationDirPath() + "/bin/fwupgrader-start.sh")
 {
     _initConnections();
 }
@@ -19,84 +19,16 @@ FirmwareUpgraderClient::FirmwareUpgraderClient(QObject *parent)
 
 FirmwareUpgraderClient::~FirmwareUpgraderClient(void)
 {
-    _finalizeFirmwareUpgraderProcess();
-}
-
-
-void FirmwareUpgraderClient::_initConnections(void)
-{
-    using FwUpg   = FirmwareUpgraderClient;
-    // after our process started, we need to initialise "watcher" replica
-    QObject::connect(&_fwUpgProcess, &QProcess::started, this, &FwUpg::_initWatcher);
-
-    // attach other
-    _attachToMessageHandler();
-    _attachToProcess();
-    _processLog.attach(_fwUpgProcess);
-}
-
-
-void FirmwareUpgraderClient::_attachToProcess(void)
-{
-    QObject::connect(&_fwUpgProcess,
-        static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-        [this](int exitCode, QProcess::ExitStatus stat) {
-            Q_UNUSED(exitCode); Q_UNUSED(stat);
-            emit finished();
-        }
-    );
-}
-
-
-void FirmwareUpgraderClient::_attachToMessageHandler(void)
-{
-    using MsgHandler = MessageHandler;
-    using FwUpg      = FirmwareUpgraderClient;
-
-    QObject::connect(&_messageHandler, &MsgHandler::errorMessageReceived, this, &FwUpg::errorMessageReceived);
-    QObject::connect(&_messageHandler, &MsgHandler::infoMessageReceived,  this, &FwUpg::infoMessageReceived);
-    QObject::connect(&_messageHandler, &MsgHandler::warnMessageReceived,  this, &FwUpg::warnMessageReceived);
-}
-
-
-void FirmwareUpgraderClient::_attachToWatcher(void)
-{
-    using Watcher = FirmwareUpgraderWatcherReplica;
-    using FwUpg   = FirmwareUpgraderClient;
-
-    auto watcherPtr = _watcher.get();
-
-    QObject::connect(watcherPtr, &Watcher::flasherProgressChanged, this, &FwUpg::progressChanged);
-    QObject::connect(watcherPtr, &Watcher::deviceMountpoints,      this, &FwUpg::_onDeviceMountpointsAvailable);
-    QObject::connect(watcherPtr, &Watcher::flasherFinished,        this, &FwUpg::flashingFinished);
-    QObject::connect(watcherPtr, &Watcher::finished,               this, &FwUpg::finished);
-
-    // after watcher initilized, we need to run rpiboot in _onWatcherInitilized slot
-    QObject::connect(watcherPtr, &Watcher::initialized,     this, &FwUpg::_onWatcherInitialized);
-    // after rpiboot finished, we need to run device scanner(which return device mountpoints)
-    QObject::connect(watcherPtr, &Watcher::rpiBootFinished,
-        [this] (bool status) {
-            qInfo() << "Rpiboot status: " << status;
-            if (status) _watcher->runDeviceScannerStep();
-        }
-    );
-    // after device scanning firmware upgrader is ready to flash device (emit 'ready' signal)
-    QObject::connect(watcherPtr, &Watcher::deviceScannerFinished,
-        [this] (bool status) {
-            qInfo() << "DeviceScanner status: " << status;
-            if (status) emit ready();
-        }
-    );
-
-    _messageHandler.attach(_watcher);
-}
-
-
-void FirmwareUpgraderClient::_finalizeFirmwareUpgraderProcess(void)
-{
-    if (_watcher != nullptr && _watcher->isInitialized()) {
+    if (_watcherInitialized()) {
+        qDebug() << "finish firmwareupgrader  process";
         _watcher->finish();
     }
+
+    while(_watcherInitialized()) {
+        QCoreApplication::processEvents();
+    }
+
+    qDebug() << "Firmware upgrader client destroyed";
 }
 
 
@@ -134,59 +66,211 @@ bool FirmwareUpgraderClient::deviceAvailable() const
 }
 
 
-void FirmwareUpgraderClient::start(void)
+void FirmwareUpgraderClient::flash(FlasherParameters const& params)
 {
-    _startProcess();
+    using Watcher = FirmwareUpgraderWatcherReplica;
+    using FwUpg   = FirmwareUpgraderClient;
+
+    QMetaObject::Connection connection;
+
+    if (params.checksumEnabled()) {
+        connection = QObject::connect(_watcher.get(), &Watcher::flasherFinished,
+            [this] (bool status) { if (status) { _watcher->runCheckingCorrectnessStep(); } }
+        );
+        _temporaryConnections.append(connection);
+
+        connection = QObject::connect(_watcher.get(), &Watcher::checkingCorrectnessFinished, this, &FwUpg::deviceFlashed);
+        _temporaryConnections.append(connection);
+
+    } else {
+        QObject::connect(_watcher.get(), &Watcher::flasherFinished, this, &FwUpg::deviceFlashed);
+        _temporaryConnections.append(connection);
+    }
+
+    _watcher->runFlasherStep(params.image().filename());
+}
+
+
+void FirmwareUpgraderClient::initializeDevice(void)
+{
+    if (!_watcherInitialized()) {
+        qDebug() << "watcher not initialized. Start new process";
+        _startProcess();
+        _initWatcher();
+        return;
+    }
+
+    emit _watcherReady();
+}
+
+
+void FirmwareUpgraderClient::cancel(void)
+{
+    _watcher->cancel();
 }
 
 
 void FirmwareUpgraderClient::_startProcess(void)
 {
-    using FwUpg = FirmwareUpgraderClient;
+    auto env = QProcessEnvironment::systemEnvironment();
+    auto appimageVarName = "APPIMAGE";
 
-    if (QCoreApplication::applicationDirPath().isEmpty()) {
-        emit warnMessageReceived(QString("Can not start firmware upgrading.") +
-                                 "You should start the program through qgroundcontrol-start.sh");
-        return;
+    /* if QGroung was started from AppImage */
+    if (env.contains(appimageVarName)) {
+        auto appimagePath  = env.value(appimageVarName);
+        auto fwUpgraderKey = "--fwupg";
+
+        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { appimagePath, fwUpgraderKey });
+    } else {
+        if (QCoreApplication::applicationDirPath().isEmpty()) {
+            auto warnMessage = QString("Can not start firmware upgrading.") +
+                     "You should start the program through qgroundcontrol-start.sh";
+            emit warnMessageReceived(warnMessage);
+            return;
+        }
+
+        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { FW_UPG_BINARY_FILENAME });
     }
-
-    _fwUpgProcess.start(FwUpg::GRAPHICAL_SUDO_BIN + " " +
-                        FwUpg::FW_UPG_BINARY_FILE);
 }
 
 
 void FirmwareUpgraderClient::_initWatcher(void)
 {
-    using FwUpg   = FirmwareUpgraderClient;
-    using Watcher = FirmwareUpgraderWatcherReplica;
-
-    auto successful = _node.connectToNode(FwUpg::SERVER_NODE_NAME);
+    auto successful = _node.connectToNode(SERVER_NODE_NAME);
 
     if (!successful) {
         qCritical() << "Can not connect to server node";
         emit errorMessageReceived("Can not connect to firmware upgrader process");
+        emit deviceInitialized(false);
         return;
     }
 
+    using Watcher = FirmwareUpgraderWatcherReplica;
+    using FwUpg   = FirmwareUpgraderClient;
+
     _watcher.reset(_node.acquire<Watcher>());
-    _attachToWatcher();
+    QObject::connect(_watcher.get(), &Watcher::initialized, this, &FwUpg::_attachToWatcher);
 }
 
 
-void FirmwareUpgraderClient::_onWatcherInitialized(void)
+void FirmwareUpgraderClient::_onWatcherReady(void)
 {
-    // attach all clients
-    emit initialzed();
-    qInfo() << "Watcher initialized.";
-
-    _watcher->setVidPid(FirmwareUpgraderClient::EDGE_VID,
-                        FirmwareUpgraderClient::EDGE_PIDS);
-
+    emit deviceInitializationStarted();
+    _watcher->setVidPid(EDGE_VID, EDGE_PIDS);
     _watcher->runRpiBootStep();
 }
 
 
-QString FirmwareUpgraderClient::_edgeVersionExtractor(QString const& bootPath) {
+void FirmwareUpgraderClient::_disconnectTmpConnections(void)
+{
+    for(auto const& connection : _temporaryConnections) {
+        QObject::disconnect(connection);
+    }
+
+    _temporaryConnections.clear();
+}
+
+
+void FirmwareUpgraderClient::
+    _onDeviceMountpointsAvailable(QStringList mountpoints)
+{
+    QString bootPath;
+
+    for (auto mnt : mountpoints) {
+        if (mnt.contains("boot")) {
+            bootPath = std::move(mnt);
+            break;
+        }
+    }
+
+    QString version = _extractFirmwareVersion(bootPath);
+    qInfo() << "Boot path: "  << bootPath;
+    qInfo() << "Fw version: " << version;
+
+    emit firmwareVersionAvailable(version);
+}
+
+
+bool FirmwareUpgraderClient::_watcherInitialized(void)
+{
+    return _watcher != nullptr && _watcher->isReplicaValid();
+}
+
+
+void FirmwareUpgraderClient::_initConnections(void)
+{
+    QObject::connect(this, &FirmwareUpgraderClient::_watcherReady,
+                     this, &FirmwareUpgraderClient::_onWatcherReady);
+
+    QObject::connect(this, &FirmwareUpgraderClient::deviceFlashed,
+                    [this] (bool status) { Q_UNUSED(status); _disconnectTmpConnections(); } );
+
+    _attachToMessageHandler();
+}
+
+
+void FirmwareUpgraderClient::_attachToMessageHandler(void)
+{
+    using MsgHandler = MessageHandler;
+    using FwUpg      = FirmwareUpgraderClient;
+
+    QObject::connect(&_messageHandler, &MsgHandler::errorMessageReceived, this, &FwUpg::errorMessageReceived);
+    QObject::connect(&_messageHandler, &MsgHandler::infoMessageReceived,  this, &FwUpg::infoMessageReceived);
+    QObject::connect(&_messageHandler, &MsgHandler::warnMessageReceived,  this, &FwUpg::warnMessageReceived);
+}
+
+
+void FirmwareUpgraderClient::_attachToWatcher(void)
+{
+    qInfo() << "Watcher initialized.";
+
+    using Watcher = FirmwareUpgraderWatcherReplica;
+    using FwUpg   = FirmwareUpgraderClient;
+
+    auto watcherPtr = _watcher.get();
+
+    _defineDeviceInitOrder();
+
+    QObject::connect(watcherPtr, &Watcher::flasherProgressChanged,             this, &FwUpg::progressChanged);
+    QObject::connect(watcherPtr, &Watcher::checkingCorrectnessProgressChanged, this, &FwUpg::progressChanged);
+    QObject::connect(watcherPtr, &Watcher::deviceMountpoints,                  this, &FwUpg::_onDeviceMountpointsAvailable);
+    QObject::connect(watcherPtr, &Watcher::cancelled,                          this, &FwUpg::cancelled);
+
+    _messageHandler.attach(_watcher);
+    emit _watcherReady();
+}
+
+
+void FirmwareUpgraderClient::_defineDeviceInitOrder(void)
+{
+    using Watcher = FirmwareUpgraderWatcherReplica;
+
+    auto watcherPtr = _watcher.get();
+
+    QObject::connect(watcherPtr, &Watcher::rpiBootFinished,
+        [this] (bool status) {
+            if (status) {
+                _watcher->runDeviceScannerStep();
+            } else {
+                emit deviceInitialized(false);
+            }
+        }
+    );
+
+    QObject::connect(watcherPtr, &Watcher::deviceScannerFinished,
+        [this] (bool status) {
+            if (status) {
+                emit deviceInitialized(true);
+            } else {
+                emit deviceInitialized(false);
+            }
+        }
+    );
+}
+
+
+QString FirmwareUpgraderClient::_extractFirmwareVersion(QString const& bootPath)
+{
     QString issuePath(bootPath + FirmwareUpgraderClient::EDGE_VERSION_FILE);
     QFile issueFile(issuePath);
 
@@ -211,42 +295,4 @@ QString FirmwareUpgraderClient::_edgeVersionExtractor(QString const& bootPath) {
     qCritical() << "This file doesn't contain edge version.";
 
     return QString();
-}
-
-
-void FirmwareUpgraderClient::
-    _onDeviceMountpointsAvailable(QStringList mountpoints)
-{
-    QString bootPath;
-
-    for (auto mnt : mountpoints) {
-        if (mnt.contains("boot")) {
-            bootPath = std::move(mnt);
-            break;
-        }
-    }
-
-    QString version = _edgeVersionExtractor(bootPath);
-    qInfo() << "Boot path: "  << bootPath;
-    qInfo() << "Fw version: " << version;
-
-    emit firmwareVersionAvailable(version);
-}
-
-
-void FirmwareUpgraderClient::cancel(void)
-{
-    _finalizeFirmwareUpgraderProcess();
-}
-
-
-void FirmwareUpgraderClient::finish(void)
-{
-    _finalizeFirmwareUpgraderProcess();
-}
-
-
-void FirmwareUpgraderClient::flash(FlasherParameters const& params)
-{
-   _watcher->runFlasherStep(params.image().filename(), params.checksumEnabled());
 }

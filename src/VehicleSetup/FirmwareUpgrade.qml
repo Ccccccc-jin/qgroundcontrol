@@ -13,6 +13,7 @@ import QtQuick.Controls 1.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Dialogs 1.2
 
+
 import QGroundControl               1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.FactSystem    1.0
@@ -74,27 +75,39 @@ QGCView {
         id: fwUpgradeController
 
         /* States functions. These function was defined for switching between window states.
-           This is not best solution. Perfectly, this code should be re-wrote with qml StateMachine. */
+           This is not best solution. Perfectly, this code should be re-written with qml StateMachine. */
 
         function initialState() {
             disabledVisible(connectButton)
             notVisible(cancelButton)
+            enableVehicleSetupButtons()
 
+            progressBar.setVisibleProgressLabel(false)
             progressBar.changeProgressBarValue(0)
+            fwUpgradeController.observeDevice()
         }
 
         function deviceUnpluggedState() {
-            initialState()
             var msg = "Device unplugged."
             statusTextArea.appendInfoMessage(msg)
-        }
-
-        function askForPriviledgesState() {
             initialState()
-            disableVehicleSetup()
         }
 
-        function deviceAvailableState() {
+        function deviceInitializationState() {
+            disabledVisible(connectButton)
+            notVisible(cancelButton)
+            disableVehicleSetup()
+            statusTextArea.clear()
+        }
+
+        function deviceNotInitializedState() {
+            var msg = "An error ocurred while initializing." +
+                      "Make sure that you did not disconnect your device."
+            statusTextArea.appendErrorMessage(msg)
+            initialState()
+        }
+
+        function devicePluggedState() {
             enabledVisible(connectButton)
             notVisible(cancelButton)
 
@@ -102,56 +115,57 @@ QGCView {
             statusTextArea.appendInfoMessage(msg)
         }
 
-        function flashingFinishedState() {
-            if (fwUpgradeController.deviceAvailable()) {
-                enabledVisible(connectButton)
-            } else {
-                disabledVisible(connectButton)
-            }
-
-            notVisible(cancelButton)
-            enableVehicleSetupButtons()
-        }
-
-        function flashingCancelledState() {
-            var msg = "Firmware Upgrading cancelled."
-            statusTextArea.appendInfoMessage(msg)
-            enableVehicleSetupButtons()
-        }
-
         function flashingStartedState() {
             notVisible(connectButton)
             enabledVisible(cancelButton)
+            progressBar.setVisibleProgressLabel(true)
         }
 
-        function flashingSuccessfullyFinishedState() {
-            notVisible(connectButton)
-            disabledVisible(cancelButton)
+        function flashingCancelledState() {
+            var msg = "Firmare upgrading cancelled. " +
+                      "If you want to try again. Unplug and plug in your device."
+            statusTextArea.appendInfoMessage(msg)
+            initialState()
+        }
 
+        function flashingFinishedState() {
             var msg = "Firmware upgrading finished. Please unplug your device."
             statusTextArea.appendInfoMessage(msg)
-            enableVehicleSetupButtons()
+            initialState()
         }
 
         function flashingFailedState() {
-            notVisible(connectButton)
-            disabledVisible(cancelButton)
-
             var msg = "An error ocurred while flashing device." +
                       "Make sure that you did not disconnect your device."
             statusTextArea.appendErrorMessage(msg)
-            enableVehicleSetupButtons()
+            initialState()
         }
 
         onDevicePlugged: {
-            deviceAvailableState()
+            devicePluggedState()
         }
 
         onDeviceUnplugged: {
             deviceUnpluggedState()
         }
 
-        onReady: {
+        onDeviceInitializationStarted: {
+            deviceInitializationState()
+        }
+
+        onDeviceFlashingStarted: {
+            flashingStartedState()
+        }
+
+        onDeviceInitialized: {
+            if (!status) {
+                deviceNotInitializedState()
+                return;
+            }
+
+            var msg = "Select firmware image file and press 'Ok' for start flashing."
+            statusTextArea.appendInfoMessage(msg)
+
             var dialogTitle = "Firmware settings"
 
             showDialog(firmwareUpgraderDialogComponent,
@@ -159,13 +173,13 @@ QGCView {
                        StandardButton.Ok | StandardButton.Cancel)
         }
 
-        onFinished: {
-            flashingFinishedState()
+        onDeviceFlashed: {
+            status ? flashingFinishedState()
+                   : flashingFailedState()
         }
 
-        onFlashingFinished: {
-            status ? flashingSuccessfullyFinishedState()
-                   : flashingFailedState()
+        onCancelled: {
+            flashingCancelledState()
         }
 
         onFlasherProgressChanged: {
@@ -186,7 +200,6 @@ QGCView {
 
         Component.onCompleted: {
             initialState()
-            fwUpgradeController.searchDevice()
         }
     }
 
@@ -206,11 +219,26 @@ QGCView {
             anchors.topMargin:   ScreenTools.defaultFontPixelHeight
             anchors.top:         titleLabel.bottom
             minimumValue:        0
+            value:               0
             maximumValue:        100
             width:               parent.width - Math.max(cancelButton.width, connectButton.width) - 2 * ScreenTools.defaultFontPixelWidth
 
             function changeProgressBarValue(value) {
                 progressBar.value = value
+            }
+
+            function setVisibleProgressLabel(value) {
+                progressLabel.visible = value
+            }
+
+            Label {
+                id: progressLabel
+
+                visible:                  false
+                color:                    qgcPal.window
+                text:                     progressBar.value + "%"
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter:   parent.verticalCenter
             }
         }
 
@@ -229,8 +257,7 @@ QGCView {
 
 
             onClicked: {
-                fwUpgradeController.start()
-                fwUpgradeController.askForPriviledgesState()
+                fwUpgradeController.initializeDevice()
             }
         }
 
@@ -248,8 +275,10 @@ QGCView {
             anchors.top:         titleLabel.bottom
 
             onClicked: {
-                fwUpgradeController.cancel()
-                fwUpgradeController.flashingCancelledState()
+                var dialogTitle = "Upgrading cancellation"
+                showDialog(cancellationDialogComponent,
+                           dialogTitle, qgcView.showDialogDefaultWidth,
+                           StandardButton.Yes | StandardButton.No)
             }
         }
 
@@ -264,6 +293,10 @@ QGCView {
             font.pointSize:     ScreenTools.defaultFontPointSize
             textFormat:         TextEdit.RichText
             text:               welcomeText
+
+            function clear() {
+                statusTextArea.remove(0, statusTextArea.length);
+            }
 
             function appendInfoMessage(message) {
                 colouredMessage("info", "green", message)
@@ -288,6 +321,27 @@ QGCView {
         }
     }
 
+    Component {
+        id: cancellationDialogComponent
+
+        QGCViewDialog {
+            id: cancellationDialog
+            width: questionLabel + ScreenTools.defaultFontPixelHeight
+
+            function accept() {
+                hideDialog();
+                fwUpgradeController.cancel()
+            }
+
+            QGCLabel {
+                id: questionLabel
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Do you really want to cancel upgrading?";
+            }
+        }
+
+    }
+
 
     Component {
         id: firmwareUpgraderDialogComponent
@@ -299,14 +353,12 @@ QGCView {
               function reject() {
                   hideDialog();
                   fwUpgradeController.cancel()
-                  fwUpgradeController.initialState()
               }
 
               function accept() {
                   if (fwUpgradeController.firmwareFilename != "") {
                       hideDialog()
                       fwUpgradeController.flash()
-                      fwUpgradeController.flashingStartedState()
                   } else {
                       statusTextArea.appendWarnMessage("Incorrect firmware file.")
                   }
@@ -317,8 +369,10 @@ QGCView {
                   spacing: ScreenTools.defaultFontPixelHeight
 
                   QGCLabel {
+                      id:      firmwareVersion
+                      visible: fwUpgradeController.firmwareVersion.length > 0
+
                       anchors.horizontalCenter: parent.horizontalCenter
-                      id:   firmwareVersion
                       text: "Current firmware version: " + fwUpgradeController.firmwareVersion;
                   }
 

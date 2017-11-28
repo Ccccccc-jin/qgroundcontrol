@@ -13,15 +13,13 @@ public:
     virtual ~FirmwareUpgrader(void);
 
     virtual bool deviceAvailable(void) const = 0;
-    virtual void flash(FlasherParameters const& image) = 0;
 
 signals:
-    void initialzed(void);
-    void ready     (void);
-    void finished  (void);
-    void cancelled (void);
+    void deviceInitializationStarted(void);
 
-    void flashingFinished(bool status);
+    void deviceInitialized (bool status);
+    void deviceFlashed     (bool status);
+    void cancelled         (void);
 
     void progressChanged(uint value);
     void firmwareVersionAvailable(QString const& version);
@@ -31,9 +29,9 @@ signals:
     void warnMessageReceived  (QString const& msg);
 
 public slots:
-    virtual void start(void)  = 0;
+    virtual void initializeDevice(void)  = 0;
+    virtual void flash(FlasherParameters const& image) = 0;
     virtual void cancel(void) = 0;
-    virtual void finish(void) = 0;
 
 protected:
     explicit FirmwareUpgrader(QObject* parent = NULL);

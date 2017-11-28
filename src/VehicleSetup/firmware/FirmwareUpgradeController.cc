@@ -10,7 +10,6 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
     : _firmwareFilename(""),
       _firmwareVersion(""),
       _checksumEnabled(true),
-      _deviceBootAsMassStorage(false),
       _deviceObserver(1),
       _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
@@ -24,13 +23,13 @@ FirmwareUpgradeController::~FirmwareUpgradeController(void)
 }
 
 
-void FirmwareUpgradeController::start(void)
+void FirmwareUpgradeController::initializeDevice(void)
 {
-    _fwUpgrader->start();
+    _fwUpgrader->initializeDevice();
 }
 
 
-bool FirmwareUpgradeController::deviceAvailable(void) const
+bool FirmwareUpgradeController::_deviceAvailable(void)
 {
     return _fwUpgrader->deviceAvailable();
 }
@@ -55,15 +54,20 @@ void FirmwareUpgradeController::_initConnections(void)
 
     auto fwUpgraderPtr = _fwUpgrader.get();
 
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::infoMessageReceived,  this, &Controller::infoMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::errorMessageReceived, this, &Controller::errorMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::warnMessageReceived,  this, &Controller::warnMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::progressChanged,      this, &Controller::flasherProgressChanged);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::flashingFinished,     this, &Controller::flashingFinished);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::ready,                this, &Controller::ready);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,            this, &Controller::cancelled);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::finished,             this, &Controller::finished);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::initialzed,          [this] () { _deviceObserver.stop(); } );
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::infoMessageReceived,         this, &Controller::infoMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::errorMessageReceived,        this, &Controller::errorMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::warnMessageReceived,         this, &Controller::warnMsgReceived);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::progressChanged,             this, &Controller::flasherProgressChanged);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitialized,           this, &Controller::deviceInitialized);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,                   this, &Controller::cancelled);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceFlashed,               this, &Controller::deviceFlashed);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitializationStarted, this, &Controller::deviceInitializationStarted);
+
+    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
+    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
+
+    QObject::connect(this, &Controller::deviceInitializationStarted,
+                     [this] () { _deviceObserver.stop(); } );
 
     QObject::connect(fwUpgraderPtr, &FWUpgrader::firmwareVersionAvailable,
         [this] (QString const& firmwareVersion) {
@@ -71,14 +75,10 @@ void FirmwareUpgradeController::_initConnections(void)
             emit firmwareVersionAvailable(firmwareVersion);
         }
     );
-
-    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
-    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
-
 }
 
 
-void FirmwareUpgradeController::searchDevice(void)
+void FirmwareUpgradeController::observeDevice(void)
 {
     qInfo() << "Polling started...";
     _deviceObserver.setDeviceAvailablePredicate(
@@ -91,6 +91,7 @@ void FirmwareUpgradeController::searchDevice(void)
 
 void FirmwareUpgradeController::flash(void)
 {
+    emit deviceFlashingStarted();
     FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
     _fwUpgrader->flash(params);
 }
@@ -98,7 +99,7 @@ void FirmwareUpgradeController::flash(void)
 
 void FirmwareUpgradeController::cancel(void)
 {
-    _fwUpgrader->finish();
+    _fwUpgrader->cancel();
 }
 
 
@@ -116,5 +117,4 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
     } else {
         emit infoMsgReceived("Selected file: " + _firmwareFilename);
     }
-
 }

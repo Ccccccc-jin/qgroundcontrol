@@ -66,5 +66,4 @@ void ProcessStateLog::onProcessStateChanged(QProcess::ProcessState state)
             std::abort();
             break;
     }
-
 }
