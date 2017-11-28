@@ -2368,7 +2368,22 @@ QString Vehicle::firmwareVersionTypeString(void) const
 
 void Vehicle::rebootVehicle()
 {
-    sendMavCommand(_defaultComponentId, MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, true, 1.0f);
+    mavlink_message_t       msg;
+    mavlink_command_long_t  cmd;
+
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.command = MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN;
+    cmd.confirmation = 0;
+    cmd.param1 = 1.0f;
+    cmd.target_system = _id;
+    cmd.target_component = 1;
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         &cmd);
+
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::setSoloFirmware(bool soloFirmware)
