@@ -38,13 +38,16 @@ QGCView {
 
     property bool activeVehicleJoystickEnabled: _activeVehicle ? _activeVehicle.joystickEnabled : false
 
+
     property var    _planMasterController:  masterController
     property var    _missionController:     _planMasterController.missionController
     property var    _geoFenceController:    _planMasterController.geoFenceController
     property var    _rallyPointController:  _planMasterController.rallyPointController
+    property var    _VideoStreamController: _activeVehicle ? _activeVehicle.videoStreamManager : null
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property bool   _mainIsMap:             QGroundControl.videoManager.hasVideo ? QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true) : true
     property bool   _isPipVisible:          QGroundControl.videoManager.hasVideo ? QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true) : false
+    property bool   _connected:             _activeVehicle ? !_activeVehicle.connectionLost : false
     property real   _savedZoomLevel:        0
     property real   _margins:               ScreenTools.defaultFontPixelWidth / 2
     property real   _pipSize:               mainWindow.width * 0.2
@@ -278,6 +281,7 @@ QGCView {
             ]
             //-- Video Streaming
             FlightDisplayViewVideo {
+                id:             flightDisplayViewVideo
                 anchors.fill:   parent
                 visible:        QGroundControl.videoManager.isGStreamer
             }
@@ -365,6 +369,7 @@ QGCView {
 
         // Button to start/stop video recording
         Item {
+            id:                 videoRecordingButton
             z:                  _flightVideoPipControl.z + 1
             anchors.margins:    ScreenTools.defaultFontPixelHeight / 2
             anchors.bottom:     _flightVideo.bottom
@@ -396,6 +401,33 @@ QGCView {
             MouseArea {
                 anchors.fill:   parent
                 onClicked:      QGroundControl.videoManager.videoReceiver && QGroundControl.videoManager.videoReceiver.recording ? QGroundControl.videoManager.videoReceiver.stopRecording() : QGroundControl.videoManager.videoReceiver.startRecording()
+            }
+        }
+
+        // Button for Video Stream Settings
+        Item {
+            z:                  _flightVideoPipControl.z + 1
+            anchors.margins:    ScreenTools.defaultFontPixelHeight / 2
+            anchors.bottom:     _flightVideo.bottom
+            anchors.right:      videoRecordingButton.left
+            height:             ScreenTools.defaultFontPixelHeight * 2
+            width:              height
+            visible:            !_mainIsMap && _connected
+
+            QGCColoredImage {
+                anchors.top:                parent.top
+                anchors.bottom:             parent.bottom
+                anchors.horizontalCenter:   parent.horizontalCenter
+                width:                      height * 0.625
+                sourceSize.width:           width
+                source:                     "qrc:/res/gear-white.svg"
+                fillMode:                   Image.PreserveAspectFit
+                color:                      "white"
+            }
+
+            MouseArea {
+                anchors.fill:   parent
+                onClicked:      _flightVideo.flightDisplayViewVideo._videoStreamSettings = ""
             }
         }
 
