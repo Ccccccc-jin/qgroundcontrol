@@ -188,15 +188,10 @@ Rectangle {
                 spacing: ScreenTools.defaultFontPixelWidth
 
                 QGCButton {
-                    text:       "Save Settings"
-                    onClicked:  {
-                        _controller.saveSettings(ipField.text, portField.text)
-                    }
-                }
-
-                QGCButton {
                     text:       "Start Streaming"
                     onClicked:  {
+                        _controller.saveSettings(ipField.text, portField.text)
+                        _controller.stopVideo()
                         _controller.startVideo()
                     }
                 }
