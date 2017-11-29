@@ -1570,7 +1570,10 @@ bool Vehicle::active(void)
 
 void Vehicle::setActive(bool active)
 {
-    _active = active;
+    if (_active != active) {
+        _active = active;
+        emit activeChanged(_active);
+    }
 
     _startJoystick(_active);
 }
