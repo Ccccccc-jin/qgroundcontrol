@@ -427,7 +427,7 @@ QGCView {
 
             MouseArea {
                 anchors.fill:   parent
-                onClicked:      _flightVideo.flightDisplayViewVideo._videoStreamSettings = ""
+                onClicked:      QGroundControl.corePlugin.showVideoSettings = true
             }
         }
 
