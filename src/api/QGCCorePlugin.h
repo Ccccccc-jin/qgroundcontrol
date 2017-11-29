@@ -47,6 +47,8 @@ public:
     Q_PROPERTY(QString      brandImageIndoor    READ brandImageIndoor   CONSTANT)
     Q_PROPERTY(QString      brandImageOutdoor   READ brandImageOutdoor  CONSTANT)
 
+    Q_PROPERTY(bool         showVideoSettings   READ showVideoSettings  WRITE setShowVideoSettings NOTIFY showVideoSettingsChanged)
+
     /// The list of settings under the Settings Menu
     /// @return A list of QGCSettings
     virtual QVariantList& settingsPages(void);
@@ -94,6 +96,8 @@ public:
     bool showAdvancedUI(void) const { return _showAdvancedUI; }
     void setShowTouchAreas(bool show);
     void setShowAdvancedUI(bool show);
+    bool showVideoSettings(void) const { return _showVideoSettings; }
+    void setShowVideoSettings(bool show);
 
     // Override from QGCTool
     void                            setToolbox              (QGCToolbox* toolbox);
@@ -102,10 +106,12 @@ signals:
     void settingsPagesChanged   (void);
     void showTouchAreasChanged  (bool showTouchAreas);
     void showAdvancedUIChanged  (bool showAdvancedUI);
+    void showVideoSettingsChanged (bool showVideoSettings);
 
 protected:
     bool                _showTouchAreas;
     bool                _showAdvancedUI;
+    bool                _showVideoSettings;
 
 private:
     QGCCorePlugin_p*    _p;

@@ -85,6 +85,7 @@ QGCCorePlugin::QGCCorePlugin(QGCApplication *app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _showTouchAreas(false)
     , _showAdvancedUI(true)
+    , _showVideoSettings(false)
 {
     _p = new QGCCorePlugin_p;
 }
@@ -200,6 +201,14 @@ void QGCCorePlugin::setShowAdvancedUI(bool show)
     if (show != _showAdvancedUI) {
         _showAdvancedUI = show;
         emit showAdvancedUIChanged(show);
+    }
+}
+
+void QGCCorePlugin::setShowVideoSettings(bool show)
+{
+    if (show != _showVideoSettings) {
+        _showVideoSettings = show;
+        emit showVideoSettingsChanged(show);
     }
 }
 
