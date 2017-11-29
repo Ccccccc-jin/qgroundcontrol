@@ -2386,6 +2386,7 @@ void Vehicle::rebootVehicle()
                                          &cmd);
 
     sendMessageOnLink(priorityLink(), msg);
+    _firmwarePlugin->requestDataStreams(this);
 }
 
 void Vehicle::setSoloFirmware(bool soloFirmware)
