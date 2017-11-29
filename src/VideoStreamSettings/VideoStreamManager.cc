@@ -125,8 +125,9 @@ QString VideoStreamManager::getLocalAddress()
 
     foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
         if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost)) {
-             localAddress = address.toString();
-             break;
+             if (address.isInSubnet(QHostAddress::parseSubnet("192.168.0.0/24"))) {
+                localAddress = address.toString();
+             }
         }
     }
 
