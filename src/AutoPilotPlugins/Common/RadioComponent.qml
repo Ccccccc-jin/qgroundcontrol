@@ -24,6 +24,10 @@ SetupPage {
     id:             radioPage
     pageComponent:  pageComponent
 
+    function changeRcValue(context, rcValue) {
+        context.item.rcValue = rcValue >= 800 ? rcValue : 1500
+    }
+
     Component {
         id: pageComponent
 
@@ -236,14 +240,6 @@ SetupPage {
                     spacing:    5
                     QGCLabel { text: qsTr("Attitude Controls") }
 
-                    QtObject {
-                        id: rcValueController
-
-                        function changeRcValue(context, rcValue) {
-                            context.item.rcValue = rcValue >= 800 ? rcValue : 1500
-                        }
-                    }
-
                     Item {
                         width:  parent.width
                         height: defaultTextHeight * 2
@@ -269,7 +265,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onRollChannelRCValueChanged: rcValueController.changeRcValue(rollLoader, rcValue)
+                            onRollChannelRCValueChanged: changeRcValue(rollLoader, rcValue)
                         }
                     }
 
@@ -299,7 +295,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onPitchChannelRCValueChanged: rcValueController.changeRcValue(pitchLoader, rcValue)
+                            onPitchChannelRCValueChanged: changeRcValue(pitchLoader, rcValue)
                         }
                     }
 
@@ -329,7 +325,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onYawChannelRCValueChanged: rcValueController.changeRcValue(yawLoader, rcValue)
+                            onYawChannelRCValueChanged: changeRcValue(yawLoader, rcValue)
                         }
                     }
 
@@ -359,7 +355,7 @@ SetupPage {
                         Connections {
                             target: controller
 
-                            onThrottleChannelRCValueChanged: rcValueController.changeRcValue(throttleLoader, rcValue)
+                            onThrottleChannelRCValueChanged: changeRcValue(throttleLoader, rcValue)
                         }
                     }
                 } // Column - Attitude Control labels
