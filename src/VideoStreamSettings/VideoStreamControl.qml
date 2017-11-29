@@ -88,8 +88,19 @@ Rectangle {
             anchors.leftMargin: ScreenTools.defaultFontPixelHeight
             anchors.margins:    ScreenTools.defaultFontPixelHeight
 
+            QGCLabel {
+                text:              qsTr("Send video to:")
+            }
+
+            QGCComboBox {
+                id:     sendToComboBox
+                width:  _secondColumn
+                model:  ["This computer", "Manual"]
+            }
+
             Row {
                 spacing: ScreenTools.defaultFontPixelWidth
+                visible: sendToComboBox.currentIndex == 1
 
                 QGCLabel {
                     width:             _firstColumn
@@ -106,6 +117,7 @@ Rectangle {
 
             Row {
                 spacing: ScreenTools.defaultFontPixelWidth
+                visible: sendToComboBox.currentIndex == 1
 
                 QGCLabel {
                     width:             _firstColumn
@@ -118,14 +130,6 @@ Rectangle {
                     text:              _controller.targetPort
                     width:             _secondColumn
                     validator:         IntValidator { bottom: 0; top: 65535}
-                }
-            }
-
-            QGCButton {
-                text:      "Use IP and Port of GCS"
-                onClicked: {
-                    portField.text = QGroundControl.settingsManager.videoSettings.udpPort.rawValue
-                    ipField.text = _controller.getLocalAddress()
                 }
             }
 
