@@ -25,6 +25,8 @@ Item {
     id: root
     property double _ar:            QGroundControl.settingsManager.videoSettings.aspectRatio.rawValue
     property bool   _showGrid:      QGroundControl.settingsManager.videoSettings.gridLines.rawValue > 0
+    property var    _videoStreamSettings: _activeVehicle ? _activeVehicle.videoStreamManager : null
+
     Rectangle {
         id:             noVideo
         anchors.fill:   parent
@@ -89,5 +91,19 @@ Item {
                 visible: _showGrid
             }
         }
+    }
+    //-- Video Stream Controller
+    Connections {
+        target: _activeVehicle
+        onActiveChanged: {
+            if (!_activeVehicle.active)
+                settingsLoader.source = ""
+        }
+    }
+    Loader {
+        id:         settingsLoader
+        source:     _videoStreamSettings ? _videoStreamSettings.controllerSource : ""
+        visible:    !_mainIsMap && _videoStreamSettings && _connected
+        anchors.centerIn: parent
     }
 }
