@@ -3006,6 +3006,7 @@
 <value code=" 0">A0</value>
 <value code=" 1">A1</value>
 <value code=" 2">Pixhawk/Pixracer/Navio2</value>
+<value code=" 3">Edge_pwr1</value>
 <value code=" 5">A5</value>
 <value code=" 10">A10</value>
 <value code=" 13">A13/Pixhawk2_PM2</value>
@@ -3016,7 +3017,7 @@
 <values>
 <value code="-1">Disabled</value>
 <value code=" 1">A1</value>
-<value code=" 2">A2</value>
+<value code=" 2">Edge_pwr1</value>
 <value code=" 3">Pixhawk/Pixracer/Navio2</value>
 <value code=" 11">A11</value>
 <value code=" 12">A12/Pixhawk2_PM2</value>
@@ -3057,7 +3058,7 @@
 <value code=" 0">A0</value>
 <value code=" 1">A1</value>
 <value code=" 2">Pixhawk/Pixracer/Navio2</value>
-<value code=" 5">A5</value>
+<value code=" 5">Edge_pwr2</value>
 <value code=" 10">A10</value>
 <value code=" 13">A13/Pixhawk2_PM2</value>
 <value code=" 100">PX4-v1</value>
@@ -3069,6 +3070,7 @@
 <value code=" 1">A1</value>
 <value code=" 2">A2</value>
 <value code=" 3">Pixhawk/Pixracer/Navio2</value>
+<value code=" 4">Edge_pwr2</value>
 <value code=" 11">A11</value>
 <value code=" 12">A12/Pixhawk2_PM2</value>
 <value code=" 101">PX4-v1</value>
