@@ -188,6 +188,7 @@
         <file alias="test.qml">src/test.qml</file>
         <file alias="UdpSettings.qml">src/ui/preferences/UdpSettings.qml</file>
         <file alias="VehicleSummary.qml">src/VehicleSetup/VehicleSummary.qml</file>
+        <file alias="VideoStreamControl.qml">src/VideoStreamSettings/VideoStreamControl.qml</file>
         <file alias="VirtualJoystick.qml">src/FlightDisplay/VirtualJoystick.qml</file>
     </qresource>
     <qresource prefix="/json">
