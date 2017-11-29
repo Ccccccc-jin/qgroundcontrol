@@ -30,6 +30,7 @@
 #include "QGroundControlQmlGlobal.h"
 #include "SettingsManager.h"
 #include "QGCQGeoCoordinate.h"
+#include "VideoStreamManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -124,6 +125,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _rallyPointManager(NULL)
     , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
+    , _videoStreamManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
@@ -221,6 +223,8 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     _firmwarePlugin->initializeVehicle(this);
 
+    _videoStreamManager = new VideoStreamManager(this);
+
     _sendMultipleTimer.start(_sendMessageMultipleIntraMessageDelay);
     connect(&_sendMultipleTimer, &QTimer::timeout, this, &Vehicle::_sendMessageMultipleNext);
 
@@ -283,6 +287,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _rallyPointManager(NULL)
     , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
+    , _videoStreamManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
@@ -391,6 +396,9 @@ void Vehicle::_commonInit(void)
 Vehicle::~Vehicle()
 {
     qCDebug(VehicleLog) << "~Vehicle" << this;
+
+    delete _videoStreamManager;
+    _videoStreamManager = NULL;
 
     delete _missionManager;
     _missionManager = NULL;

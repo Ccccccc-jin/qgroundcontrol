@@ -38,6 +38,7 @@ class ParameterManager;
 class JoystickManager;
 class UASMessage;
 class SettingsManager;
+class VideoStreamManager;
 
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
@@ -312,6 +313,7 @@ public:
     Q_PROPERTY(int                  telemetryRNoise         READ telemetryRNoise                                        NOTIFY telemetryRNoiseChanged)
     Q_PROPERTY(QVariantList         toolBarIndicators       READ toolBarIndicators                                      CONSTANT)
     Q_PROPERTY(QVariantList         cameraList              READ cameraList                                             CONSTANT)
+    Q_PROPERTY(VideoStreamManager*  videoStreamManager      READ videoStreamManager                                     NOTIFY videoStreamManagerChanged)
 
     /// true: Vehicle is flying, false: Vehicle is on ground
     Q_PROPERTY(bool flying READ flying NOTIFY flyingChanged)
@@ -495,6 +497,7 @@ public:
     MissionManager*     missionManager(void)    { return _missionManager; }
     GeoFenceManager*    geoFenceManager(void)   { return _geoFenceManager; }
     RallyPointManager*  rallyPointManager(void) { return _rallyPointManager; }
+    VideoStreamManager* videoStreamManager(void) { return _videoStreamManager; }
 
     QGeoCoordinate homePosition(void);
 
@@ -721,6 +724,7 @@ signals:
     void firmwareTypeChanged(void);
     void vehicleTypeChanged(void);
     void capabilitiesKnownChanged(bool capabilitiesKnown);
+    void videoStreamManagerChanged(void);
 
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
@@ -952,6 +956,8 @@ private:
     bool                _rallyPointManagerInitialRequestSent;
 
     ParameterManager*    _parameterManager;
+
+    VideoStreamManager*  _videoStreamManager;
 
     bool    _armed;         ///< true: vehicle is armed
     uint8_t _base_mode;     ///< base_mode from HEARTBEAT
