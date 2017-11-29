@@ -26,6 +26,7 @@ import QGroundControl.FactControls      1.0
 
 Rectangle {
     id:             mainRect
+    visible:        QGroundControl.corePlugin.showVideoSettings
     height:         videoStreamSettingsCol.height * 1.5
     width:          videoStreamSettingsCol.width  * 1.5
     radius:         ScreenTools.defaultFontPixelWidth * 0.5
@@ -61,7 +62,7 @@ Rectangle {
             anchors.fill:       parent
             anchors.margins:    ScreenTools.isMobile ? -ScreenTools.defaultFontPixelHeight : 0
             onClicked: {
-                mainRect.visible = false
+                QGroundControl.corePlugin.showVideoSettings = false
             }
         }
     }
