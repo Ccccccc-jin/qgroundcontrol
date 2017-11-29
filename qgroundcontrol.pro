@@ -348,6 +348,7 @@ INCLUDEPATH += \
     src/QtLocationPlugin/QMLControl \
     src/Settings \
     src/VehicleSetup \
+    src/VideoStreamSettings \
     src/ViewWidgets \
     src/audio \
     src/comm \
@@ -559,6 +560,7 @@ HEADERS += \
     src/Settings/VideoSettings.h \
     src/Vehicle/MAVLinkLogManager.h \
     src/VehicleSetup/JoystickConfigController.h \
+    src/VideoStreamSettings/VideoStreamManager.h \
     src/audio/QGCAudioWorker.h \
     src/comm/LinkConfiguration.h \
     src/comm/LinkInterface.h \
@@ -736,6 +738,7 @@ SOURCES += \
     src/Settings/VideoSettings.cc \
     src/Vehicle/MAVLinkLogManager.cc \
     src/VehicleSetup/JoystickConfigController.cc \
+    src/VideoStreamSettings/VideoStreamManager.cc \
     src/audio/QGCAudioWorker.cpp \
     src/comm/LinkConfiguration.cc \
     src/comm/LinkInterface.cc \
