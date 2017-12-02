@@ -14,7 +14,7 @@
 #ifndef Bootloader_H
 #define Bootloader_H
 
-#include "FirmwareImage.h"
+#include "firmware/FirmwareImage.h"
 
 #include "qextserialport.h"
 

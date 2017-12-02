@@ -13,7 +13,7 @@
 ///     @author Don Gagne <don@thegagnes.com>
 
 #include "FirmwareUpgradeController.h"
-#include "Bootloader.h"
+#include "upgraders/Bootloader.h"
 #include "QGCQFileDialog.h"
 #include "QGCApplication.h"
 #include "QGCFileDownload.h"

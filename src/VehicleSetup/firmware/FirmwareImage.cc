@@ -19,7 +19,7 @@
 #include "QGCApplication.h"
 #include "FirmwarePlugin.h"
 #include "ParameterManager.h"
-#include "Bootloader.h"
+#include "upgraders/Bootloader.h"
 
 #include <QDebug>
 #include <QFile>

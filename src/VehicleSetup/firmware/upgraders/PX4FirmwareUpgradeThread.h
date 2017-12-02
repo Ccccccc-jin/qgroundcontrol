@@ -16,7 +16,7 @@
 #define PX4FirmwareUpgradeThread_H
 
 #include "Bootloader.h"
-#include "FirmwareImage.h"
+#include "firmware/FirmwareImage.h"
 #include "QGCSerialPortInfo.h"
 
 #include <QObject>

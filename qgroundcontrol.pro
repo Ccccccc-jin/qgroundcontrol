@@ -224,6 +224,7 @@ QT += \
     sql \
     svg \
     widgets \
+    remoteobjects \
     xml
 
 # Multimedia only used if QVC is enabled
@@ -850,10 +851,13 @@ HEADERS+= \
 
 !MobileBuild {
     HEADERS += \
-        src/VehicleSetup/Bootloader.h \
-        src/VehicleSetup/FirmwareImage.h \
-        src/VehicleSetup/FirmwareUpgradeController.h \
-        src/VehicleSetup/PX4FirmwareUpgradeThread.h \
+        $$FIRMWARE_DIR/FirmwareImage.h \
+        $$FIRMWARE_DIR/FirmwareUpgradeController.h \
+        $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
+        $$FIRMWARE_DIR/upgraders/Bootloader.h \
+        $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.h \
+        $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.h \
+        $$FIRMWARE_DIR/FirmwareUpgraderController.h
 }
 
 SOURCES += \
@@ -874,11 +878,18 @@ SOURCES += \
     src/VehicleSetup/VehicleComponent.cc \
 
 !MobileBuild {
+    FIRMWARE_DIR = src/VehicleSetup/firmware
+
     SOURCES += \
-        src/VehicleSetup/Bootloader.cc \
-        src/VehicleSetup/FirmwareImage.cc \
-        src/VehicleSetup/FirmwareUpgradeController.cc \
-        src/VehicleSetup/PX4FirmwareUpgradeThread.cc \
+        $$FIRMWARE_DIR/FirmwareImage.cc \
+        $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
+        $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
+        $$FIRMWARE_DIR/upgraders/Bootloader.cc \
+        $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.cc \
+        $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.cc \
+        $$FIRMWARE_DIR/FirmwareUpgraderController.cpp
+
+     REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
 }
 
 # ArduPilot FirmwarePlugin

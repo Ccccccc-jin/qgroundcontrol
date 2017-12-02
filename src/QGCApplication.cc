@@ -91,7 +91,7 @@
 #ifndef __mobile__
 #include "QGCQFileDialog.h"
 #include "QGCMessageBox.h"
-#include "FirmwareUpgradeController.h"
+#include "firmware/FirmwareUpgradeController.h"
 #include "MainWindow.h"
 #include "GeoTagController.h"
 #include "MavlinkConsoleController.h"
