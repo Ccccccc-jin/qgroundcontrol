@@ -64,6 +64,7 @@ private:
     bool _binLoad(const QString& px4Filename);
     bool _px4Load(const QString& px4Filename);
     bool _ihxLoad(const QString& ihxFilename);
+    bool _edgeLoad(const QString& edgeFilename);
     
     bool _readByteFromStream(QTextStream& stream, uint8_t& byte);
     bool _readWordFromStream(QTextStream& stream, uint16_t& word);

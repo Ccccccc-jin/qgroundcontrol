@@ -60,6 +60,9 @@ bool FirmwareImage::load(const QString& imageFilename, uint32_t boardId)
     } else if (imageFilename.endsWith(".ihx")) {
         _binFormat = false;
         return _ihxLoad(imageFilename);
+    } else if (imageFilename.endsWith(".img")) {
+        _binFormat = false;
+        return _edgeLoad(imageFilename);
     } else {
         emit statusMessage("Unsupported file format");
         return false;
@@ -109,6 +112,21 @@ bool FirmwareImage::_readBytesFromStream(QTextStream& stream, uint8_t byteCount,
         byteCount--;
     }
     
+    return true;
+}
+
+bool FirmwareImage::_edgeLoad(const QString& edgeFilename)
+{
+    QFileInfo fileInfo(edgeFilename);
+
+    if (!fileInfo.isReadable()) {
+        emit statusMessage(QStringLiteral("Unable to read from file %1").arg(edgeFilename));
+        return false;
+    }
+
+    _imageSize = fileInfo.size();
+    _binFilename = edgeFilename;
+
     return true;
 }
 
