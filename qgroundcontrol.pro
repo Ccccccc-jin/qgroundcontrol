@@ -850,6 +850,8 @@ HEADERS+= \
     src/VehicleSetup/VehicleComponent.h \
 
 !MobileBuild {
+    FIRMWARE_DIR = src/VehicleSetup/firmware
+
     HEADERS += \
         $$FIRMWARE_DIR/FirmwareImage.h \
         $$FIRMWARE_DIR/FirmwareUpgradeController.h \
@@ -857,7 +859,7 @@ HEADERS+= \
         $$FIRMWARE_DIR/upgraders/Bootloader.h \
         $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.h \
         $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.h \
-        $$FIRMWARE_DIR/FirmwareUpgraderController.h
+        $$FIRMWARE_DIR/upgraders/MockFirmwareUpgrader.h \
 }
 
 SOURCES += \
@@ -879,6 +881,7 @@ SOURCES += \
 
 !MobileBuild {
     FIRMWARE_DIR = src/VehicleSetup/firmware
+    LIBS += -lusb-1.0
 
     SOURCES += \
         $$FIRMWARE_DIR/FirmwareImage.cc \
@@ -887,7 +890,7 @@ SOURCES += \
         $$FIRMWARE_DIR/upgraders/Bootloader.cc \
         $$FIRMWARE_DIR/upgraders/PX4FirmwareUpgradeThread.cc \
         $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpgrader.cc \
-        $$FIRMWARE_DIR/FirmwareUpgraderController.cpp
+        $$FIRMWARE_DIR/upgraders/MockFirmwareUpgrader.cpp \
 
      REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
 }
