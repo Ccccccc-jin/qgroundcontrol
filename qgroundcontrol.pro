@@ -393,7 +393,7 @@ HEADERS += \
     src/api/QGCCorePlugin.h \
     src/api/QGCOptions.h \
     src/api/QGCSettings.h \
-    src/Vehicle/VehicleBatteries.h
+    src/Vehicle/VehicleBatteries.h \
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
@@ -855,13 +855,18 @@ HEADERS+= \
     HEADERS += \
         $$FIRMWARE_DIR/FirmwareUpgradeController.h \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
+        $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
+        $$FIRMWARE_DIR/DeviceObserver.h \
+
+    !LinuxBuild:HEADERS += \
+        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClientStub.h \
+
+    LinuxBuild:HEADERS += \
         $$FIRMWARE_DIR/upgraders/States.h \
         $$FIRMWARE_DIR/upgraders/MessageHandler.h \
-        $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
         $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
-        $$FIRMWARE_DIR/DeviceObserver.h \
 }
 
 SOURCES += \
@@ -883,18 +888,20 @@ SOURCES += \
 
 !MobileBuild {
     FIRMWARE_DIR = src/VehicleSetup/firmware
-    LIBS += -lusb-1.0
 
     SOURCES += \
         $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
+        $$FIRMWARE_DIR/DeviceObserver.cc
+
+    LinuxBuild:LIBS += -lusb-1.0
+    LinuxBuild:SOURCES += \
         $$FIRMWARE_DIR/upgraders/MessageHandler.cc \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
-        $$FIRMWARE_DIR/DeviceObserver.cc
 
 
-     REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
+    LinuxBuild:REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
 }
 
 # ArduPilot FirmwarePlugin

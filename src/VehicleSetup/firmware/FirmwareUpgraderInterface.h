@@ -2,7 +2,7 @@
 #define FIRMWAREUPGRADERINTERFACE_H
 
 #include <QObject>
-#include <FlasherParameters.h>
+#include "upgraders/FlasherParameters.h"
 #include <memory>
 
 class FirmwareUpgrader : public QObject
