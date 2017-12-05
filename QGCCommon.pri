@@ -125,7 +125,7 @@ exists ($$PWD/.git) {
     }
 
     VERSION      = $$replace(GIT_DESCRIBE, -.*, "")
-    VERSION      = $$replace(VERSION, "v", ".")
+    VERSION      = $$replace(VERSION, "v", "")
     VERSION      = $$section(VERSION, ".", 0, 3)
 
     MacBuild {
