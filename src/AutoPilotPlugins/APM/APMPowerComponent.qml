@@ -122,6 +122,22 @@ SetupPage {
                             }
 
                             ListElement {
+                                text:       "Edge PWR1"
+                                voltPin:    3
+                                currPin:    2
+                                voltMult:   18.620
+                                ampPerVolt: 62.980
+                            }
+
+                            ListElement {
+                                text:       "Edge PWR2"
+                                voltPin:    5
+                                currPin:    4
+                                voltMult:   18.620
+                                ampPerVolt: 62.980
+                            }
+
+                            ListElement {
                                 text:       qsTr("Other")
                             }
                         }
