@@ -81,8 +81,8 @@ WindowsBuild {
 QGC_APP_NAME        = "QGroundControl"
 QGC_ORG_NAME        = "QGroundControl.org"
 QGC_ORG_DOMAIN      = "org.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QGC_APP_COPYRIGHT   = "Copyright (C) 2017 QGroundControl Development Team. All rights reserved."
+QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team. Modified for Emlid Edge by Emlid."
+QGC_APP_COPYRIGHT   = "Copyright (C) 2017 QGroundControl Development Team. All rights reserved. (C) 2017 Emlid Limited. All rights reserved."
 
 WindowsBuild {
     QGC_INSTALLER_ICON          = "WindowsQGC.ico"
