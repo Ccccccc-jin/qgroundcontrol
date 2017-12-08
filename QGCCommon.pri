@@ -118,10 +118,10 @@ exists ($$PWD/.git) {
     # determine if we're on a tag matching vX.Y.Z (stable release)
     contains(GIT_DESCRIBE, v[0-9]+.[0-9]+.[0-9]+-[^-]*-[0-9]+.[0-9]+) {
         # release version "vX.Y.Z"
-        GIT_VERSION = $${GIT_DESCRIBE}
+        GIT_VERSION = "for Edge $${GIT_DESCRIBE}"
     } else {
         # development version "Development branch:sha date"
-        GIT_VERSION = "Development $${GIT_BRANCH}:$${GIT_HASH} $${GIT_TIME}"
+        GIT_VERSION = "for Edge $${GIT_BRANCH}:$${GIT_HASH} $${GIT_TIME}"
     }
 
     VERSION      = $$replace(GIT_DESCRIBE, -.*, "")
