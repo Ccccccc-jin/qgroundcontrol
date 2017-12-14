@@ -93,16 +93,9 @@ Item {
         }
     }
     //-- Video Stream Controller
-    Connections {
-        target: _activeVehicle
-        onActiveChanged: {
-            if (!_activeVehicle.active)
-                settingsLoader.source = ""
-        }
-    }
     Loader {
         id:         settingsLoader
-        source:     _videoStreamSettings ? _videoStreamSettings.controllerSource : ""
+        source:     (_videoStreamSettings && _activeVehicle.active) ? _videoStreamSettings.controllerSource : ""
         visible:    !_mainIsMap && _videoStreamSettings && _connected
         anchors.centerIn: parent
     }
