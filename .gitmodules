@@ -9,4 +9,4 @@
 	url = https://github.com/mavlink/c_library_v2.git
 [submodule "libs/firmwareupgrader"]
 	path = libs/firmwareupgrader
-	url = https://github.com/emlid/edge-firmware-update-tool-shared.git
+	url = ../edge-firmware-update-tool-shared.git
