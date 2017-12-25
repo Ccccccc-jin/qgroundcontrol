@@ -123,7 +123,7 @@ QGCView {
 
         function flashingCancelledState() {
             var msg = "Firmare upgrading cancelled. " +
-                      "If you want to try again. Unplug and plug in your device."
+                      "If you want to try again, unplug and plug in your device."
             statusTextArea.appendInfoMessage(msg)
             initialState()
         }
@@ -393,6 +393,10 @@ QGCView {
                               fwUpgradeController.checksumEnabled = checksumCheckbox.checked;
                           }
 
+                          Component.onCompleted: {
+                              fwUpgradeController.checksumEnabled = checksumCheckbox.checked;
+                          }
+
                       }
 
                   }
@@ -404,6 +408,11 @@ QGCView {
 
                       onClicked: {
                           fwUpgradeController.askForFirmwareFile()
+                      }
+
+                      Component.onCompleted: {
+                          fwUpgradeController.firmwareFilename = ""
+
                       }
                   }
 

@@ -13,6 +13,7 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
       _deviceObserver(1),
       _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
+    FirmwareUpgrader::registerMetatypes();
     _initConnections();
 }
 
@@ -92,6 +93,10 @@ void FirmwareUpgradeController::observeDevice(void)
 void FirmwareUpgradeController::flash(void)
 {
     emit deviceFlashingStarted();
+    if (_firmwareFilename.isEmpty()) {
+        emit warnMsgReceived("File is not selected.");
+        return;
+    }
     FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
     _fwUpgrader->flash(params);
 }
@@ -109,12 +114,15 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
     auto filesFormat   = QStringLiteral("Firmware Files (*.img)");
     auto firstLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
-    _firmwareFilename = QGCQFileDialog::
+    auto fwFilename = QGCQFileDialog::
             getOpenFileName(nullptr, dialogTitle, firstLocation, filesFormat);
 
-    if (_firmwareFilename.isEmpty()) {
-        emit warnMsgReceived("File not selected.");
+    if (fwFilename.isEmpty()) {
+        if (_firmwareFilename.isEmpty()) {
+            emit warnMsgReceived("File is not selected.");
+        }
     } else {
+        _firmwareFilename = std::move(fwFilename);
         emit infoMsgReceived("Selected file: " + _firmwareFilename);
     }
 }

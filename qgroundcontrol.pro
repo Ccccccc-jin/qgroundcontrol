@@ -898,7 +898,7 @@ SOURCES += \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
 
 
-    LinuxBuild:REPC_REPLICA = $$FIRMWARE_DIR/upgraders/FirmwareUpgraderWatcher.rep
+    LinuxBuild:REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
 }
 
 # ArduPilot FirmwarePlugin

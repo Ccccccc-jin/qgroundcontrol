@@ -2,11 +2,12 @@
 #define FIRMWAREUPGRADERCLIENT_H
 
 #include <QObject>
+#include <QtRemoteObjects>
 
 #include "FlasherParameters.h"
-#include "MessageHandler.h"
 #include "ProcessStateLog.h"
 #include "firmware/FirmwareUpgraderInterface.h"
+#include "rep_EdgeFirmwareUpdaterIPC_replica.h"
 
 class FirmwareUpgraderClient : public FirmwareUpgrader
 {
@@ -24,23 +25,19 @@ public slots:
 
 private slots:
     void _startProcess   (void);
-    void _initWatcher    (void);
-    void _onWatcherReady (void);
+    void _initUpdater    (void);
+    void _onUpdaterReady (void);
 
     void _disconnectTmpConnections(void);
-    void _onDeviceMountpointsAvailable(QStringList mountpoints);
 
 signals:
-    void _watcherReady(void);
+    void _updaterReady(void);
 
 private:
-    bool _watcherInitialized     (void);
-    void _initConnections        (void);
-    void _attachToMessageHandler (void);
-    void _attachToWatcher        (void);
-    void _defineDeviceInitOrder  (void);
-
-    QString _extractFirmwareVersion(QString const& bootPath);
+    void _handleMessage(QString msg, int type);
+    bool _updaterInitialized (void);
+    void _initConnections    (void);
+    void _attachToUpdater    (void);
 
     static const int        EDGE_VID;
     static const QList<int> EDGE_PIDS;
@@ -50,11 +47,9 @@ private:
 
     const QString    FW_UPG_BINARY_FILENAME;
 
-    MessageHandler      _messageHandler;
-
     QList<QMetaObject::Connection>     _temporaryConnections;
-    std::shared_ptr<FirmwareUpgraderWatcherReplica> _watcher;
-    QRemoteObjectNode _node;
+    std::shared_ptr<EdgeFirmwareUpdaterIPCReplica> _updaterServer;
+    QRemoteObjectNode _clientNode;
 };
 
 #endif // FIRMWAREUPGRADERCLIENT_H

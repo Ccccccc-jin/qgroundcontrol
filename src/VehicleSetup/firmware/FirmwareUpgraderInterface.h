@@ -9,7 +9,26 @@ class FirmwareUpgrader : public QObject
 {
     Q_OBJECT
 public:
+    enum FinishStatus {
+        Succeed = 1,
+        Cancelled = 0,
+        Failed = -1
+    };
+    Q_ENUM(FinishStatus)
+
+    enum LogMsgType {
+        Info = 0,
+        Warning,
+        Error
+    };
+    Q_ENUM(LogMsgType)
+
     static std::unique_ptr<FirmwareUpgrader> instance(void);
+    static void registerMetatypes(void) {
+        qRegisterMetaType<LogMsgType>("FirmwareUpgrader::LogMsgType");
+        qRegisterMetaType<FinishStatus>("FirmwareUpgrader::FinishStatus");
+    }
+
     virtual ~FirmwareUpgrader(void);
 
     virtual bool deviceAvailable(void) const = 0;

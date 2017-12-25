@@ -1,6 +1,5 @@
 #include <functional>
 
-#include "rep_FirmwareUpgraderWatcher_replica.h"
 #include "MessageHandler.h"
 #include "States.h"
 
@@ -11,11 +10,11 @@ MessageHandler::MessageHandler(QObject *parent)
 
 
 void MessageHandler::
-    attach(std::shared_ptr<FirmwareUpgraderWatcherReplica> watcher)
+    attach(std::shared_ptr<EdgeFirmwareUpdaterIPCReplica> watcher)
 {
     auto watcherPtr = watcher.get();
 
-    using Watcher = FirmwareUpgraderWatcherReplica;
+    using Watcher = EdgeFirmwareUpdaterIPCReplica;
     using MsgHandler = MessageHandler;
 
     QObject::connect(watcherPtr, &Watcher::rpiBootStateChanged,

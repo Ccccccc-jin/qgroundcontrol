@@ -17,7 +17,7 @@ class MessageHandler : public QObject
 public:
     explicit MessageHandler(QObject *parent = nullptr);
 
-    void attach(std::shared_ptr<FirmwareUpgraderWatcherReplica> watcher);
+    void attach(std::shared_ptr<EdgeFirmwareUpdaterIPCReplica> watcher);
 
 signals:
     void infoMessageReceived(QString const& msg);
