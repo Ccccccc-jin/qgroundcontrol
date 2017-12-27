@@ -862,8 +862,6 @@ HEADERS+= \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClientStub.h \
 
     LinuxBuild:HEADERS += \
-        $$FIRMWARE_DIR/upgraders/States.h \
-        $$FIRMWARE_DIR/upgraders/MessageHandler.h \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
         $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
@@ -896,7 +894,6 @@ SOURCES += \
 
     LinuxBuild:LIBS += -lusb-1.0
     LinuxBuild:SOURCES += \
-        $$FIRMWARE_DIR/upgraders/MessageHandler.cc \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
 
