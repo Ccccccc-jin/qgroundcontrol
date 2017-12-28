@@ -892,7 +892,6 @@ SOURCES += \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
         $$FIRMWARE_DIR/DeviceObserver.cc
 
-    LinuxBuild:LIBS += -lusb-1.0
     LinuxBuild:SOURCES += \
         $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
         $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
