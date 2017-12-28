@@ -60,10 +60,25 @@ DEFINES += NOMINMAX
 # [REQUIRED] QWT plotting library dependency. Provides plotting capabilities.
 #
 !MobileBuild {
-LinuxBuild:include(libs/fwupgrader.pri)
-include(libs/qwt.pri)
-DEPENDPATH += libs/qwt
-INCLUDEPATH += libs/qwt
+    contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
+        message("Skipping support for Edge firmware upgrader(manual override from command line)")
+    } else {
+        LinuxBuild {
+            message(Including support for Firmware Updater)
+
+            LIBUSB_PATH = $$PWD/libs/lib/libusb/g++64
+            INCLUDEPATH += "$${LIBUSB_PATH}/include"
+            LIBS += -L"$${LIBUSB_PATH}/lib/" -lusb-1.0
+            include(libs/fwupgrader.pri)
+        } else {
+            message("Skipping support for Edge firmware upgrader(unsupported OS)")
+        }
+    }
+
+    include(libs/qwt.pri)
+
+    DEPENDPATH += libs/qwt
+    INCLUDEPATH += libs/qwt
 }
 
 #
