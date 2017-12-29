@@ -34,6 +34,7 @@ signals:
     void _updaterReady(void);
 
 private:
+    QString _fwUpgraderBinaryFilename(void);
     void _handleMessage(QString msg, int type);
     bool _updaterInitialized (void);
     void _initConnections    (void);
@@ -44,8 +45,6 @@ private:
     static const QString    GRAPHICAL_SUDO_CMD_NAME;
     static const QString    SERVER_NODE_NAME;
     static const QString    EDGE_VERSION_FILE;
-
-    const QString    FW_UPG_BINARY_FILENAME;
 
     QList<QMetaObject::Connection>     _temporaryConnections;
     std::shared_ptr<EdgeFirmwareUpdaterIPCReplica> _updaterServer;

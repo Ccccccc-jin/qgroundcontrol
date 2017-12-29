@@ -10,8 +10,7 @@ QString const     FirmwareUpgraderClient::EDGE_VERSION_FILE       = "/issue.txt"
 
 
 FirmwareUpgraderClient::FirmwareUpgraderClient(QObject *parent)
-    : FirmwareUpgrader(parent),
-      FW_UPG_BINARY_FILENAME(QCoreApplication::applicationDirPath() + "/fwupgrader-start.sh")
+    : FirmwareUpgrader(parent)
 {
     _initConnections();
 }
@@ -128,6 +127,13 @@ void FirmwareUpgraderClient::cancel(void)
 
 void FirmwareUpgraderClient::_startProcess(void)
 {
+#ifdef Q_OS_WIN
+   auto const cmdexe = QString("cmd.exe");
+   auto const cmdRunCommandKey = QString("/C");
+   auto const fwUpgBinaryFile  = _fwUpgraderBinaryFilename();
+
+   QProcess::startDetached(cmdexe, {cmdRunCommandKey, fwUpgBinaryFile});
+#else
     auto env = QProcessEnvironment::systemEnvironment();
     auto appimageVarName = "APPIMAGE";
 
@@ -145,8 +151,9 @@ void FirmwareUpgraderClient::_startProcess(void)
             return;
         }
 
-        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { FW_UPG_BINARY_FILENAME });
+        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { _fwUpgraderBinaryFilename() });
     }
+#endif
 }
 
 
@@ -196,6 +203,18 @@ void FirmwareUpgraderClient::_disconnectTmpConnections(void)
     }
 
     _temporaryConnections.clear();
+}
+
+
+QString FirmwareUpgraderClient::_fwUpgraderBinaryFilename(void)
+{
+    auto genericFilename = QCoreApplication::applicationDirPath() + "/fwupgrader";
+
+#ifdef Q_OS_WIN
+    return genericFilename.append(".exe").replace("/","\\");
+#else
+    return genericFilename;
+#endif
 }
 
 
