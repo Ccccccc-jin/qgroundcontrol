@@ -71,6 +71,7 @@ LinuxBuild {
 }
 
 WindowsBuild {
+    QMAKE_LFLAGS += '\"/MANIFESTUAC:level=\'highestAvailable\' uiAccess=\'false\'\"'
     RC_ICONS = resources/icons/qgroundcontrol.ico
 }
 
@@ -858,13 +859,16 @@ HEADERS+= \
         $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
         $$FIRMWARE_DIR/DeviceObserver.h \
 
-    !LinuxBuild:HEADERS += \
-        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClientStub.h \
 
-    LinuxBuild:HEADERS += \
-        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
-        $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
-        $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
+    LinuxBuild|WindowsBuild {
+        HEADERS += \
+            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
+            $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
+            $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
+    } else {
+        HEADERS += \
+            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClientStub.h \
+    }
 }
 
 SOURCES += \
@@ -892,12 +896,13 @@ SOURCES += \
         $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
         $$FIRMWARE_DIR/DeviceObserver.cc
 
-    LinuxBuild:SOURCES += \
-        $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
-        $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
+    WindowsBuild|LinuxBuild {
+        SOURCES += \
+            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
+            $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
 
-
-    LinuxBuild:REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
+        REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
+    }
 }
 
 # ArduPilot FirmwarePlugin
