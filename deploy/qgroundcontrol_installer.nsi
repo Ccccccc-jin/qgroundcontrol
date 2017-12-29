@@ -2,6 +2,7 @@
 !include LogicLib.nsh
 !include Win\COM.nsh
 !include Win\Propkey.nsh
+!include x64.nsh
 
 !macro DemoteShortCut target
     !insertmacro ComHlpr_CreateInProcInstance ${CLSID_ShellLink} ${IID_IShellLink} r0 ""
@@ -72,6 +73,39 @@ doinstall:
   SetOutPath $INSTDIR
   File /r /x ${EXENAME}.pdb /x ${EXENAME}.lib /x ${EXENAME}.exp ${DESTDIR}\*.*
   File deploy\px4driver.msi
+  File deploy\wdi-simple.exe
+
+  ExpandEnvStrings $1 %COMSPEC%
+
+  DetailPrint "Checking for BCM2708 driver..."
+  ExpandEnvStrings $1 %COMSPEC%
+  ${DisableX64FSRedirection}
+  ExecWait '"$1" /c "pnputil.exe -e | findstr $\"USB\VID_0A5C&PID_2763$\""' $0
+  DetailPrint "Driver check returned $0"
+  ${EnableX64FSRedirection}
+
+  ${If} $0 != 0
+    DetailPrint "Driver not found. Installing BCM2708 driver..."
+    ExecWait '"$INSTDIR\wdi-simple.exe" -n "Raspberry Pi USB boot" -v 0x0a5c -p 0x2763 -t 0' $0 
+    DetailPrint "Driver install returned $0"
+  ${Else}
+    DetailPrint "Driver found. Skipping install."
+  ${EndIf}
+
+  DetailPrint "Checking for BCM2708 driver..."
+  ${DisableX64FSRedirection}
+  ExecWait '"$1" /c "pnputil.exe -e | findstr $\"USB\VID_0A5C&PID_2764$\""' $0
+  DetailPrint "Driver check returned $0"
+  ${EnableX64FSRedirection}
+
+  ${If} $0 != 0
+    DetailPrint "Driver not found. Installing BCM2710 driver..."
+    ExecWait '"$INSTDIR\wdi-simple.exe" -n "Raspberry Pi USB boot" -v 0x0a5c -p 0x2764 -t 0' $0
+    DetailPrint "Driver install returned $0"
+  ${Else}
+    DetailPrint "Driver found. Skipping install"
+  ${EndIf}
+
   WriteUninstaller $INSTDIR\${EXENAME}-Uninstall.exe
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$\"$INSTDIR\${EXENAME}-Uninstall.exe$\""
