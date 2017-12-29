@@ -63,13 +63,22 @@ DEFINES += NOMINMAX
     contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
         message("Skipping support for Edge firmware upgrader(manual override from command line)")
     } else {
-        LinuxBuild {
-            message(Including support for Firmware Updater)
 
-            LIBUSB_PATH = $$PWD/libs/lib/libusb/g++64
-            INCLUDEPATH += "$${LIBUSB_PATH}/include"
-            LIBS += -L"$${LIBUSB_PATH}/lib/" -lusb-1.0
+        LinuxBuild|WindowsBuild {
+            message(Including support for Firmware Updater)
             include(libs/fwupgrader.pri)
+
+            LinuxBuild {
+                LIBUSB_PATH = $$PWD/libs/lib/libusb/g++64
+                INCLUDEPATH += "$${LIBUSB_PATH}/include"
+                LIBS += -L"$${LIBUSB_PATH}/lib/" -lusb-1.0
+            }
+
+            WindowsBuild {
+                LIBUSB_PATH = $$shell_path($$PWD/libs/lib/libusb/msvc2015_32)
+                INCLUDEPATH += $$shell_path("$${LIBUSB_PATH}/include")
+                LIBS += -L$$shell_path("$${LIBUSB_PATH}/lib/") -llibusb-1.0
+            }
         } else {
             message("Skipping support for Edge firmware upgrader(unsupported OS)")
         }
