@@ -1,6 +1,8 @@
 #include <libusb-1.0/libusb.h>
 #include "FirmwareUpgraderClient.h"
 
+#include <algorithm>
+
 
 int const         FirmwareUpgraderClient::EDGE_VID                = 0x0a5c;
 QList<int> const  FirmwareUpgraderClient::EDGE_PIDS               = QList<int>({0x2763, 0x2764});
@@ -137,12 +139,26 @@ void FirmwareUpgraderClient::_startProcess(void)
     auto env = QProcessEnvironment::systemEnvironment();
     auto appimageVarName = "APPIMAGE";
 
+    auto shellExecuteCmd = [] (QString const& args) {
+        auto shell = "/bin/sh";
+        QProcess::startDetached(shell, {"-c", args});
+    };
+
+    auto makeArgs = [] (QStringList&& args) {
+        std::transform(args.begin(), args.end(), args.begin(),
+                       [] (QString& arg) { return arg.append('\"').prepend('\"'); });
+
+        return args.join(" ");
+    };
+
+    auto shellArgs = QString();
+
     /* if QGroung was started from AppImage */
     if (env.contains(appimageVarName)) {
         auto appimagePath  = env.value(appimageVarName);
         auto fwUpgraderKey = "--fwupg";
 
-        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { appimagePath, fwUpgraderKey });
+        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, appimagePath, fwUpgraderKey});
     } else {
         if (QCoreApplication::applicationDirPath().isEmpty()) {
             auto warnMessage = QString("Can not start firmware upgrading.") +
@@ -151,8 +167,10 @@ void FirmwareUpgraderClient::_startProcess(void)
             return;
         }
 
-        QProcess::startDetached(GRAPHICAL_SUDO_CMD_NAME, { _fwUpgraderBinaryFilename() });
+        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, _fwUpgraderBinaryFilename()});
     }
+
+    shellExecuteCmd(shellArgs);
 #endif
 }
 
@@ -213,7 +231,7 @@ QString FirmwareUpgraderClient::_fwUpgraderBinaryFilename(void)
 #ifdef Q_OS_WIN
     return genericFilename.append(".exe").replace("/","\\");
 #else
-    return genericFilename;
+    return genericFilename.append("-start.sh");
 #endif
 }
 
