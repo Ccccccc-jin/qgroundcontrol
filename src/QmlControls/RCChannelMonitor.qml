@@ -45,41 +45,53 @@ FactPanel {
             readonly property int   __rcValueMaxJitter: 2
             property color          __barColor:         qgcPal.windowShade
 
-            // Bar
-            Rectangle {
-                id:                     bar
-                anchors.verticalCenter: parent.verticalCenter
-                width:                  parent.width
-                height:                 parent.height / 2
-                color:                  __barColor
-            }
+            Row {
+                anchors.fill:        parent
+                spacing:             ScreenTools.defaultFontPixelWidth
+                anchors.leftMargin:  ScreenTools.defaultFontPixelWidth
+                anchors.rightMargin: anchors.leftMargin
 
-            // Center point
-            Rectangle {
-                anchors.horizontalCenter:   parent.horizontalCenter
-                anchors.verticalCenter:     parent.verticalCenter
-                width:                      ScreenTools.defaultFontPixelWidth / 3
-                height:                     parent.height / 2
-                color:                      qgcPal.primaryButton
-            }
+                Rectangle {
+                    id:                     bar
+                    width:                  parent.width - digitalIndicator.width - parent.spacing
+                    anchors.verticalCenter: parent.verticalCenter
+                    height:                 parent.height / 2
+                    color:                  __barColor
 
-            // Indicator
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width:                  parent.height * 0.75
-                height:                 width
-                x:                      (((reversed ? _pwmMax - rcValue : rcValue - _pwmMin) / _pwmRange) * parent.width) - (width / 2)
-                radius:                 width / 2
-                color:                  qgcPal.text
-                visible:                mapped
-            }
+                    // Center point
+                    Rectangle {
+                        anchors.horizontalCenter:   parent.horizontalCenter
+                        anchors.verticalCenter:     parent.verticalCenter
+                        width:                      ScreenTools.defaultFontPixelWidth / 3
+                        height:                     parent.height
+                        color:                      qgcPal.primaryButton
+                    }
 
-            QGCLabel {
-                anchors.fill:           parent
-                horizontalAlignment:    Text.AlignHCenter
-                verticalAlignment:      Text.AlignVCenter
-                text:                   "Not Mapped"
-                visible:                !mapped
+                    // Indicator
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width:                  parent.height * 1.25
+                        height:                 width
+                        x:                      (((reversed ? _pwmMax - rcValue : rcValue - _pwmMin) / _pwmRange) * parent.width) - (width / 2)
+                        radius:                 width / 2
+                        color:                  qgcPal.text
+                        visible:                mapped
+                    }
+
+                    QGCLabel {
+                        anchors.fill:           parent
+                        horizontalAlignment:    Text.AlignHCenter
+                        verticalAlignment:      Text.AlignVCenter
+                        text:                   "Not Mapped"
+                        visible:                !mapped
+                    }
+                }
+
+                QGCLabel {
+                    id:                  digitalIndicator
+                    width:               ScreenTools.defaultFontPixelWidth * 7
+                    text:                rcValue
+                }
             }
 
             ColorAnimation {

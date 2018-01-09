@@ -180,40 +180,51 @@ SetupPage {
                     readonly property int _pwmRange:    _pwmMax - _pwmMin
 
                     // Bar
-                    Rectangle {
-                        id:                     bar
-                        anchors.verticalCenter: parent.verticalCenter
-                        width:                  parent.width
-                        height:                 parent.height / 2
-                        color:                  __barColor
-                    }
+                    Row {
+                        anchors.fill: parent
+                        spacing:      ScreenTools.defaultFontPixelWidth
 
-                    // Center point
-                    Rectangle {
-                        anchors.horizontalCenter:   parent.horizontalCenter
-                        anchors.verticalCenter:     parent.verticalCenter
-                        width:                      defaultTextWidth / 4
-                        height:                     parent.height / 2
-                        color:                      qgcPal.primaryButton
-                    }
+                        Rectangle {
+                            id:                     bar
+                            width:                  parent.width - digitalIndicator.width - parent.spacing
+                            anchors.verticalCenter: parent.verticalCenter
+                            height:                 parent.height / 2
+                            color:                  __barColor
 
-                    // Indicator
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width:                  parent.height * 0.75
-                        height:                 width
-                        radius:                 width / 2
-                        color:                  qgcPal.text
-                        visible:                mapped
-                        x:                      (((reversed ? _pwmMax - rcValue : rcValue - _pwmMin) / _pwmRange) * parent.width) - (width / 2)
-                    }
+                            // Center point
+                            Rectangle {
+                                anchors.horizontalCenter:   parent.horizontalCenter
+                                anchors.verticalCenter:     parent.verticalCenter
+                                width:                      ScreenTools.defaultFontPixelWidth / 3
+                                height:                     parent.height
+                                color:                      qgcPal.primaryButton
+                            }
 
-                    QGCLabel {
-                        anchors.fill:           parent
-                        horizontalAlignment:    Text.AlignHCenter
-                        verticalAlignment:      Text.AlignVCenter
-                        text:                   qsTr("Not Mapped")
-                        visible:                !mapped
+                            // Indicator
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width:                  parent.height * 1.25
+                                height:                 width
+                                x:                      (((reversed ? _pwmMax - rcValue : rcValue - _pwmMin) / _pwmRange) * parent.width) - (width / 2)
+                                radius:                 width / 2
+                                color:                  qgcPal.text
+                                visible:                mapped
+                            }
+
+                            QGCLabel {
+                                anchors.fill:           parent
+                                horizontalAlignment:    Text.AlignHCenter
+                                verticalAlignment:      Text.AlignVCenter
+                                text:                   "Not Mapped"
+                                visible:                !mapped
+                            }
+                        }
+
+                        QGCLabel {
+                            id:                  digitalIndicator
+                            width:               ScreenTools.defaultFontPixelWidth * 7
+                            text:                rcValue
+                        }
                     }
 
                     ColorAnimation {
