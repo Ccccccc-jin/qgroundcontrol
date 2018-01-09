@@ -69,9 +69,7 @@ DEFINES += NOMINMAX
             include(libs/fwupgrader.pri)
 
             LinuxBuild {
-                LIBUSB_PATH = $$PWD/libs/lib/libusb/g++64
-                INCLUDEPATH += "$${LIBUSB_PATH}/include"
-                LIBS += -L"$${LIBUSB_PATH}/lib/" -lusb-1.0
+                LIBS += -lusb-1.0
             }
 
             WindowsBuild {
