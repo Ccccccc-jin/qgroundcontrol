@@ -49,10 +49,18 @@ You need to install Qt as described below instead of using pre-built packages fr
     * Windows: Make sure to install VS 2015 32 bit package.
 
 ###### Install additional packages:
-* Ubuntu: sudo apt-get install espeak libespeak-dev libudev-dev libsdl2-dev libblkid-dev libusb-1.0-0-dev
+* Ubuntu: sudo apt-get install espeak libespeak-dev libudev-dev libsdl2-dev libblkid-dev libusb-1.0-0-dev liblzma-dev
 * Fedora: sudo dnf install espeak espeak-devel SDL2-devel SDL2 systemd-devel
 * Arch Linux: pacman -Sy espeak
 * Windows: [USB Driver](http://www.pixhawk.org/firmware/downloads) to connect to Pixhawk/PX4Flow/3DR Radio
+  - Download [liblzma](https://tukaani.org/xz/xz-5.2.3-windows.zip): extract it into the `C:\liblzma` directory
+    - To link against `liblzma.dll`, you need to create an import library first. You need the `lib` command from MSVC
+	  and `liblzma.def` from `C:\liblzma\doc`. Here is command:
+
+	  `lib /def:liblzma.def /out:liblzma.lib /machine:ix86`
+
+    - move `liblzma.lib` into the `C:\liblzma\bin_i686`
+  - Download [libusb](https://github.com/libusb/libusb/releases/download/v1.0.21/libusb-1.0.21.7z):  extract it into the `C:\libusb` directory
 * Android: [Qt Android Setup](http://doc.qt.io/qt-5/androidgs.html)
 
 ###### Building using Qt Creator
