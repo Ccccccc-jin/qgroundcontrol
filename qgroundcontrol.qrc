@@ -190,6 +190,7 @@
         <file alias="VehicleSummary.qml">src/VehicleSetup/VehicleSummary.qml</file>
         <file alias="VideoStreamControl.qml">src/VideoStreamSettings/VideoStreamControl.qml</file>
         <file alias="VirtualJoystick.qml">src/FlightDisplay/VirtualJoystick.qml</file>
+        <file alias="QGroundControl/Controls/QGCDropDownSetting.qml">src/QmlControls/QGCDropDownSetting.qml</file>
     </qresource>
     <qresource prefix="/json">
         <file alias="MavCmdInfoCommon.json">src/MissionManager/MavCmdInfoCommon.json</file>
