@@ -225,7 +225,6 @@ QT += \
     sql \
     svg \
     widgets \
-    remoteobjects \
     xml
 
 # Multimedia only used if QVC is enabled
@@ -395,14 +394,14 @@ HEADERS += \
     src/api/QGCOptions.h \
     src/api/QGCSettings.h \
     src/Vehicle/VehicleBatteries.h \
+    src/QGCDownload.h \
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
     src/Vehicle/VehicleBatteries.cc \
-    src/QGCDownload.cc \
-    src/VehicleSetup/firmware/upgraders/FirmwareVersion.cc
+    src/QGCDownload.cc
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
@@ -852,26 +851,84 @@ HEADERS+= \
     src/Vehicle/Vehicle.h \
     src/VehicleSetup/VehicleComponent.h \
 
+# Firmware Upgrader sources
+
 !MobileBuild {
     FIRMWARE_DIR = src/VehicleSetup/firmware
 
     HEADERS += \
-        $$FIRMWARE_DIR/FirmwareUpgradeController.h \
-        $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
-        $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
-        $$FIRMWARE_DIR/DeviceObserver.h \
+            $$FIRMWARE_DIR/FirmwareUpgradeControllerBase.h \
+            $$FIRMWARE_DIR/RemoteFirmwareInfoViewBase.h \
 
+    # Firmware Upgrader sources and libs
+    LinuxBuild|WindowsBuild: !contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
+        # Add QtRemoteObjects framework
+        QT += remoteobjects
 
-    LinuxBuild|WindowsBuild {
         HEADERS += \
             $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
             $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
             $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
+            $$FIRMWARE_DIR/upgraders/RemoteFirmwareManager.h \
+            $$FIRMWARE_DIR/upgraders/FirmwareInfo.h \
+            $$FIRMWARE_DIR/FirmwareUpgradeController.h \
+            $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
+            $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
+            $$FIRMWARE_DIR/DeviceObserver.h \
+            $$FIRMWARE_DIR/RemoteFirmwareInfoView.h \
+            src/QGCXzDecompressor.h \
+
+        SOURCES += \
+            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
+            $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
+            $$FIRMWARE_DIR/upgraders/FirmwareVersion.cc \
+            $$FIRMWARE_DIR/upgraders/RemoteFirmwareManager.cc \
+            $$FIRMWARE_DIR/upgraders/FirmwareInfo.cc \
+            $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
+            $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
+            $$FIRMWARE_DIR/DeviceObserver.cc \
+            $$FIRMWARE_DIR/RemoteFirmwareInfoView.cc \
+            src/QGCXzDecompressor.cc \
+
+        REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
+
+        LinuxBuild {
+            LIBS += -lusb-1.0 -llzma
+
+        } else {
+            WIN_LIBRARY_ROOT_PATH = "C:"
+
+            LIBUSB_PATH =  $$shell_path("$${WIN_LIBRARY_ROOT_PATH}/libusb")
+            !exists("$$LIBUSB_PATH") {
+                error("libusb not found. Check README.md for installation steps")
+            } else {
+                INCLUDEPATH += $$shell_path("$${LIBUSB_PATH}/include")
+                LIBS +=      -L$$shell_path("$${LIBUSB_PATH}/MS32/dll/") -llibusb-1.0
+
+                QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY \
+                    \"$$shell_path($${LIBUSB_PATH}/MS32/dll/libusb-1.0.dll)\" \
+                    \"$$shell_path($$DESTDIR)\"
+            }
+
+            LIBLZMA_PATH = $$shell_path("$${WIN_LIBRARY_ROOT_PATH}/liblzma")
+            !exists("$$LIBLZMA_PATH") {
+                error("liblzma not found. Check README.md for installation steps.");
+            } else {
+                INCLUDEPATH += $$shell_path("$${LIBLZMA_PATH}/include")
+                LIBS        += -L$$shell_path("$${LIBLZMA_PATH}/bin_i686/") -lliblzma
+
+                QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY \
+                    \"$$shell_path($${LIBLZMA_PATH}/bin_i686/liblzma.dll)\" \
+                    \"$$shell_path($$DESTDIR)\"
+                QMAKE_POST_LINK += $$escape_expand(\\n)
+            }
+        }
     } else {
         HEADERS += \
-            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClientStub.h \
+            $$FIRMWARE_DIR/FirmwareUpgradeControllerStub.h \
     }
 }
+
 
 SOURCES += \
     src/AutoPilotPlugins/AutoPilotPlugin.cc \
@@ -890,22 +947,6 @@ SOURCES += \
     src/Vehicle/Vehicle.cc \
     src/VehicleSetup/VehicleComponent.cc \
 
-!MobileBuild {
-    FIRMWARE_DIR = src/VehicleSetup/firmware
-
-    SOURCES += \
-        $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
-        $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
-        $$FIRMWARE_DIR/DeviceObserver.cc
-
-    WindowsBuild|LinuxBuild {
-        SOURCES += \
-            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
-            $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
-
-        REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
-    }
-}
 
 # ArduPilot FirmwarePlugin
 
