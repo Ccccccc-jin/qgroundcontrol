@@ -400,7 +400,9 @@ SOURCES += \
     src/api/QGCCorePlugin.cc \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
-    src/Vehicle/VehicleBatteries.cc
+    src/Vehicle/VehicleBatteries.cc \
+    src/QGCDownload.cc \
+    src/VehicleSetup/firmware/upgraders/FirmwareVersion.cc
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
