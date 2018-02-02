@@ -90,7 +90,11 @@
 #ifndef __mobile__
 #include "QGCQFileDialog.h"
 #include "QGCMessageBox.h"
+#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX))
 #include "firmware/FirmwareUpgradeController.h"
+#else
+#include "firmware/FirmwareUpgradeControllerStub.h"
+#endif
 #include "MainWindow.h"
 #include "GeoTagController.h"
 #include "MavlinkConsoleController.h"
@@ -380,7 +384,13 @@ void QGCApplication::_initCommon(void)
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
     qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
+#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX))
     qmlRegisterType<FirmwareUpgradeController>      ("QGroundControl.Controllers", 1, 0, "FirmwareUpgradeController");
+#else
+    qmlRegisterType<FirmwareUpgradeControllerStub>  ("QGroundControl.Controllers", 1, 0, "FirmwareUpgradeController");
+#endif
+    qmlRegisterType<RemoteFirmwareInfoViewBase>     ("QGroundControl.Controllers", 1, 0, "RemoteFirmwareInfoViewBase");
+
     qmlRegisterType<GeoTagController>               ("QGroundControl.Controllers", 1, 0, "GeoTagController");
     qmlRegisterType<MavlinkConsoleController>       ("QGroundControl.Controllers", 1, 0, "MavlinkConsoleController");
 #endif
