@@ -112,7 +112,7 @@ class VehicleGPSFactGroup : public FactGroup
     Q_OBJECT
 
 public:
-    VehicleGPSFactGroup(QObject* parent = NULL);
+    VehicleGPSFactGroup(QString const& metaDataFile, QObject* parent = NULL);
 
     Q_PROPERTY(Fact* hdop               READ hdop               CONSTANT)
     Q_PROPERTY(Fact* vdop               READ vdop               CONSTANT)
@@ -304,6 +304,7 @@ public:
 
 
     Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
+    Q_PROPERTY(FactGroup* gps2        READ gps2FactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
     Q_PROPERTY(FactGroup* battery1    READ battery1FactGroup    CONSTANT)
@@ -567,6 +568,7 @@ public:
     Fact* distanceToHome    (void) { return &_distanceToHomeFact; }
 
     FactGroup* gpsFactGroup         (void) { return &_gpsFactGroup; }
+    FactGroup* gps2FactGroup        (void) { return &_gps2FactGroup; }
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
     FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
@@ -805,6 +807,7 @@ private:
     void _handleAutopilotVersion(LinkInterface* link, mavlink_message_t& message);
     void _handleHilActuatorControls(mavlink_message_t& message);
     void _handleGpsRawInt(mavlink_message_t& message);
+    void _handleGps2Raw(mavlink_message_t& message);
     void _handleGlobalPositionInt(mavlink_message_t& message);
     void _handleAltitude(mavlink_message_t& message);
     void _handleVfrHud(mavlink_message_t& message);
@@ -998,6 +1001,7 @@ private:
     Fact _distanceToHomeFact;
 
     VehicleGPSFactGroup         _gpsFactGroup;
+    VehicleGPSFactGroup         _gps2FactGroup;
     VehicleBatteries*           _vehicleBatteries;
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
@@ -1016,6 +1020,7 @@ private:
     static const char* _distanceToHomeFactName;
 
     static const char* _gpsFactGroupName;
+    static const char* _gps2FactGroupName;
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
     static const char* _temperatureFactGroupName;

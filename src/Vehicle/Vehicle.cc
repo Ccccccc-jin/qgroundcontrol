@@ -58,6 +58,7 @@ const char* Vehicle::_flightTimeFactName =          "flightTime";
 const char* Vehicle::_distanceToHomeFactName =      "distanceToHome";
 
 const char* Vehicle::_gpsFactGroupName =         "gps";
+const char* Vehicle::_gps2FactGroupName =        "gps2";
 const char* Vehicle::_windFactGroupName =        "wind";
 const char* Vehicle::_vibrationFactGroupName =   "vibration";
 const char* Vehicle::_temperatureFactGroupName = "temperature";
@@ -161,7 +162,8 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _flightDistanceFact   (0, _flightDistanceFactName,    FactMetaData::valueTypeDouble)
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
-    , _gpsFactGroup(this)
+    , _gpsFactGroup(":/json/Vehicle/GPSFact.json", this)
+    , _gps2FactGroup(":/json/Vehicle/GPS2Fact.json", this)
     , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
@@ -324,7 +326,8 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _flightDistanceFact   (0, _flightDistanceFactName,    FactMetaData::valueTypeDouble)
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
-    , _gpsFactGroup(this)
+    , _gpsFactGroup(":/json/Vehicle/GPSFact.json", this)
+    , _gps2FactGroup(":/json/Vehicle/GPS2Fact.json", this)
     , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
@@ -392,6 +395,7 @@ void Vehicle::_commonInit(void)
     _addFactGroup(secondBattery.factGroup, secondBattery.factName);
 
     _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
+    _addFactGroup(&_gps2FactGroup,      _gps2FactGroupName);
     _addFactGroup(&_windFactGroup,      _windFactGroupName);
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
     _addFactGroup(&_temperatureFactGroup, _temperatureFactGroupName);
@@ -602,6 +606,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_GPS_RAW_INT:
         _handleGpsRawInt(message);
         break;
+    case MAVLINK_MSG_ID_GPS2_RAW:
+        _handleGps2Raw(message);
+         break;
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         _handleGlobalPositionInt(message);
         break;
@@ -706,6 +713,19 @@ void Vehicle::_handleGpsRawInt(mavlink_message_t& message)
     _gpsFactGroup.courseOverGround()->setRawValue(gpsRawInt.cog == UINT16_MAX ? std::numeric_limits<double>::quiet_NaN() : gpsRawInt.cog / 100.0);
     _gpsFactGroup.lock()->setRawValue(gpsRawInt.fix_type);
 }
+
+void Vehicle::_handleGps2Raw(mavlink_message_t& message)
+{
+    mavlink_gps2_raw_t gps2Raw;
+    mavlink_msg_gps2_raw_decode(&message, &gps2Raw);
+
+    _gps2FactGroup.count()->setRawValue(gps2Raw.satellites_visible == 255 ? 0 : gps2Raw.satellites_visible);
+    _gps2FactGroup.hdop()->setRawValue(gps2Raw.eph == UINT16_MAX ? std::numeric_limits<double>::quiet_NaN() : gps2Raw.eph / 100.0);
+    _gps2FactGroup.vdop()->setRawValue(gps2Raw.epv == UINT16_MAX ? std::numeric_limits<double>::quiet_NaN() : gps2Raw.epv / 100.0);
+    _gps2FactGroup.courseOverGround()->setRawValue(gps2Raw.cog == UINT16_MAX ? std::numeric_limits<double>::quiet_NaN() : gps2Raw.cog / 100.0);
+    _gps2FactGroup.lock()->setRawValue(gps2Raw.fix_type);
+}
+
 
 void Vehicle::_handleGlobalPositionInt(mavlink_message_t& message)
 {
@@ -2466,8 +2486,9 @@ const char* VehicleGPSFactGroup::_courseOverGroundFactName =    "courseOverGroun
 const char* VehicleGPSFactGroup::_countFactName =               "count";
 const char* VehicleGPSFactGroup::_lockFactName =                "lock";
 
-VehicleGPSFactGroup::VehicleGPSFactGroup(QObject* parent)
-    : FactGroup(1000, ":/json/Vehicle/GPSFact.json", parent)
+
+VehicleGPSFactGroup::VehicleGPSFactGroup(QString const& metaDataFile, QObject* parent)
+    : FactGroup(1000, metaDataFile, parent)
     , _hdopFact             (0, _hdopFactName,              FactMetaData::valueTypeDouble)
     , _vdopFact             (0, _vdopFactName,              FactMetaData::valueTypeDouble)
     , _courseOverGroundFact (0, _courseOverGroundFactName,  FactMetaData::valueTypeDouble)
