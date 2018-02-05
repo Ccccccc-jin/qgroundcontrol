@@ -4,6 +4,8 @@
 #include "FirmwareUpgradeController.h"
 #include "FirmwareUpgraderInterface.h"
 #include "QGCQFileDialog.h"
+#include "QGCFileDownload.h"
+#include "QGCXzDecompressor.h"
 
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
@@ -17,37 +19,28 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
       _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
     FirmwareUpgrader::registerMetatypes();
+
+    auto destPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    if (destPath.isEmpty()) {
+        destPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        if (destPath.isEmpty()) {
+            qWarning() << "Can not get destPath for firmwareManager";
+        }
+    }
+
+    _remoteFwManager.setDestDirPath(destPath);
     _initConnections();
-}
-
-
-FirmwareUpgradeController::~FirmwareUpgradeController(void)
-{
-    qInfo() << "FirmwareUpgradeController destructed.";
-}
-
-
-void FirmwareUpgradeController::initializeDevice(void)
-{
-    _fwUpgrader->initializeDevice();
-}
-
-
-bool FirmwareUpgradeController::_deviceAvailable(void)
-{
-    return _fwUpgrader->deviceAvailable();
 }
 
 
 void FirmwareUpgradeController::_initConnections(void)
 {
-    return _checksumEnabled;
-}
+    _attachFirmwareUpgrader();
+    _attachDeviceObserver();
+    _attachFirmwareManager();
 
-
-void FirmwareUpgradeController::enableChecksum(bool checksumEnabled)
-{
-    _checksumEnabled = checksumEnabled;
+    using Controller = FirmwareUpgradeController;
+    QObject::connect(this, &Controller::_flash, this, &Controller::_flashSelectedFile);
 }
 
 
@@ -76,8 +69,25 @@ void FirmwareUpgradeController::_attachFirmwareUpgrader(void)
 
                 auto msg = QString("");
 
-    QObject::connect(this, &Controller::deviceInitializationStarted,
-                     [this] () { _deviceObserver.stop(); } );
+                if (!remoteFwVersion.defined()) {
+                    msg = "Can not get info about remote firmware. Check for internet connection."
+                          " You can try to flash Edge with manually selected firmware in 'Advanced settings'.";
+
+                } else  if (remoteFwVersion > _firmwareVersion) {
+                    msg = QString("New firmware available. Date ") + remoteFwVersion.releaseDate()
+                                + "\nClick 'Ok' and QGround automatically download firmware and flash Edge.";
+
+                } else if (remoteFwVersion == _firmwareVersion) {
+                    msg = "Your firmware is up to date. Cancel upgrading or select firmware manually in 'Advanced settings'";
+                }
+
+                emit firmwareInfoMsg(msg) ;
+
+                _availableDiskSpace = QStorageInfo(_remoteFwManager.destDirPath()).bytesFree();
+                emit availableDiskSpaceChanged();
+            }
+        }
+    );
 
     QObject::connect(fwUpgraderPtr, &FWUpgrader::firmwareVersionAvailable,
         [this] (QString const& firmwareVersion) {
@@ -86,6 +96,162 @@ void FirmwareUpgradeController::_attachFirmwareUpgrader(void)
         }
     );
 }
+
+
+void FirmwareUpgradeController::_attachDeviceObserver(void)
+{
+    using Controller = FirmwareUpgradeController;
+
+    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
+    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
+    QObject::connect(this, &Controller::deviceInitializationStarted,    [this] () { _deviceObserver.stop(); } );
+}
+
+
+void FirmwareUpgradeController::_fetchFirmwareInfo(void)
+{
+    auto dataBuffer      = std::shared_ptr<QByteArray>(new QByteArray());
+    auto downloadWatcher = QGCDownload::
+            download(EdgeRemoteFirmwareInfo::firmwareInfoFileUrl(), dataBuffer);
+
+    QObject::connect(downloadWatcher.get(), &QGCDownloadWatcher::success,
+        [this, dataBuffer] (void) {
+            auto latestFwInfo = EdgeRemoteFirmwareInfo();
+            latestFwInfo.fromJson(*dataBuffer);
+
+            auto cashedFwVersion = _remoteFirmwareInfoView->remoteFirmwareInfo().version();
+
+            if (cashedFwVersion != latestFwInfo.version()) {
+                _remoteFwManager.resetCache();
+                _remoteFwManager.setSourceUrl(QString(EdgeRemoteFirmwareInfo::firmwareUrl())
+                                              + "/" + latestFwInfo.firmwareArchiveName());
+                _remoteFirmwareInfoView->setRemoteFirmwareInfo(latestFwInfo);
+
+                emit remoteFirmwareInfoChanged();
+            }
+        }
+    );
+
+    QObject::connect(downloadWatcher.get(), &QGCDownloadWatcher::networkError,
+        [this] (QNetworkReply::NetworkError error) {
+            Q_UNUSED(error);
+            auto undefinedFirmwareInfo = EdgeRemoteFirmwareInfo();
+            _remoteFirmwareInfoView->setRemoteFirmwareInfo(undefinedFirmwareInfo);
+            emit remoteFirmwareInfoChanged();
+        }
+    );
+
+    _downloadWatcher = std::move(downloadWatcher);
+}
+
+
+void FirmwareUpgradeController::_attachFirmwareManager(void)
+{
+    using Controller = FirmwareUpgradeController;
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::networkError,
+                     this,              &Controller::_onNetworkError);
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::decompressError,
+                     this,              &Controller::_onDecompressError);
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::cancelled,
+                     this,              &Controller::_onCancelled);
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::savingError,
+        [this] (void) {
+            emit errorMsgReceived("Can not save file. Not enough disk space. "
+                                  "You can select another location in 'Advanced settings'");
+            emit deviceFlashed(false);
+        }
+    );
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::firmwareExtracted,
+        [this] (QString filename) {
+            emit infoMsgReceived("Firmware extracted. Flashing...");
+            _firmwareFilename = filename;
+            _flashSelectedFile();
+        }
+    );
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::firmwareDownloaded,
+        [this] (QString localFile)
+            { Q_UNUSED(localFile); emit infoMsgReceived("Firmware downloaded. Extracting..."); }
+    );
+
+    QObject::connect(this,              &Controller::_cancel,
+                     &_remoteFwManager, &RemoteFirmwareManager::cancel);
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::progressChanged,
+        [this] (qint64 curr, qint64 total) { emit flasherProgressChanged((curr * 100) / total); }
+    );
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::archiveCached,
+        [this] (void) { emit infoMsgReceived("Skip downloading. Archive cached. Extracting..."); }
+    );
+
+    QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::firmwareCached,
+        [this] (void) {
+            emit infoMsgReceived("Skip extracting. Firmware cached.");
+            _flashSelectedFile();
+        }
+    );
+}
+
+
+void FirmwareUpgradeController::_removeDownloadedFiles(void)
+{
+    auto fwArchiveName    = _remoteFirmwareInfoView->remoteFirmwareInfo().firmwareArchiveName();
+    auto filesLocation    = QDir(_remoteFwManager.destDirPath());
+
+    auto archiveLocalPath = QFileInfo(filesLocation, fwArchiveName).absoluteFilePath();
+    auto imageLocalPath   = QGCXzDecompressor::eraseXzSuffix(archiveLocalPath);
+
+    auto removeFile = [] (QString const& fileName) {
+        if (QFileInfo(fileName).exists()) {
+            if (!QFile::remove(fileName)) {
+                qWarning() << "Can not remove downloaded file: " << fileName;
+            }
+        }
+    };
+
+    removeFile(archiveLocalPath);
+    removeFile(imageLocalPath);
+}
+
+
+FirmwareUpgradeController::~FirmwareUpgradeController(void)
+{
+    if (_updateMethod == UpdateMethod::Auto && !_firmwareSavingEnabled) {
+        _removeDownloadedFiles();
+    }
+}
+
+
+void FirmwareUpgradeController::initializeDevice(void)
+{
+    _fwUpgrader->initializeDevice();
+    _fetchFirmwareInfo();
+}
+
+
+void FirmwareUpgradeController::_flashSelectedFile(void)
+{
+    if (_firmwareFilename.isEmpty()) {
+        emit warnMsgReceived("File is not selected.");
+        return;
+    }
+
+    FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
+    _fwUpgrader->flash(params);
+}
+
+
+bool FirmwareUpgradeController::_deviceAvailable(void)
+{
+    return _fwUpgrader->deviceAvailable();
+}
+
 
 
 void FirmwareUpgradeController::observeDevice(void)
@@ -101,19 +267,105 @@ void FirmwareUpgradeController::observeDevice(void)
 
 void FirmwareUpgradeController::flash(void)
 {
-    emit deviceFlashingStarted();
-    if (_firmwareFilename.isEmpty()) {
-        emit warnMsgReceived("File is not selected.");
-        return;
+    emit firmwareUpgraderStarted();
+
+    if (_updateMethod == UpdateMethod::Manual) {
+        _flashSelectedFile();
+    } else {
+        auto fwInfo = _remoteFirmwareInfoView->remoteFirmwareInfo();
+        auto neededDiskSpace = fwInfo.imageSize() + fwInfo.archiveSize();
+
+        if (neededDiskSpace > _availableDiskSpace) {
+            emit errorMsgReceived("Not enough disk space.");
+            emit deviceFlashed(false);
+            return;
+        }
+
+        emit infoMsgReceived("Downloading firmware...");
+        if (!_remoteFwManager.asyncRun()) {
+            emit errorMsgReceived("Can not start downloading."
+                                  " Check for internet connection");
+            emit deviceFlashed(false);
+        }
     }
-    FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
-    _fwUpgrader->flash(params);
 }
 
 
 void FirmwareUpgradeController::cancel(void)
 {
-    _fwUpgrader->cancel();
+    emit _cancel();
+}
+
+
+void FirmwareUpgradeController::_onNetworkError(QNetworkReply::NetworkError error)
+{
+    using NetError = QNetworkReply::NetworkError;
+
+    if (error == NetError::OperationCanceledError) {
+        return;
+    }
+
+    switch(error) {
+        case NetError::ContentNotFoundError: {
+            emit errorMsgReceived("Can not download remote file. File not found.");
+            break;
+        }
+
+        case NetError::TimeoutError: {
+            emit errorMsgReceived("Can not download remote file. Connection timed out.");
+            break;
+        }
+
+        default: {
+            emit errorMsgReceived(QString("File downloading failed. Code: ") + QString::number(error));
+        }
+    }
+
+    emit deviceFlashed(false);
+}
+
+
+void FirmwareUpgradeController::_onDecompressError(QGCXzDecompressor::ErrorType error)
+{
+    using DecompressError = QGCXzDecompressor::ErrorType;
+
+    switch(error) {
+        case DecompressError::OpenArchiveFailed: {
+            emit errorMsgReceived("Can not open archive file.");
+            break;
+        }
+
+        case DecompressError::OpenDestFailed: {
+            emit errorMsgReceived("Can not open destination file.");
+            break;
+        }
+
+        case DecompressError::CorruptData: {
+            emit errorMsgReceived("Can not extract firmware. Archive is corrupt.");
+            break;
+        }
+
+        case DecompressError::MagicNumberError: {
+            emit errorMsgReceived("This archive file not supported.");
+            break;
+        }
+
+        case DecompressError::WriteDestFailed: {
+            emit errorMsgReceived("Can not write to file. Make sure that you have enough space");
+            break;
+        }
+
+        default: {
+            emit errorMsgReceived(QString("Extracting failed, code: %1").arg(error));
+        }
+    }
+    emit deviceFlashed(false);
+}
+
+
+void FirmwareUpgradeController::_onCancelled(void)
+{
+    emit cancelled();
 }
 
 

@@ -20,7 +20,12 @@
 #include <stdint.h>
 #include <memory>
 #include "DeviceObserver.h"
+#include "QGCFileDownload.h"
+#include "QGCXzDecompressor.h"
+#include "FirmwareVersion.h"
 
+#include "RemoteFirmwareManager.h"
+#include "RemoteFirmwareInfoView.h"
 
 class FirmwareUpgrader;
 
@@ -35,7 +40,7 @@ public:
     Q_INVOKABLE virtual void askForFirmwareDirectory(void) override;
     Q_INVOKABLE virtual bool hasEnoughDiskSpace(void) override;
 
-    Q_INVOKABLE void askForFirmwareFile(void);
+    virtual RemoteFirmwareInfoViewBase* remoteFirmwareInfo(void) override { return _remoteFirmwareInfoView.get(); }
 
     virtual QString      availableDiskSpace    (void) const override { return QString("%1 Mb").arg(_availableDiskSpace / 1024 / 1024); }
     virtual QString      firmwareFilename      (void) const override { return _firmwareFilename;  }
@@ -64,34 +69,41 @@ public slots:
     void cancel           (void) override;
 
 signals:
-    void deviceInitializationStarted (void);
-    void deviceFlashingStarted       (void);
+    void _cancel           (void);
+    void _flash            (void);
 
-    void devicePlugged     (void);
-    void deviceUnplugged   (void);
-    void cancelled         (void);
-    void deviceInitialized (bool status);
-    void deviceFlashed     (bool status);
-
-    void flasherProgressChanged   (uint progress);
-    void firmwareVersionAvailable (QString const& verison);
-
-    void infoMsgReceived  (QString const& message);
-    void errorMsgReceived (QString const& message);
-    void warnMsgReceived  (QString const& message);
+private slots:
+    void _onNetworkError(QNetworkReply::NetworkError);
+    void _onDecompressError(QGCXzDecompressor::ErrorType);
+    void _onCancelled(void);
 
 private:
-    bool _deviceAvailable (void);
-    void _startPolling    (void);
-    void _initConnections (void);
+    // Methods for connect signals/slots
+    void _initConnections        (void);
+    void _attachFirmwareUpgrader (void);
+    void _attachDeviceObserver   (void);
+    void _fetchFirmwareInfo  (void);
+    void _attachFirmwareManager  (void);
+
+    void _removeDownloadedFiles  (void);
+
+    void _flashSelectedFile(void);
+    bool _deviceAvailable  (void);
+    void _startPolling     (void);
 
     FirmwareVersion _firmwareVersion;
     QString _firmwareDirectory;
     QString _firmwareFilename;
     bool    _checksumEnabled;
+    bool    _firmwareSavingEnabled;
+    qint64  _availableDiskSpace;
 
-    DeviceObserver                    _deviceObserver;
-    std::unique_ptr<FirmwareUpgrader> _fwUpgrader;
+    RemoteFirmwareManager                   _remoteFwManager;
+    UpdateMethod                            _updateMethod;
+    DeviceObserver                          _deviceObserver;
+    std::unique_ptr<QGCDownloadWatcher>     _downloadWatcher;
+    std::unique_ptr<RemoteFirmwareInfoView> _remoteFirmwareInfoView;
+    std::unique_ptr<FirmwareUpgrader>       _fwUpgrader;
 };
 
 #endif
