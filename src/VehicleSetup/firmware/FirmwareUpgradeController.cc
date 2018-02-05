@@ -7,10 +7,13 @@
 
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
-    : _firmwareFilename(""),
-      _firmwareVersion(""),
+    : _firmwareDirectory(""),
+      _firmwareFilename(""),
       _checksumEnabled(true),
-      _deviceObserver(1),
+      _firmwareSavingEnabled(false),
+      _updateMethod(UpdateMethod::Auto),
+      _deviceObserver(1000),
+      _remoteFirmwareInfoView(new RemoteFirmwareInfoView()),
       _fwUpgrader(std::move(FirmwareUpgrader::instance()))
 {
     FirmwareUpgrader::registerMetatypes();
@@ -36,7 +39,7 @@ bool FirmwareUpgradeController::_deviceAvailable(void)
 }
 
 
-bool FirmwareUpgradeController::checksumEnabled(void) const
+void FirmwareUpgradeController::_initConnections(void)
 {
     return _checksumEnabled;
 }
@@ -48,31 +51,37 @@ void FirmwareUpgradeController::enableChecksum(bool checksumEnabled)
 }
 
 
-void FirmwareUpgradeController::_initConnections(void)
+void FirmwareUpgradeController::_attachFirmwareUpgrader(void)
 {
     using FWUpgrader = FirmwareUpgrader;
     using Controller = FirmwareUpgradeController;
 
     auto fwUpgraderPtr = _fwUpgrader.get();
 
+    QObject::connect(this, &Controller::_cancel, fwUpgraderPtr, &FWUpgrader::cancel);
+
     QObject::connect(fwUpgraderPtr, &FWUpgrader::infoMessageReceived,         this, &Controller::infoMsgReceived);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::errorMessageReceived,        this, &Controller::errorMsgReceived);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::warnMessageReceived,         this, &Controller::warnMsgReceived);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::progressChanged,             this, &Controller::flasherProgressChanged);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitialized,           this, &Controller::deviceInitialized);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,                   this, &Controller::cancelled);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,                   this, &Controller::_onCancelled);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceFlashed,               this, &Controller::deviceFlashed);
     QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitializationStarted, this, &Controller::deviceInitializationStarted);
 
-    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
-    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
+    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitialized,
+        [this] (bool status) {
+            if (status) {
+                auto remoteFwVersion = _remoteFirmwareInfoView->remoteFirmwareInfo().version();
+
+                auto msg = QString("");
 
     QObject::connect(this, &Controller::deviceInitializationStarted,
                      [this] () { _deviceObserver.stop(); } );
 
     QObject::connect(fwUpgraderPtr, &FWUpgrader::firmwareVersionAvailable,
         [this] (QString const& firmwareVersion) {
-            _firmwareVersion = firmwareVersion;
+            _firmwareVersion = FirmwareVersion::fromString(firmwareVersion);
             emit firmwareVersionAvailable(firmwareVersion);
         }
     );
@@ -125,4 +134,34 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
         _firmwareFilename = std::move(fwFilename);
         emit infoMsgReceived("Selected file: " + _firmwareFilename);
     }
+}
+
+
+void FirmwareUpgradeController::askForFirmwareDirectory(void)
+{
+    auto dialogTitle   = QStringLiteral("Select directory");
+    auto firstLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+
+    auto firmwareDirectory = QGCQFileDialog::
+            getExistingDirectory(nullptr, dialogTitle, firstLocation);
+
+    if (firmwareDirectory.isEmpty()) {
+        if (_firmwareDirectory.isEmpty()) {
+            emit warnMsgReceived("Directory not selected.");
+        }
+    } else {
+        _firmwareDirectory = std::move(firmwareDirectory);
+        emit infoMsgReceived("Selected directory: " + _firmwareDirectory);
+        _remoteFwManager.setDestDirPath(_firmwareDirectory);
+        _availableDiskSpace = QStorageInfo(_firmwareDirectory).bytesFree();
+        emit availableDiskSpaceChanged();
+    }
+}
+
+
+bool FirmwareUpgradeController::hasEnoughDiskSpace(void)
+{
+    auto info = _remoteFirmwareInfoView->remoteFirmwareInfo();
+    return (info.imageSize() + info.archiveSize()) < _availableDiskSpace
+            || _remoteFwManager.cached();
 }

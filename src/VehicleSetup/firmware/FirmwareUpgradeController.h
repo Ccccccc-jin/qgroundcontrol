@@ -15,6 +15,7 @@
 #define FirmwareUpgradeController_H
 
 #include <QTimer>
+#include "FirmwareUpgradeControllerBase.h"
 
 #include <stdint.h>
 #include <memory>
@@ -23,33 +24,44 @@
 
 class FirmwareUpgrader;
 
-class FirmwareUpgradeController : public QObject
+class FirmwareUpgradeController : public FirmwareUpgradeControllerBase
 {
     Q_OBJECT
 public:
     explicit FirmwareUpgradeController(void);
     ~FirmwareUpgradeController();
 
-    Q_PROPERTY(bool    checksumEnabled  READ checksumEnabled  WRITE  enableChecksum)
-    Q_PROPERTY(QString firmwareVersion  READ firmwareVersion  NOTIFY firmwareVersionAvailable)
-    Q_PROPERTY(QString firmwareFilename READ firmwareFilename WRITE  setFirmwareFilename)
+    Q_INVOKABLE virtual void askForFirmwareFile(void) override;
+    Q_INVOKABLE virtual void askForFirmwareDirectory(void) override;
+    Q_INVOKABLE virtual bool hasEnoughDiskSpace(void) override;
 
     Q_INVOKABLE void askForFirmwareFile(void);
 
-    bool checksumEnabled(void) const;
-    void enableChecksum(bool checksumEnabled);
+    virtual QString      availableDiskSpace    (void) const override { return QString("%1 Mb").arg(_availableDiskSpace / 1024 / 1024); }
+    virtual QString      firmwareFilename      (void) const override { return _firmwareFilename;  }
+    virtual QString      firmwareVersion       (void) const override { return _firmwareVersion.toString(); }
+    virtual UpdateMethod updateMethod          (void) const override { return _updateMethod; }
+    virtual bool         checksumEnabled       (void) const override { return _checksumEnabled; }
+    virtual bool         firmwareSavingEnabled (void) const override { return _firmwareSavingEnabled; }
 
-    QString const& firmwareVersion(void)  const { return _firmwareVersion; }
-    QString const& firmwareFilename(void) const { return _firmwareFilename; }
+    virtual void enableChecksum(bool value) override
+        { _checksumEnabled = value; }
 
-    void setFirmwareFilename(QString const& firmwareFilename)
+    virtual void enableFirmwareSaving(bool value) override
+        { _firmwareSavingEnabled = value; }
+
+    virtual void setUpdateMethod(UpdateMethod value) override
+        { _updateMethod = value; emit updateMethodChanged(_updateMethod);}
+
+    virtual void setFirmwareFilename(QString const& firmwareFilename) override
         { _firmwareFilename = firmwareFilename; }
 
+
 public slots:
-    void observeDevice    (void);
-    void initializeDevice (void);
-    void flash            (void);
-    void cancel           (void);
+    void observeDevice    (void) override;
+    void initializeDevice (void) override;
+    void flash            (void) override;
+    void cancel           (void) override;
 
 signals:
     void deviceInitializationStarted (void);
@@ -73,8 +85,9 @@ private:
     void _startPolling    (void);
     void _initConnections (void);
 
+    FirmwareVersion _firmwareVersion;
+    QString _firmwareDirectory;
     QString _firmwareFilename;
-    QString _firmwareVersion;
     bool    _checksumEnabled;
 
     DeviceObserver                    _deviceObserver;
