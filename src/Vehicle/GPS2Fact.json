@@ -1,0 +1,34 @@
+[
+{
+    "name":             "hdop",
+    "shortDescription": "HDOP 2",
+    "type":             "double",
+    "decimalPlaces":    1
+},
+{
+    "name":             "vdop",
+    "shortDescription": "VDOP 2",
+    "type":             "double",
+    "decimalPlaces":    1
+},
+{
+    "name":             "courseOverGround",
+    "shortDescription": "Course Over Ground 2",
+    "type":             "double",
+    "decimalPlaces":    1,
+    "units":            "deg"
+},
+{
+    "name":             "lock",
+    "shortDescription": "GPS Lock 2",
+    "type":             "uint32",
+    "enumStrings":      "None,None,2D Lock,3D Lock,3D DGPS Lock,3D RTK GPS Lock (float),3D RTK GPS Lock (fixed),Static (fixed)",
+    "enumValues":       "0,1,2,3,4,5,6,7",
+    "decimalPlaces":    0
+},
+{
+    "name":             "count",
+    "shortDescription": "Sat Count 2",
+    "type":             "uint32"
+}
+]
