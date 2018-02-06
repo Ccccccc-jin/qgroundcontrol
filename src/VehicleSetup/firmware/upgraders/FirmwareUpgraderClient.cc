@@ -1,7 +1,14 @@
-#include <libusb-1.0/libusb.h>
 #include "FirmwareUpgraderClient.h"
-
 #include <algorithm>
+
+#ifdef Q_OS_WIN
+#pragma warning(push)
+#pragma warning(disable:4200)
+#include <libusb-1.0/libusb.h>
+#pragma warning(pop)
+#else
+#include <libusb-1.0/libusb.h>
+#endif
 
 
 int const         FirmwareUpgraderClient::EDGE_VID                = 0x0a5c;
