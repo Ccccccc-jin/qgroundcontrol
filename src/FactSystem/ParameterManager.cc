@@ -1459,11 +1459,34 @@ bool ParameterManager::loadFromJson(const QJsonObject& json, bool required, QStr
 
 void ParameterManager::resetAllParametersToDefaults(void)
 {
-    _vehicle->sendMavCommand(MAV_COMP_ID_ALL,
-                             MAV_CMD_PREFLIGHT_STORAGE,
-                             true,  // showError
-                             2,     // Reset params to default
-                             -1);   // Don't do anything with mission storage
+    // Ardupilot doesn't support MAV_CMD_PREFLIGHT_STORAGE.
+    // For resetting all params we need to set SYSID_SW_MREV to zero and reboot vehicle
+    if (_vehicle->firmwareType() == MAV_AUTOPILOT::MAV_AUTOPILOT_ARDUPILOTMEGA) {
+        auto paramName = "SYSID_SW_MREV";
+        auto parameterFact = _vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, paramName);
+
+        parameterFact->setRawValue(0);
+        emit parameterFact->valueChanged(parameterFact->rawValue());
+
+        _vehicle->rebootVehicle();
+
+    } else {
+        _vehicle->sendMavCommand(MAV_COMP_ID_ALL,
+                                 MAV_CMD_PREFLIGHT_STORAGE,
+                                 true,  // showError
+                                 2,     // Reset params to default
+                                -1);   // Don't do anything with mission storage
+    }
+
+    qgcApp()->setOverrideCursor(Qt::WaitCursor);
+    qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    for (unsigned i = 0; i < 2000; i++) {
+        QGC::SLEEP::usleep(500);
+        qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
+
+    qgcApp()->restoreOverrideCursor();
 }
 
 QString ParameterManager::_logVehiclePrefix(int componentId)
