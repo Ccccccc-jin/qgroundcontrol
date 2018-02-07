@@ -140,7 +140,7 @@ void ParameterEditorController::refresh(void)
 void ParameterEditorController::resetAllToDefaults(void)
 {
     _vehicle->parameterManager()->resetAllParametersToDefaults();
-    refresh();
+    qgcApp()->toolbox()->linkManager()->disconnectAll();
 }
 
 void ParameterEditorController::setRCToParam(const QString& paramName)
