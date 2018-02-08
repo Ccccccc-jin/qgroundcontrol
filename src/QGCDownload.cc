@@ -1,10 +1,7 @@
 #include "QGCDownload.h"
+#include "QGCApplication.h"
 
 // QGCDownload definition
-
-
-QNetworkAccessManager QGCDownload::_netwkManager;
-
 
 std::unique_ptr<QGCDownloadWatcher>
     QGCDownload::download(const QString &remotePath,
@@ -85,9 +82,10 @@ std::unique_ptr<QGCDownloadWatcher>
     QNetworkRequest networkRequest(remoteUrl);
     QNetworkProxy tProxy;
     tProxy.setType(QNetworkProxy::DefaultProxy);
-    _netwkManager.setProxy(tProxy);
+    auto& netwkManager = qgcApp()->networkManager();
+    netwkManager.setProxy(tProxy);
 
-    auto netwkReplyRawPtr = _netwkManager.get(networkRequest);
+    auto netwkReplyRawPtr = netwkManager.get(networkRequest);
     auto netwkReply = std::unique_ptr<QNetworkReply>(netwkReplyRawPtr);
 
     if (!netwkReply) {
@@ -98,7 +96,7 @@ std::unique_ptr<QGCDownloadWatcher>
     auto watcherRawPtr = new QGCDownloadWatcher(std::move(netwkReply));
     auto watcher = std::unique_ptr<QGCDownloadWatcher>(watcherRawPtr);
 
-    QObject::connect(&_netwkManager, &QNetworkAccessManager::networkAccessibleChanged,
+    QObject::connect(&netwkManager, &QNetworkAccessManager::networkAccessibleChanged,
                      watcherRawPtr,  &QGCDownloadWatcher::_onNetworkAccessibilityChanged);
 
     QObject::connect(netwkReplyRawPtr, &QNetworkReply::readyRead,

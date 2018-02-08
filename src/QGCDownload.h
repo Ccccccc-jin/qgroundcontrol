@@ -41,8 +41,6 @@ private:
 
     static std::unique_ptr<QGCDownloadWatcher>
         _download(QString const& remotePath, _onReadyReadCallback_t onReadyRead);
-
-    static QNetworkAccessManager _netwkManager;
 };
 
 
