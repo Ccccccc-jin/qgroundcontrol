@@ -1,0 +1,43 @@
+[
+{
+    "name":             "voltage",
+    "shortDescription": "Voltage 2",
+    "type":             "double",
+    "decimalPlaces":    2,
+    "units":            "v"
+},
+{
+    "name":             "percentRemaining",
+    "shortDescription": "Percent 2",
+    "type":             "int32",
+    "decimalPlaces":    0,
+    "units":            "%"
+},
+{
+    "name":             "mahConsumed",
+    "shortDescription": "Consumed 2",
+    "type":             "int32",
+     "decimalPlaces":    0,
+     "units":            "mAh"
+},
+{
+    "name":             "current",
+    "shortDescription": "Current 2",
+    "type":             "float",
+    "decimalPlaces":    2,
+    "units":            "A"
+},
+{
+    "name":             "temperature",
+    "shortDescription": "Temperature 2",
+    "type":             "int32",
+    "decimalPlaces":    2,
+    "units":            "C"
+},
+{
+    "name":             "cellCount",
+    "shortDescription": "Cell Count 2",
+    "type":             "int32",
+    "decimalPlaces":    0
+}
+]

@@ -213,7 +213,8 @@
         <file alias="SpeedSection.FactMetaData.json">src/MissionManager/SpeedSection.FactMetaData.json</file>
         <file alias="MissionSettings.FactMetaData.json">src/MissionManager/MissionSettings.FactMetaData.json</file>
         <file alias="Vehicle/VehicleFact.json">src/Vehicle/VehicleFact.json</file>
-        <file alias="Vehicle/BatteryFact.json">src/Vehicle/BatteryFact.json</file>
+        <file alias="Vehicle/Battery1Fact.json">src/Vehicle/Battery1Fact.json</file>
+        <file alias="Vehicle/Battery2Fact.json">src/Vehicle/Battery2Fact.json</file>
         <file alias="Vehicle/GPSFact.json">src/Vehicle/GPSFact.json</file>
         <file alias="Vehicle/GPSRTKFact.json">src/Vehicle/GPSRTKFact.json</file>
         <file alias="Vehicle/WindFact.json">src/Vehicle/WindFact.json</file>
