@@ -17,8 +17,8 @@ const int    VehicleBatteryFactGroup::_currentUnavailable =           -1;
 const double VehicleBatteryFactGroup::_temperatureUnavailable =       -1.0;
 const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1;
 
-VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
-    : FactGroup(1000, ":/json/Vehicle/BatteryFact.json", parent)
+VehicleBatteryFactGroup::VehicleBatteryFactGroup(QString const& metaFile, QObject* parent)
+    : FactGroup(1000, metaFile, parent)
     , _voltageFact                  (0, _voltageFactName,                   FactMetaData::valueTypeDouble)
     , _percentRemainingFact         (0, _percentRemainingFactName,          FactMetaData::valueTypeInt32)
     , _mahConsumedFact              (0, _mahConsumedFactName,               FactMetaData::valueTypeInt32)
@@ -69,70 +69,72 @@ void VehicleBatteryFactGroup::setTemperature(double value)
         VehicleBatteryFactGroup::_temperatureUnavailable : value / 100.0);
 }
 
-void VehicleBatteryFactGroup::setPercentRemaining(int32_t value) {
+void VehicleBatteryFactGroup::setPercentRemaining(int32_t value)
+{
     percentRemaining()->setRawValue(value);
 }
 
-VehicleBatteriesFactGroup::VehicleBatteriesFactGroup(QObject *parent)
-    : FactGroup{1000,"",parent}
-{
-    _addFactGroup(new VehicleBatteryFactGroup(this), "Battery 1");
-    _addFactGroup(new VehicleBatteryFactGroup(this), "Battery 2");
+namespace impl {
+    static QString batteryFactMetaFile(uint batteryNum) {
+        return QString(":/json/Vehicle/Battery%1Fact.json").arg(batteryNum);
+    }
+
+    static QString batteryName(uint batteryNum) {
+        return QString("battery%1").arg(batteryNum);
+    }
 }
 
-void VehicleBatteriesFactGroup::handleBatteryStatus(const mavlink_message_t& message)
+
+VehicleBatteries::VehicleBatteries(QObject *parent)
+    : QObject(parent)
+{
+    _batteries.emplace_back(new VehicleBatteryFactGroup(impl::batteryFactMetaFile(1)));
+    _batteries.emplace_back(new VehicleBatteryFactGroup(impl::batteryFactMetaFile(2)));
+}
+
+VehicleBatteries::Battery VehicleBatteries::battery(int batNum) const
+{
+    Q_ASSERT(batNum >= 1 && _batteries.size() >= (uint)batNum);
+    auto idx = batNum - 1;
+    return Battery{impl::batteryName(batNum), _batteries[idx].get()};
+}
+
+void VehicleBatteries::handleBatteryStatus(const mavlink_message_t& message)
 {
     mavlink_battery_status_t battStatus;
     mavlink_msg_battery_status_decode(&message, &battStatus);
 
-    auto batteryName = _getBatteryName(battStatus.id);
-    _appendBatteryIfNotPresent(batteryName);
-    auto battery = dynamic_cast<VehicleBatteryFactGroup*>(getFactGroup(batteryName));
+    auto battId = battStatus.id;
+    if (battId >= _batteries.size()) {
+        return;
+    }
+
+    auto& battery = _batteries.at(battId);
 
     battery->setMahConsumed(battStatus.current_consumed);
     battery->setTemperature(battStatus.temperature);
     battery->setPercentRemaining (battStatus.battery_remaining);
 }
 
-void VehicleBatteriesFactGroup::handleSysStatus(const mavlink_message_t& message)
+void VehicleBatteries::handleSysStatus(const mavlink_message_t& message)
 {
-    const int mainBatteryId = 0;
     mavlink_sys_status_t sysStatus;
     mavlink_msg_sys_status_decode(&message, &sysStatus);
 
-    auto batteryName = _getBatteryName(mainBatteryId);
-    _appendBatteryIfNotPresent(batteryName);
-    auto battery = dynamic_cast<VehicleBatteryFactGroup*>(getFactGroup(batteryName));
+    auto& battery = _batteries.at(0);
 
     battery->setCurrent(sysStatus.current_battery);
     battery->setVoltage(sysStatus.voltage_battery);
     battery->setPercentRemaining (sysStatus.battery_remaining);
 }
 
-void VehicleBatteriesFactGroup::handleBattery2(const mavlink_message_t& message)
+void VehicleBatteries::handleBattery2(const mavlink_message_t& message)
 {
-    const int secondBatteryId = 1;
     mavlink_battery2_t batt2;
     mavlink_msg_battery2_decode(&message, &batt2);
 
-    auto batteryName = _getBatteryName(secondBatteryId);
-    _appendBatteryIfNotPresent(batteryName);
-    auto battery = dynamic_cast<VehicleBatteryFactGroup*>(getFactGroup(batteryName));
+    auto& battery = _batteries.at(1);
 
     battery->setCurrent(batt2.current_battery);
     battery->setVoltage(batt2.voltage);
 }
-
-QString VehicleBatteriesFactGroup::_getBatteryName(int batteryId)
-{
-   return QStringLiteral("Battery %1").arg(batteryId + 1);
-}
-
-void VehicleBatteriesFactGroup::_appendBatteryIfNotPresent(QString const& batteryName)
-{
-    if (!getFactGroup(batteryName)) {
-        _addFactGroup(new VehicleBatteryFactGroup(this), batteryName);
-    }
-}
-
-VehicleBatteriesFactGroup::~VehicleBatteriesFactGroup(void) {}

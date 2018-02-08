@@ -5,6 +5,7 @@
 #include <FactGroup.h>
 
 #include "MAVLinkProtocol.h"
+#include <memory>
 
 
 class VehicleBatteryFactGroup : public FactGroup
@@ -12,7 +13,7 @@ class VehicleBatteryFactGroup : public FactGroup
     Q_OBJECT
 
 public:
-    VehicleBatteryFactGroup(QObject* parent = NULL);
+    VehicleBatteryFactGroup(QString const& metaFile, QObject* parent = NULL);
 
     Q_PROPERTY(Fact* voltage            READ voltage            CONSTANT)
     Q_PROPERTY(Fact* percentRemaining   READ percentRemaining   CONSTANT)
@@ -62,12 +63,18 @@ private:
 };
 
 
-class VehicleBatteriesFactGroup : public FactGroup
+class VehicleBatteries : public QObject
 {
     Q_OBJECT
 public:
-    VehicleBatteriesFactGroup(QObject *parent = nullptr);
-    ~VehicleBatteriesFactGroup(void);
+    struct Battery {
+        QString factName;
+        FactGroup* factGroup;
+    };
+
+    VehicleBatteries(QObject *parent = nullptr);
+
+    Battery battery(int batNum) const;
 
 public slots:
     void handleBatteryStatus (const mavlink_message_t& message);
@@ -75,8 +82,10 @@ public slots:
     void handleBattery2      (const mavlink_message_t& message);
 
 private:
-    QString _getBatteryName(int batteryId);
-    void _appendBatteryIfNotPresent(QString const& batteryId);
+    static char const* _battery1FactGroupName;
+    static char const* _battery2FactGroupName;
+
+    std::vector<std::unique_ptr<VehicleBatteryFactGroup>> _batteries;
 };
 
 #endif // VEHICLEBATTERIES_H
