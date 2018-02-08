@@ -201,14 +201,20 @@ void FirmwareUpgradeController::_attachFirmwareManager(void)
 
 void FirmwareUpgradeController::_removeDownloadedFiles(void)
 {
-    auto fwArchiveName    = _remoteFirmwareInfoView->remoteFirmwareInfo().firmwareArchiveName();
+    auto remoteFwInfo = _remoteFirmwareInfoView->remoteFirmwareInfo();
+    if (remoteFwInfo.isUndefined()) {
+        return;
+    }
+
+    auto fwArchiveName    = remoteFwInfo.firmwareArchiveName();
     auto filesLocation    = QDir(_remoteFwManager.destDirPath());
 
     auto archiveLocalPath = QFileInfo(filesLocation, fwArchiveName).absoluteFilePath();
     auto imageLocalPath   = QGCXzDecompressor::eraseXzSuffix(archiveLocalPath);
 
     auto removeFile = [] (QString const& fileName) {
-        if (QFileInfo(fileName).exists()) {
+        auto fileInfo = QFileInfo(fileName);
+        if (fileInfo.isFile() && fileInfo.exists()) {
             if (!QFile::remove(fileName)) {
                 qWarning() << "Can not remove downloaded file: " << fileName;
             }
