@@ -35,7 +35,6 @@
 
 #include "QGC.h"
 #include "QGCApplication.h"
-#include "VehicleBatteries.h"
 #include "GAudioOutput.h"
 #include "CmdLineOptParser.h"
 #include "UDPLink.h"
@@ -351,7 +350,6 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                  1, 0, "QmlObjectListModel",     "Reference only");
     qmlRegisterUncreatableType<MissionCommandTree>  ("QGroundControl",                  1, 0, "MissionCommandTree",     "Reference only");
 
-    qmlRegisterUncreatableType<VehicleBatteriesFactGroup>    ("QGroundControl.VehicleBatteries",     1, 0, "VehicleBatteries",       "Reference only");
     qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",      1, 0, "AutoPilotPlugin",        "Reference only");
     qmlRegisterUncreatableType<VehicleComponent>    ("QGroundControl.AutoPilotPlugin",      1, 0, "VehicleComponent",       "Reference only");
     qmlRegisterUncreatableType<Vehicle>             ("QGroundControl.Vehicle",              1, 0, "Vehicle",                "Reference only");
