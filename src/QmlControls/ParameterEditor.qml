@@ -312,11 +312,22 @@ QGCView {
                 hideDialog()
             }
 
-            QGCLabel {
-                width:              parent.width
-                wrapMode:           Text.WordWrap
-                text:               qsTr("Select Reset to reset all parameters to their defaults.")
+            Column {
+                anchors.fill: parent
+
+                QGCLabel {
+                    width:    parent.width
+                    wrapMode: Text.WordWrap
+                    text:     qsTr("Select Reset to reset all parameters to their defaults.")
+                }
+
+                QGCLabel {
+                    width:    parent.width
+                    wrapMode: Text.WordWrap
+                    text:     "<font color=\"orange\">Warning</font>: " + qsTr("It will reboot vehicle.")
+                }
             }
+
         }
     }
 
