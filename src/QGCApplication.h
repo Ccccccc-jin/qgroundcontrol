@@ -22,6 +22,7 @@
 #include <QApplication>
 #include <QTimer>
 #include <QQmlApplicationEngine>
+#include <QNetworkAccessManager>
 
 #include "LinkConfiguration.h"
 #include "LinkManager.h"
@@ -94,6 +95,9 @@ public:
 
     /// Is Internet available?
     bool isInternetAvailable();
+
+    /// Global network manger.
+    QNetworkAccessManager& networkManager(void);
 
 public slots:
     /// You can connect to this slot to show an information message box from a different thread.
@@ -172,6 +176,7 @@ private:
 #endif
 
     QGCToolbox* _toolbox;
+    QNetworkAccessManager _netwkManager;
 
     bool _bluetoothAvailable;
 

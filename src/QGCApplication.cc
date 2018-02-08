@@ -688,3 +688,8 @@ bool QGCApplication::isInternetAvailable()
 {
     return getQGCMapEngine()->isInternetActive();
 }
+
+QNetworkAccessManager& QGCApplication::networkManager(void)
+{
+    return _netwkManager;
+}
