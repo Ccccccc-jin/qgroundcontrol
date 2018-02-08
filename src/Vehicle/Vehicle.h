@@ -25,6 +25,7 @@
 #include "MAVLinkProtocol.h"
 #include "UASMessageHandler.h"
 #include "SettingsFact.h"
+#include "VehicleBatteries.h"
 
 class UAS;
 class UASInterface;
@@ -43,7 +44,6 @@ class VideoStreamManager;
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
 class Vehicle;
-class VehicleBatteriesFactGroup;
 
 class VehicleVibrationFactGroup : public FactGroup
 {
@@ -306,7 +306,8 @@ public:
     Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
     Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
-    Q_PROPERTY(FactGroup* batteries   READ batteriesFactGroup   CONSTANT)
+    Q_PROPERTY(FactGroup* battery1    READ battery1FactGroup    CONSTANT)
+    Q_PROPERTY(FactGroup* battery2    READ battery2FactGroup    CONSTANT)
     Q_PROPERTY(FactGroup* temperature READ temperatureFactGroup CONSTANT)
 
 
@@ -567,9 +568,16 @@ public:
 
     FactGroup* gpsFactGroup         (void) { return &_gpsFactGroup; }
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
-    FactGroup* batteriesFactGroup   (void) { return (FactGroup*)_vehicleBatteries; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
     FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
+
+    FactGroup* battery1FactGroup    (void) {
+        return _vehicleBatteries->battery(1).factGroup;
+    }
+
+    FactGroup* battery2FactGroup    (void) {
+        return _vehicleBatteries->battery(2).factGroup;
+    }
 
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
@@ -990,7 +998,7 @@ private:
     Fact _distanceToHomeFact;
 
     VehicleGPSFactGroup         _gpsFactGroup;
-    VehicleBatteriesFactGroup*  _vehicleBatteries;
+    VehicleBatteries*           _vehicleBatteries;
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
     VehicleTemperatureFactGroup _temperatureFactGroup;
@@ -1008,7 +1016,6 @@ private:
     static const char* _distanceToHomeFactName;
 
     static const char* _gpsFactGroupName;
-    static const char* _batteriesFactGroupName;
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
     static const char* _temperatureFactGroupName;

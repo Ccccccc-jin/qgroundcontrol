@@ -58,7 +58,6 @@ const char* Vehicle::_flightTimeFactName =          "flightTime";
 const char* Vehicle::_distanceToHomeFactName =      "distanceToHome";
 
 const char* Vehicle::_gpsFactGroupName =         "gps";
-const char* Vehicle::_batteriesFactGroupName =   "battery";
 const char* Vehicle::_windFactGroupName =        "wind";
 const char* Vehicle::_vibrationFactGroupName =   "vibration";
 const char* Vehicle::_temperatureFactGroupName = "temperature";
@@ -163,7 +162,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
     , _gpsFactGroup(this)
-    , _vehicleBatteries(new VehicleBatteriesFactGroup(this))
+    , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
     , _temperatureFactGroup(this)
@@ -326,7 +325,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _flightTimeFact       (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact   (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
     , _gpsFactGroup(this)
-    , _vehicleBatteries(new VehicleBatteriesFactGroup(this))
+    , _vehicleBatteries(new VehicleBatteries(this))
     , _windFactGroup(this)
     , _vibrationFactGroup(this)
 {
@@ -350,9 +349,9 @@ void Vehicle::_commonInit(void)
     connect(_missionManager, &MissionManager::sendComplete,             this, &Vehicle::_clearTrajectoryPoints);
 
     // Batteries
-    connect(this, &Vehicle::batteryStatusReceived, _vehicleBatteries, &VehicleBatteriesFactGroup::handleBatteryStatus);
-    connect(this, &Vehicle::sysStatusReceived,     _vehicleBatteries, &VehicleBatteriesFactGroup::handleSysStatus);
-    connect(this, &Vehicle::battery2Received,      _vehicleBatteries, &VehicleBatteriesFactGroup::handleBattery2);
+    connect(this, &Vehicle::batteryStatusReceived, _vehicleBatteries, &VehicleBatteries::handleBatteryStatus);
+    connect(this, &Vehicle::sysStatusReceived,     _vehicleBatteries, &VehicleBatteries::handleSysStatus);
+    connect(this, &Vehicle::battery2Received,      _vehicleBatteries, &VehicleBatteries::handleBattery2);
 
     _parameterManager = new ParameterManager(this);
     connect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
@@ -386,7 +385,12 @@ void Vehicle::_commonInit(void)
     _addFact(&_flightTimeFact,          _flightTimeFactName);
     _addFact(&_distanceToHomeFact,      _distanceToHomeFactName);
 
-    _addFactGroup(_vehicleBatteries,    _batteriesFactGroupName);
+    auto firstBattery = _vehicleBatteries->battery(1);
+    auto secondBattery = _vehicleBatteries->battery(2);
+
+    _addFactGroup(firstBattery.factGroup,  firstBattery.factName);
+    _addFactGroup(secondBattery.factGroup, secondBattery.factName);
+
     _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
     _addFactGroup(&_windFactGroup,      _windFactGroupName);
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
@@ -412,9 +416,6 @@ Vehicle::~Vehicle()
 
     delete _videoStreamManager;
     _videoStreamManager = NULL;
-
-    delete _vehicleBatteries;
-    _vehicleBatteries = NULL;
 
     delete _missionManager;
     _missionManager = NULL;
