@@ -28,7 +28,9 @@ Item {
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 
     function _getBattery(batteryId) {
-       return _activeVehicle.batteries.getFactGroup(batteryId);
+        if (_activeVehicle) {
+            return batteryId === 1 ? _activeVehicle.battery1 : _activeVehicle.battery2;
+        }
     }
 
     function getBatteryColor(batteryId) {
@@ -110,7 +112,7 @@ Item {
                     spacing:  20
 
                     Repeater {
-                        model: _activeVehicle ? _activeVehicle.batteries.factGroupNames : 0
+                        model: _activeVehicle ? [1, 2] : 0
 
                             GridLayout {
                                 anchors.left:      parent.left
@@ -160,7 +162,7 @@ Item {
 
             Repeater {
                 // Only two power modules percentage need to show
-                model: _activeVehicle.batteries.factGroupNames
+                model: _activeVehicle ? [1, 2] : 0;
 
                 QGCLabel {
                     text:                   getBatteryPercentageText(modelData)
