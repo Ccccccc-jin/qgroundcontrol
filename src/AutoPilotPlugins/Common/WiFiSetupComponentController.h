@@ -16,41 +16,106 @@
 
 #include "FactPanelController.h"
 
+class WifiNetwork {
+public:
+    WifiNetwork(QString const& ssid, QString const& encryptType)
+        : _ssid(ssid), _encryptType(encryptType)
+    { }
+
+    QString ssid(void) const& { return _ssid; }
+    QString encryptionType(void) const& { return _encryptType; }
+
+private:
+    QString _ssid, _encryptType;
+};
+
+class WifiNetworksListModel : public QAbstractListModel
+{
+    Q_OBJECT
+public:
+    enum NetworkRole {
+        SsidRole = Qt::UserRole + 1,
+        EncryptionTypeRole
+    };
+
+    WifiNetworksListModel(QObject* parent = nullptr);
+
+    void add(WifiNetwork const& network);
+    void clear(void);
+
+    QHash<int, QByteArray> roleNames(void) const override;
+
+    int rowCount(QModelIndex const& parent = QModelIndex()) const override;
+
+    QVariant data(QModelIndex const& index, int role = Qt::DisplayRole) const override;
+
+private:
+    QList<WifiNetwork> _networks;
+};
+
+
 class WiFiSetupComponentController : public FactPanelController
 {
     Q_OBJECT
 
 public:
+    enum EdgeMode { AccessPoint, Client };
+    Q_ENUMS(EdgeMode)
+
+    enum EncryptionType : int { OpenEncrypt = 0, WepEncrypt, WpaEncrypt, Wpa2Encrypt };
+    Q_ENUMS(EncryptionType)
+
     WiFiSetupComponentController(void);
     ~WiFiSetupComponentController(void);
 
-    Q_PROPERTY(QStringList networks MEMBER _networks NOTIFY _networksChanged)
-    Q_PROPERTY(QStringList protocolTypes MEMBER _protocolTypes CONSTANT)
-    Q_PROPERTY(QString connectionName MEMBER _connectionName CONSTANT)
-    Q_PROPERTY(QString connectionType MEMBER _connectionType CONSTANT)
+    Q_PROPERTY(QStringList savedNetworks   MEMBER _savedNetworks  NOTIFY savedNetworksUpdated)
+    Q_PROPERTY(EdgeMode    edgeMode        MEMBER _edgeMode       NOTIFY edgeModeChanged)
+    Q_PROPERTY(QString     defaultNetwork  MEMBER _defaultNetwork WRITE  setDefaultNetwork NOTIFY defaultNetworkChanged)
+    Q_PROPERTY(QString     activeNetwork   MEMBER _activeNetwork  NOTIFY activeNetworkChanged)
 
-    Q_INVOKABLE void startAPMode();
+    Q_PROPERTY(QStringList encryptTypeStrings  MEMBER _encryptTypeStrings   CONSTANT)
+    Q_PROPERTY(int         ssidMaxLength       MEMBER _ssidMaxLength        CONSTANT)
+    Q_PROPERTY(int         passwdMaxLength     MEMBER _passwdMaxLength      CONSTANT)
 
-    Q_INVOKABLE void connectToNetwork(const QString name);
+    Q_PROPERTY(WifiNetworksListModel* scannedNetworks READ scannedNetworks NOTIFY scannedNetworksUpdated)
 
-    Q_INVOKABLE void addNetwork(const QString name, const int type, const QString psw);
+    Q_INVOKABLE void bootAsAccessPoint     (void);
+    Q_INVOKABLE void bootAsClient          (QString const& netwkName);
 
-    Q_INVOKABLE void removeNetwork(const QString name);
+    Q_INVOKABLE void removeNetworkFromEdge (QString const& netwkName);
+    Q_INVOKABLE void saveNetworkToEdge     (QString const& netwkName, int netwkType, QString const& netwkPasswd);
+
+    Q_INVOKABLE QString encryptionTypeAsString(EncryptionType type) {
+        return _encryptTypeStrings[static_cast<int>(type)];
+    }
+
+    WifiNetworksListModel* scannedNetworks(void) { return &_scannedNetworks; }
+    void setDefaultNetwork(QString const& network);
 
 signals:
-    void _networksChanged();
+    void savedNetworksUpdated  (void);
+    void edgeModeChanged       (void);
+    void defaultNetworkChanged (void);
+    void activeNetworkChanged  (void);
+    void scannedNetworksUpdated(void);
 
 private slots:
     void _handleWiFiNetworkInformation(mavlink_message_t message);
 
 private:
-    void update_network_list();
+    void _updateSavedNetworksList(void);
 
-    QStringList _protocolTypes;
-    QStringList _networks;
+    QStringList _encryptTypeStrings;
+    QStringList _savedNetworks;
 
-    QString _connectionName;
-    QString _connectionType;
+    QString  _defaultNetwork;
+    QString  _activeNetwork;
+
+    EdgeMode _edgeMode;
+    WifiNetworksListModel _scannedNetworks;
+
+    static int const _ssidMaxLength;
+    static int const _passwdMaxLength;
 };
 
 #endif // WiFiSetupComponentController_H
