@@ -934,7 +934,7 @@ void MockLink::_sendGpsRawInt(void)
     static uint64_t timeTick = 0;
     mavlink_message_t msg;
 
-    mavlink_msg_gps_raw_int_pack_chan(_vehicleSystemId,
+    /*mavlink_msg_gps_raw_int_pack_chan(_vehicleSystemId,
                                       _vehicleComponentId,
                                       _mavlinkChannel,
                                       &msg,
@@ -946,7 +946,7 @@ void MockLink::_sendGpsRawInt(void)
                                       UINT16_MAX, UINT16_MAX,                // HDOP/VDOP not known
                                       UINT16_MAX,                            // velocity not known
                                       UINT16_MAX,                            // course over ground not known
-                                      8);                                    // satellite count
+                                      8);                                    // satellite count*/
     respondWithMavlinkMessage(msg);
 }
 

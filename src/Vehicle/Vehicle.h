@@ -755,6 +755,7 @@ signals:
 
     // Mavlink Wi-Fi
     void mavlinkWifiNetworkInformation(mavlink_message_t message);
+    void mavlinkWifiStatus(mavlink_message_t message);
 
 private slots:
     void _mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message);

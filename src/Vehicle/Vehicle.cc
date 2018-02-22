@@ -639,6 +639,10 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         emit mavlinkWifiNetworkInformation(message);
         break;
 
+    case MAVLINK_MSG_ID_WIFI_STATUS:
+        emit mavlinkWifiStatus(message);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
     {
         mavlink_serial_control_t ser;
