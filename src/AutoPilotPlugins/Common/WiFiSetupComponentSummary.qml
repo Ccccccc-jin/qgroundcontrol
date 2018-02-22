@@ -33,19 +33,13 @@ FactPanel {
 
         VehicleSummaryRow {
             labelText:  qsTr("Mode:")
-            valueText:  controller.connectionName ? qsTr("Client") : qsTr("AP")
+            valueText:  controller.activeNetwork ? qsTr("Client") : qsTr("AP")
         }
 
         VehicleSummaryRow {
-            labelText:  qsTr("SSID:")
-            valueText:  controller.connectionName
-            visible:    controller.connectionName !== ""
-        }
-
-        VehicleSummaryRow {
-            labelText:  qsTr("Type:")
-            valueText:  controller.connectionType
-            visible:    controller.connectionName !== ""
+            labelText:  qsTr("Network SSID:")
+            valueText:  controller.activeNetwork
+            visible:    controller.activeNetwork !== ""
         }
     }
 }
