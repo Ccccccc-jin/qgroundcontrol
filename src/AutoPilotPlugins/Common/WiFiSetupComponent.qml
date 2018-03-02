@@ -36,6 +36,15 @@ SetupPage {
             WiFiSetupComponentController {
                 id:        controller
                 factPanel: wifiPage.viewPanel
+
+                onEdgeModeChanged: {
+                    if (controller.edgeMode == WiFiSetupComponentController.AccessPoint) {
+                        modeSwitch.setAccessPointMode()
+                    } else if (controller.edgeMode == WiFiSetupComponentController.Client) {
+                        modeSwitch.setClientMode()
+                    }
+
+                }
             }
 
             QGCPalette { id: palette; colorGroupEnabled: true }
@@ -66,6 +75,18 @@ SetupPage {
                             id:            modeSwitch
                             anchors.right: parent.right
 
+                            function setAccessPointMode() {
+                                modeLabel.text = "Access point mode"
+                                checked = true
+                                enabled = true
+                            }
+
+                            function setClientMode() {
+                                modeLabel.text = "Client mode"
+                                checked = false
+                                enabled = true
+                            }
+
                             function switchToAccessPointMode() {
                                 modeLabel.text = "Access point mode"
                                 controller.bootAsAccessPoint()
@@ -74,6 +95,11 @@ SetupPage {
                             function switchToClientMode() {
                                 modeLabel.text = "Client mode"
                                 controller.bootAsClient(controller.defaultNetwork)
+                            }
+
+                            function switchToUndefinedState() {
+                                modeLabel.text = "Undefined"
+                                enabled = false
                             }
 
                             onClicked: {
@@ -99,6 +125,10 @@ SetupPage {
                                     border.width:   1
                                     border.color:   "grey"
                                 }
+                            }
+
+                            Component.onCompleted: {
+                                switchToUndefinedState()
                             }
                         }
 
@@ -305,8 +335,8 @@ SetupPage {
                                     anchors.fill: parent
                                     text: "Set as default"
                                     onClicked: {
-                                        var netwkIdx = savedNetworksListView.currentIndex
-                                        var netwkName = controller.networks[netwkIdx]
+                                        var netwkIdx =  savedNetworksListView.currentIndex
+                                        var netwkName = controller.getSavedNetwork(netwkIdx)
                                         controller.defaultNetwork = netwkName
                                     }
                                 }
@@ -410,6 +440,7 @@ SetupPage {
                                     Column {
                                         width:   parent.width
                                         spacing: parent.childSpacing()
+                                        visible: false
 
                                         GridLayout {
                                             anchors        { left: parent.left; right: parent.right }
@@ -426,7 +457,7 @@ SetupPage {
                                                     anchors    { left: parent.left; right: parent.right }
                                                     text:      "Visible"
 
-                                                    onClicked: {
+                                                    function accept() {
                                                         hiddenNetworkButton.checked = false
                                                         networkListPanel.show()
 
@@ -435,6 +466,8 @@ SetupPage {
                                                         passwordPanel.hide()
                                                         warningPanel.hide()
                                                     }
+
+                                                    onClicked: { accept() }
                                                 }
                                             }
 
@@ -448,7 +481,7 @@ SetupPage {
                                                     anchors    { left: parent.left; right: parent.right }
                                                     text:      "Hidden"
 
-                                                    onClicked: {
+                                                    function accept() {
                                                         networkListButton.checked = false
                                                         networkListPanel.hide()
 
@@ -457,12 +490,15 @@ SetupPage {
                                                         passwordPanel.hide()
                                                         warningPanel.hide()
                                                     }
+
+                                                    onClicked: { accept() }
                                                 }
                                             }
+                                        }
 
-                                            Component.onCompleted: {
-                                                networkListButton.checked = true
-                                            }
+                                        Component.onCompleted: {
+                                            hiddenNetworkButton.checked = true
+                                            hiddenNetworkButton.accept()
                                         }
                                     }
 
@@ -581,8 +617,6 @@ SetupPage {
                                             model:   controller.encryptTypeStrings
 
                                             onActivated: {
-                                                console.log(index)
-                                                console.log(WiFiSetupComponentController.OpenEncrypt)
                                                 if (index === WiFiSetupComponentController.OpenEncrypt) {
                                                     passwordPanel.hide()
                                                 } else {
