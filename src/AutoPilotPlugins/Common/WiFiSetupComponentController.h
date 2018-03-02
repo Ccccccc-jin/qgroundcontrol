@@ -59,14 +59,14 @@ class WiFiSetupComponentController : public FactPanelController
     Q_OBJECT
 
 public:
-    enum EdgeMode { AccessPoint, Client };
+    enum EdgeMode : int { AccessPoint = 0, Client, Undefined };
     Q_ENUMS(EdgeMode)
 
     enum EncryptionType : int { OpenEncrypt = 0, WepEncrypt, WpaEncrypt, Wpa2Encrypt };
     Q_ENUMS(EncryptionType)
 
     WiFiSetupComponentController(void);
-    ~WiFiSetupComponentController(void);
+    ~WiFiSetupComponentController(void) = default;
 
     Q_PROPERTY(QStringList savedNetworks   MEMBER _savedNetworks  NOTIFY savedNetworksUpdated)
     Q_PROPERTY(EdgeMode    edgeMode        MEMBER _edgeMode       NOTIFY edgeModeChanged)
@@ -85,6 +85,8 @@ public:
     Q_INVOKABLE void removeNetworkFromEdge (QString const& netwkName);
     Q_INVOKABLE void saveNetworkToEdge     (QString const& netwkName, int netwkType, QString const& netwkPasswd);
 
+    Q_INVOKABLE QString getSavedNetwork(int idx) { return _savedNetworks[idx]; }
+
     Q_INVOKABLE QString encryptionTypeAsString(EncryptionType type) {
         return _encryptTypeStrings[static_cast<int>(type)];
     }
@@ -101,8 +103,10 @@ signals:
 
 private slots:
     void _handleWiFiNetworkInformation(mavlink_message_t message);
+    void _handleWifiStatus(mavlink_message_t message);
 
 private:
+    void _requestWifiStatus(void);
     void _updateSavedNetworksList(void);
 
     QStringList _encryptTypeStrings;
