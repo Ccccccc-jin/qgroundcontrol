@@ -179,7 +179,13 @@ private:
     void _handleFTP(const mavlink_message_t& msg);
     void _handleCommandLong(const mavlink_message_t& msg);
     void _handleManualControl(const mavlink_message_t& msg);
+    void _handleWifiNetworkAdd(const mavlink_message_t& msg);
+    void _handleWifiNetworkDelete(const mavlink_message_t& msg);
+    void _handleWifiNetworkConnect(const mavlink_message_t& msg);
     void _handlePreFlightCalibration(const mavlink_command_long_t& request);
+    void _handleWifiStartAP(const mavlink_command_long_t& request);
+    void _handleRequestWifiStatus(const mavlink_command_long_t& request);
+    void _handleRequestWifiNetworks(const mavlink_command_long_t& request);
     void _handleLogRequestList(const mavlink_message_t& msg);
     void _handleLogRequestData(const mavlink_message_t& msg);
     float _floatUnionForParam(int componentId, const QString& paramName);
@@ -209,6 +215,9 @@ private:
 
     QMap<int, QMap<QString, QVariant> > _mapParamName2Value;
     QMap<QString, MAV_PARAM_TYPE>       _mapParamName2MavParamType;
+    QString _activeNetwork;
+    int _currentWifiStatus;
+    QList<std::pair<QString, WIFI_SECURITY_TYPE>> _savedWifiNetowrks;
 
     uint8_t     _mavBaseMode;
     uint32_t    _mavCustomMode;
