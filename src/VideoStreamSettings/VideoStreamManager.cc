@@ -153,5 +153,16 @@ void VideoStreamManager::_handleVideoStreamInfo(const mavlink_message_t &message
     _bitRateFact.setRawValue(videoStreamInformation.bitrate);
     _fpsFact.setRawValue(videoStreamInformation.framerate);
     _rotationFact.setRawValue(videoStreamInformation.rotation);
-    //_uriFact()->setRawValue(videoStreamInformation.uri);
+
+    QString resolution = QString("%1x%2")
+            .arg(QString::number(videoStreamInformation.resolution_h))
+            .arg(QString::number(videoStreamInformation.resolution_v));
+    int index = _resolutionList.indexOf(resolution);
+
+    if (index >= 0) {
+        _resolutionFact.setRawValue(index);
+    } else {
+        qDebug() << "Get undefined resolution";
+        _resolutionFact.setRawValue(0);
+    }
 }
