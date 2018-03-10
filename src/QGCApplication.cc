@@ -90,7 +90,7 @@
 #ifndef __mobile__
 #include "QGCQFileDialog.h"
 #include "QGCMessageBox.h"
-#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX))
+#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX) || defined(Q_OS_MACX))
 #include "firmware/FirmwareUpgradeController.h"
 #else
 #include "firmware/FirmwareUpgradeControllerStub.h"
@@ -384,7 +384,7 @@ void QGCApplication::_initCommon(void)
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
     qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
-#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX))
+#if !defined(QGC_DISABLE_FWUPGRADER) && (defined(Q_OS_WIN) || defined(Q_OS_LINUX) || defined(Q_OS_MACX))
     qmlRegisterType<FirmwareUpgradeController>      ("QGroundControl.Controllers", 1, 0, "FirmwareUpgradeController");
 #else
     qmlRegisterType<FirmwareUpgradeControllerStub>  ("QGroundControl.Controllers", 1, 0, "FirmwareUpgradeController");
