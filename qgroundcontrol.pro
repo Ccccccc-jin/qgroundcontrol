@@ -395,6 +395,7 @@ HEADERS += \
     src/api/QGCSettings.h \
     src/Vehicle/VehicleBatteries.h \
     src/QGCDownload.h \
+    src/VehicleSetup/firmware/upgraders/UpdateConfig.h
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
@@ -861,7 +862,7 @@ HEADERS+= \
             $$FIRMWARE_DIR/RemoteFirmwareInfoViewBase.h \
 
     # Firmware Upgrader sources and libs
-    LinuxBuild|WindowsBuild: !contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
+    !contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
         # Add QtRemoteObjects framework
         QT += remoteobjects
 
@@ -895,7 +896,11 @@ HEADERS+= \
         LinuxBuild {
             LIBS += -lusb-1.0 -llzma
 
-        } else {
+        } else:MacBuild {
+            INCLUDEPATH += /usr/local/include
+            LIBS += -L/usr/local/lib -llzma -lusb-1.0
+
+        } else:WindowsBuild {
             WIN_LIBRARY_ROOT_PATH = "C:"
 
             LIBUSB_PATH =  $$shell_path("$${WIN_LIBRARY_ROOT_PATH}/libusb")
