@@ -24,6 +24,10 @@ FactPanel {
     WiFiSetupComponentController {
         id:        controller
         factPanel: panel
+
+        Component.onCompleted: {
+            requestWifiStatus()
+        }
     }
 
     QGCPalette { id: palette; colorGroupEnabled: true }
