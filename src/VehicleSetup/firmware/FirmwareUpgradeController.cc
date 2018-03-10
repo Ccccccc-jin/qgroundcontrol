@@ -17,7 +17,7 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
       _updateMethod(UpdateMethod::Auto),
       _deviceObserver(1000),
       _remoteFirmwareInfoView(new RemoteFirmwareInfoView()),
-      _fwUpgrader(std::move(FirmwareUpgrader::instance()))
+      _fwUpgrader(FirmwareUpgrader::instance())
 {
     FirmwareUpgrader::registerMetatypes();
 
