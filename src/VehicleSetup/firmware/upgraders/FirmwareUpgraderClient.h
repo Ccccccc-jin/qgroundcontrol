@@ -5,6 +5,7 @@
 #include <QtRemoteObjects>
 
 #include "FlasherParameters.h"
+#include "UpdateConfig.h"
 #include "ProcessStateLog.h"
 #include "firmware/FirmwareUpgraderInterface.h"
 #include "rep_EdgeFirmwareUpdaterIPC_replica.h"
@@ -13,7 +14,8 @@ class FirmwareUpgraderClient : public FirmwareUpgrader
 {
     Q_OBJECT
 public:
-    explicit FirmwareUpgraderClient(QObject *parent = nullptr);
+    explicit FirmwareUpgraderClient(UpdateConfig const& config,
+                                    QObject *parent = nullptr);
     virtual ~FirmwareUpgraderClient(void) override;
 
     bool deviceAvailable(void)            const override;
@@ -34,18 +36,12 @@ signals:
     void _updaterReady(void);
 
 private:
-    QString _fwUpgraderBinaryFilename(void);
     void _handleMessage(QString msg, int type);
     bool _updaterInitialized (void);
     void _initConnections    (void);
     void _attachToUpdater    (void);
 
-    static const int        EDGE_VID;
-    static const QList<int> EDGE_PIDS;
-    static const QString    GRAPHICAL_SUDO_CMD_NAME;
-    static const QString    SERVER_NODE_NAME;
-    static const QString    EDGE_VERSION_FILE;
-
+    UpdateConfig _config;
     QList<QMetaObject::Connection>     _temporaryConnections;
     std::shared_ptr<EdgeFirmwareUpdaterIPCReplica> _updaterServer;
     QRemoteObjectNode _clientNode;

@@ -11,15 +11,10 @@
 #endif
 
 
-int const         FirmwareUpgraderClient::EDGE_VID                = 0x0a5c;
-QList<int> const  FirmwareUpgraderClient::EDGE_PIDS               = QList<int>({0x2763, 0x2764});
-QString const     FirmwareUpgraderClient::GRAPHICAL_SUDO_CMD_NAME = "pkexec";
-QString const     FirmwareUpgraderClient::SERVER_NODE_NAME        = "local:fwupg_socket";
-QString const     FirmwareUpgraderClient::EDGE_VERSION_FILE       = "/issue.txt";
-
-
-FirmwareUpgraderClient::FirmwareUpgraderClient(QObject *parent)
-    : FirmwareUpgrader(parent)
+FirmwareUpgraderClient::FirmwareUpgraderClient(UpdateConfig const& config,
+                                               QObject *parent)
+    : FirmwareUpgrader(parent),
+      _config(config)
 {
     _initConnections();
 }
@@ -42,8 +37,8 @@ FirmwareUpgraderClient::~FirmwareUpgraderClient(void)
 
 bool FirmwareUpgraderClient::deviceAvailable() const
 {
-    auto const requiredVid  = FirmwareUpgraderClient::EDGE_VID;
-    auto const requiredPids = FirmwareUpgraderClient::EDGE_PIDS;
+    auto const requiredVid  = _config.edgeVid();
+    auto const requiredPids = _config.edgePids();
 
     libusb_context *context = 0;
     libusb_device **list = 0;
@@ -85,6 +80,8 @@ void FirmwareUpgraderClient::flash(FlasherParameters const& params)
         } else if (stat == FinishStatus::Failed) {
             emit deviceFlashed(false);
         }
+
+        _updaterServer->closeSession();
     };
 
     if (params.checksumEnabled()) {
@@ -124,6 +121,7 @@ void FirmwareUpgraderClient::initializeDevice(void)
         return;
     }
 
+    _updaterServer->closeSession();
     emit _updaterReady();
 }
 
@@ -137,12 +135,19 @@ void FirmwareUpgraderClient::cancel(void)
 void FirmwareUpgraderClient::_startProcess(void)
 {
 #ifdef Q_OS_WIN
-   auto const cmdexe = QString("cmd.exe");
-   auto const cmdRunCommandKey = QString("/C");
-   auto const fwUpgBinaryFile  = _fwUpgraderBinaryFilename();
+    auto const cmdexe = QString("cmd.exe");
+    auto const cmdRunCommandKey = QString("/C");
+    auto const fwUpgBinaryFile  = _fwUpgraderBinaryFilename();
 
-   QProcess::startDetached(cmdexe, {cmdRunCommandKey, fwUpgBinaryFile});
-#else
+    QProcess::startDetached(cmdexe, {cmdRunCommandKey, _config.fwUpdaterBinaryPath()});
+#elif defined(Q_OS_MACX)
+    auto const graphicalSudo = "osascript";
+    auto const arg = "-e";
+    auto const script = QString("do shell script \"%1\" with administrator privileges")
+        .arg(_config.fwUpdaterBinaryPath());
+
+    QProcess::startDetached(graphicalSudo, {arg, script});
+#elif defined(Q_OS_LINUX)
     auto env = QProcessEnvironment::systemEnvironment();
     auto appimageVarName = "APPIMAGE";
 
@@ -174,7 +179,7 @@ void FirmwareUpgraderClient::_startProcess(void)
             return;
         }
 
-        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, _fwUpgraderBinaryFilename()});
+        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, _config.fwUpdaterBinaryPath()});
     }
 
     shellExecuteCmd(shellArgs);
@@ -184,7 +189,8 @@ void FirmwareUpgraderClient::_startProcess(void)
 
 void FirmwareUpgraderClient::_initUpdater(void)
 {
-    auto successful = _clientNode.connectToNode(SERVER_NODE_NAME);
+    auto successful = _clientNode
+            .connectToNode(_config.serverNodeName());
 
     if (!successful) {
         qCritical() << "Can not connect to server node";
@@ -197,12 +203,15 @@ void FirmwareUpgraderClient::_initUpdater(void)
     using FwUpg   = FirmwareUpgraderClient;
 
     _updaterServer.reset(_clientNode.acquire<Updater>());
-    QObject::connect(_updaterServer.get(), &Updater::initialized, this, &FwUpg::_attachToUpdater);
+    QObject::connect(_updaterServer.get(), &Updater::initialized,
+                     this, &FwUpg::_attachToUpdater);
 }
 
 
 void FirmwareUpgraderClient::_onUpdaterReady(void)
 {
+    _updaterServer->openSession();
+
     using Updater = EdgeFirmwareUpdaterIPCReplica;
     auto connection = QObject::connect(_updaterServer.get(), &Updater::initializingFinished,
         [this] (int status) {
@@ -228,18 +237,6 @@ void FirmwareUpgraderClient::_disconnectTmpConnections(void)
     }
 
     _temporaryConnections.clear();
-}
-
-
-QString FirmwareUpgraderClient::_fwUpgraderBinaryFilename(void)
-{
-    auto genericFilename = QCoreApplication::applicationDirPath() + "/fwupgrader";
-
-#ifdef Q_OS_WIN
-    return genericFilename.append(".exe").replace("/","\\");
-#else
-    return genericFilename.append("-start.sh");
-#endif
 }
 
 
