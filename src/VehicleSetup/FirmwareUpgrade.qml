@@ -467,7 +467,7 @@ QGCView {
 
             function reject() {
                 hideDialog();
-                fwUpgradeController.cancel()
+                fwUpgradeController.cancelled()
             }
 
             QGCFlickable {
