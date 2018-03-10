@@ -43,7 +43,11 @@ SetupPage {
                     } else if (controller.edgeMode == WiFiSetupComponentController.Client) {
                         modeSwitch.setClientMode()
                     }
+                }
 
+                Component.onCompleted: {
+                    requestWifiStatus()
+                    updateNetwokrsList()
                 }
             }
 
