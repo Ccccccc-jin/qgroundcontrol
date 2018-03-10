@@ -63,7 +63,7 @@ DEFINES += NOMINMAX
     contains(DEFINES, QGC_DISABLE_FWUPGRADER) {
         message("Skipping support for Edge firmware upgrader(manually overrided from command line)")
     } else {
-        LinuxBuild|WindowsBuild {
+        LinuxBuild|WindowsBuild|MacBuild {
             message(Including support for Firmware Updater)
             include(libs/fwupgrader.pri)
         } else {
