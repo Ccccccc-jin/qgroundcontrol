@@ -914,14 +914,17 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
 
     case MAV_CMD_WIFI_START_AP:
         _handleWifiStartAP(request);
+        commandResult = MAV_RESULT_ACCEPTED;
         break;
 
     case MAV_CMD_REQUEST_WIFI_STATUS:
         _handleRequestWifiStatus(request);
+        commandResult = MAV_RESULT_ACCEPTED;
         break;
 
     case MAV_CMD_REQUEST_WIFI_NETWORKS:
         _handleRequestWifiNetworks(request);
+        commandResult = MAV_RESULT_ACCEPTED;
         break;
 
     }
