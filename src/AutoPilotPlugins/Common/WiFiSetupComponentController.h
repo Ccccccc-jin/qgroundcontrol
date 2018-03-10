@@ -82,6 +82,9 @@ public:
     Q_INVOKABLE void bootAsAccessPoint     (void);
     Q_INVOKABLE void bootAsClient          (QString const& netwkName);
 
+    Q_INVOKABLE void requestWifiStatus(void);
+    Q_INVOKABLE void updateNetwokrsList(void);
+
     Q_INVOKABLE void removeNetworkFromEdge (QString const& netwkName);
     Q_INVOKABLE void saveNetworkToEdge     (QString const& netwkName, int netwkType, QString const& netwkPasswd);
 
@@ -106,8 +109,6 @@ private slots:
     void _handleWifiStatus(mavlink_message_t message);
 
 private:
-    void _requestWifiStatus(void);
-    void _updateSavedNetworksList(void);
 
     QStringList _encryptTypeStrings;
     QStringList _savedNetworks;

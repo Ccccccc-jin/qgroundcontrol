@@ -150,8 +150,6 @@ WiFiSetupComponentController::WiFiSetupComponentController()
     connect(_vehicle, &Vehicle::mavlinkWifiStatus,
             this,     &WiFiSetupComponentController::_handleWifiStatus);
 
-    _requestWifiStatus();
-    _updateSavedNetworksList();
 }
 
 
@@ -170,18 +168,19 @@ void WiFiSetupComponentController::bootAsClient(QString const& name)
 
 void WiFiSetupComponentController::saveNetworkToEdge(QString const& name, int type, QString const& psw)
 {
+    qInfo() << "debug add";
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeAddNetworkMsg(name, type, psw));
-    _updateSavedNetworksList();
+    updateNetwokrsList();
 }
 
 
 void WiFiSetupComponentController::removeNetworkFromEdge(QString const& name)
 {
-
+    qInfo() << "debug delete";
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeRemoveNetworkMsg(name));
-    _updateSavedNetworksList();
+    updateNetwokrsList();
 }
 
 
@@ -198,16 +197,16 @@ void WiFiSetupComponentController::setDefaultNetwork(const QString &netwkName)
 }
 
 
-void WiFiSetupComponentController::_requestWifiStatus(void)
+void WiFiSetupComponentController::requestWifiStatus(void)
 {
-    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_STATUS, true, 1);
+    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_STATUS, false, 1);
 }
 
 
-void WiFiSetupComponentController::_updateSavedNetworksList()
+void WiFiSetupComponentController::updateNetwokrsList()
 {
     _savedNetworks.clear();
-    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
+    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, false, 1);
 }
 
 
