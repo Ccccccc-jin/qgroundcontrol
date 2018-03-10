@@ -2,6 +2,9 @@
 
 class EdgeFirmwareUpdaterIPC
 {
+    SLOT(void openSession());
+    SLOT(void closeSession());
+
     SLOT(void initializeEdgeDevice());
     SIGNAL(initializingFinished(int status));
 
