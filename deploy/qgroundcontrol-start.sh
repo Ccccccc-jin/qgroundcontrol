@@ -9,7 +9,7 @@ echo "App image path: $APPIMAGE"
 
 if [ "$1" = "--fwupg" ]; then
     echo "start firmware upgrader"
-    "${HERE}/fwupgrader-start.sh"
+    "${HERE}/fwupgrader"
 else 
     echo "start qgroundcontrol"
 	"${HERE}/QGroundControl"
