@@ -137,7 +137,6 @@ void FirmwareUpgraderClient::_startProcess(void)
 #ifdef Q_OS_WIN
     auto const cmdexe = QString("cmd.exe");
     auto const cmdRunCommandKey = QString("/C");
-    auto const fwUpgBinaryFile  = _fwUpgraderBinaryFilename();
 
     QProcess::startDetached(cmdexe, {cmdRunCommandKey, _config.fwUpdaterBinaryPath()});
 #elif defined(Q_OS_MACX)
