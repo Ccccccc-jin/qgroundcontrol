@@ -148,6 +148,7 @@ void FirmwareUpgraderClient::_startProcess(void)
 
     QProcess::startDetached(graphicalSudo, {arg, script});
 #elif defined(Q_OS_LINUX)
+    auto const graphicalSudo = "pkexec";
     auto env = QProcessEnvironment::systemEnvironment();
     auto appimageVarName = "APPIMAGE";
 
@@ -170,7 +171,7 @@ void FirmwareUpgraderClient::_startProcess(void)
         auto appimagePath  = env.value(appimageVarName);
         auto fwUpgraderKey = "--fwupg";
 
-        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, appimagePath, fwUpgraderKey});
+        shellArgs = makeArgs({graphicalSudo, appimagePath, fwUpgraderKey});
     } else {
         if (QCoreApplication::applicationDirPath().isEmpty()) {
             auto warnMessage = QString("Can not start firmware upgrading.") +
@@ -179,7 +180,7 @@ void FirmwareUpgraderClient::_startProcess(void)
             return;
         }
 
-        shellArgs = makeArgs({GRAPHICAL_SUDO_CMD_NAME, _config.fwUpdaterBinaryPath()});
+        shellArgs = makeArgs({graphicalSudo, _config.fwUpdaterBinaryPath()});
     }
 
     shellExecuteCmd(shellArgs);
