@@ -10,9 +10,7 @@
 
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
-    : _firmwareDirectory(""),
-      _firmwareFilename(""),
-      _checksumEnabled(true),
+    : _firmwareFilename(""),
       _firmwareSavingEnabled(false),
       _updateMethod(UpdateMethod::Auto),
       _deviceObserver(1000),
@@ -258,7 +256,8 @@ void FirmwareUpgradeController::_flashSelectedFile(void)
         return;
     }
 
-    FlasherParameters params(FirmwareImage(_firmwareFilename), _checksumEnabled);
+    FlasherParameters params(FirmwareImage(_firmwareFilename),
+                             _settings.checksumEnabeld());
     _fwUpgrader->flash(params);
 }
 
@@ -389,7 +388,7 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
 {
     auto dialogTitle   = QStringLiteral("Select firmware file.");
     auto filesFormat   = QStringLiteral("Firmware Files (*.img)");
-    auto firstLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    auto firstLocation = _settings.defaultFirmwareSearchPath();
 
     auto fwFilename = QGCQFileDialog::
             getOpenFileName(nullptr, dialogTitle, firstLocation, filesFormat);
@@ -401,6 +400,9 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
     } else {
         _firmwareFilename = std::move(fwFilename);
         emit infoMsgReceived("Selected file: " + _firmwareFilename);
+
+        auto firmwareDir = QFileInfo(_firmwareFilename).dir().path();
+        _settings.setDefaultFirmwareSearchPath(firmwareDir);
     }
 }
 
@@ -408,20 +410,20 @@ void FirmwareUpgradeController::askForFirmwareFile(void)
 void FirmwareUpgradeController::askForFirmwareDirectory(void)
 {
     auto dialogTitle   = QStringLiteral("Select directory");
-    auto firstLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    auto const& firstLocation = _settings.defaultFirmwareSavePath();
 
     auto firmwareDirectory = QGCQFileDialog::
             getExistingDirectory(nullptr, dialogTitle, firstLocation);
 
     if (firmwareDirectory.isEmpty()) {
-        if (_firmwareDirectory.isEmpty()) {
-            emit warnMsgReceived("Directory not selected.");
-        }
+        emit infoMsgReceived("Fimrware will be saved to: " + firstLocation);
     } else {
-        _firmwareDirectory = std::move(firmwareDirectory);
-        emit infoMsgReceived("Selected directory: " + _firmwareDirectory);
-        _remoteFwManager.setDestDirPath(_firmwareDirectory);
-        _availableDiskSpace = QStorageInfo(_firmwareDirectory).bytesFree();
+        _settings.setDefaultFirmwareSavePath(firmwareDirectory);
+        emit infoMsgReceived("Selected directory: " + firmwareDirectory);
+
+        _remoteFwManager.setDestDirPath(firmwareDirectory);
+        _availableDiskSpace = QStorageInfo(firmwareDirectory).bytesFree();
+
         emit availableDiskSpaceChanged();
     }
 }

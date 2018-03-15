@@ -26,6 +26,7 @@
 
 #include "RemoteFirmwareManager.h"
 #include "RemoteFirmwareInfoView.h"
+#include "FirmwareUpdateSettings.h"
 
 class FirmwareUpgrader;
 
@@ -46,11 +47,12 @@ public:
     virtual QString      firmwareFilename      (void) const override { return _firmwareFilename;  }
     virtual QString      firmwareVersion       (void) const override { return _firmwareVersion.toString(); }
     virtual UpdateMethod updateMethod          (void) const override { return _updateMethod; }
-    virtual bool         checksumEnabled       (void) const override { return _checksumEnabled; }
+    virtual bool         checksumEnabled       (void) const override { return _settings.checksumEnabeld(); }
     virtual bool         firmwareSavingEnabled (void) const override { return _firmwareSavingEnabled; }
 
-    virtual void enableChecksum(bool value) override
-        { _checksumEnabled = value; }
+    virtual void enableChecksum(bool value) override {
+        _settings.setChecksumEnabled(value);
+    }
 
     virtual void enableFirmwareSaving(bool value) override
         { _firmwareSavingEnabled = value; }
@@ -92,9 +94,7 @@ private:
     void _startPolling     (void);
 
     FirmwareVersion _firmwareVersion;
-    QString _firmwareDirectory;
     QString _firmwareFilename;
-    bool    _checksumEnabled;
     bool    _firmwareSavingEnabled;
     qint64  _availableDiskSpace;
 
@@ -104,6 +104,7 @@ private:
     std::unique_ptr<QGCDownloadWatcher>     _downloadWatcher;
     std::unique_ptr<RemoteFirmwareInfoView> _remoteFirmwareInfoView;
     std::unique_ptr<FirmwareUpgrader>       _fwUpgrader;
+    FirmwareUpdateSettings                  _settings;
 };
 
 #endif
