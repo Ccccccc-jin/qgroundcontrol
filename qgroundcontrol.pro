@@ -877,6 +877,7 @@ HEADERS+= \
             $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
             $$FIRMWARE_DIR/DeviceObserver.h \
             $$FIRMWARE_DIR/RemoteFirmwareInfoView.h \
+            $$FIRMWARE_DIR/FirmwareUpdateSettings.h \
             src/QGCXzDecompressor.h \
 
         SOURCES += \
