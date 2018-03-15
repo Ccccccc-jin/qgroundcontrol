@@ -6,6 +6,7 @@
 #include "QGCQFileDialog.h"
 #include "QGCFileDownload.h"
 #include "QGCXzDecompressor.h"
+#include "QGCApplication.h"
 
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
@@ -231,11 +232,20 @@ FirmwareUpgradeController::~FirmwareUpgradeController(void)
     if (_updateMethod == UpdateMethod::Auto && !_firmwareSavingEnabled) {
         _removeDownloadedFiles();
     }
+    qgcApp()->toolbox()->linkManager()->setConnectionsAllowed();
 }
 
 
 void FirmwareUpgradeController::initializeDevice(void)
 {
+    auto linkMngr = qgcApp()->toolbox()->linkManager();
+    linkMngr->setConnectionsSuspended("Connect not allowed during firmware update.");
+
+    // disconnect inactive links
+    if (!qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()) {
+        linkMngr->disconnectAll();
+    }
+
     _fwUpgrader->initializeDevice();
     _fetchFirmwareInfo();
 }
