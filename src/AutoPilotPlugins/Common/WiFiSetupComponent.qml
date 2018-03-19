@@ -671,7 +671,25 @@ SetupPage {
                                             id:             passwordField
                                             anchors         { left: parent.left; right: parent.right }
                                             maximumLength:  controller.passwdMaxLength
-                                            echoMode:       TextInput.PasswordEchoOnEdit
+                                            echoMode:       TextInput.Password
+                                        }
+
+                                        Row {
+                                            QGCCheckBox {
+                                                id: showPasswdCheckbox
+                                                onClicked: {
+                                                    passwordField.echoMode = checked ?
+                                                                TextInput.Normal : TextInput.Password
+                                                }
+
+                                                Component.onCompleted: { checked = false }
+                                            }
+
+                                            QGCLabel {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                font.pointSize: passwordField.font.pointSize / 1.3
+                                                text: "Show password"
+                                            }
                                         }
                                     }
 
