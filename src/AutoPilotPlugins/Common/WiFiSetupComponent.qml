@@ -15,6 +15,7 @@ import QtQuick.Controls.Styles 1.4
 import QtQuick.Dialogs         1.2
 import QtQuick.Layouts         1.2
 
+import QGroundControl               1.0
 import QGroundControl.Palette       1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.Controllers   1.0
@@ -37,15 +38,58 @@ SetupPage {
                 id:        controller
                 factPanel: wifiPage.viewPanel
 
+                property var corePlugin: QGroundControl.corePlugin
+
+                function enableVehicleSetupButtons()  { corePlugin.vehicleSetupDisabled = false }
+                function disableVehicleSetupButtons() { corePlugin.vehicleSetupDisabled = true }
+
+                function setComponentActiveState() {
+                    btnsPanel.enablePanel()
+                    savedNetworksListView.enableView()
+                    savedNetworksListView.resetCurrentIndex()
+                    enableVehicleSetupButtons()
+                }
+
+                function setComponentInactiveState() {
+                    btnsPanel.disablePanel()
+                    savedNetworksListView.disableView()
+                }
+
                 onEdgeModeChanged: {
-                    if (controller.edgeMode == WiFiSetupComponentController.AccessPoint) {
-                        modeSwitch.setAccessPointMode()
-                    } else if (controller.edgeMode == WiFiSetupComponentController.Client) {
-                        modeSwitch.setClientMode()
+                    switch(controller.edgeMode) {
+                        case WiFiSetupComponentController.AccessPoint:
+                            modeSwitch.setAccessPointMode()
+                            setComponentActiveState()
+                            break
+
+                        case WiFiSetupComponentController.Client:
+                            modeSwitch.setClientMode()
+                            setComponentActiveState()
+                            break
+
+                        case WiFiSetupComponentController.Undefined:
+                            modeSwitch.setUndefined()
+                            setComponentInactiveState()
+                            break
+
+                        case WiFiSetupComponentController.Switching:
+                            modeSwitch.setSwitching()
+                            setComponentInactiveState()
+                            disableVehicleSetupButtons()
+                            break
+
+                        default:
+                            console.log("Undefined wifistatus")
+                            break
                     }
+
                 }
 
                 Component.onCompleted: {
+                    modeSwitch.setUndefined()
+                    btnsPanel.disablePanel()
+                    savedNetworksListView.disableView()
+
                     requestWifiStatus()
                     updateNetwokrsList()
                 }
@@ -91,27 +135,20 @@ SetupPage {
                                 enabled = true
                             }
 
-                            function switchToAccessPointMode() {
-                                modeLabel.text = "Access point mode"
-                                controller.bootAsAccessPoint()
-                            }
-
-                            function switchToClientMode() {
-                                modeLabel.text = "Client mode"
-                                controller.bootAsClient(controller.defaultNetwork)
-                            }
-
-                            function switchToUndefinedState() {
+                            function setUndefined() {
                                 modeLabel.text = "Undefined"
                                 enabled = false
                             }
 
+                            function setSwitching() {
+                                modeLabel.text = "Switching..."
+                                enabled = false
+                            }
+
                             onClicked: {
-                                if (checked) {
-                                    switchToAccessPointMode()
-                                } else {
-                                    switchToClientMode()
-                                }
+                                checked ?
+                                    controller.bootAsAccessPoint() :
+                                    controller.bootAsClient(controller.defaultNetwork)
                             }
 
                             style: SwitchStyle {
@@ -129,20 +166,6 @@ SetupPage {
                                     border.width:   1
                                     border.color:   "grey"
                                 }
-                            }
-
-                            Component.onCompleted: {
-                                switchToUndefinedState()
-                            }
-                        }
-
-                        Component.onCompleted:  {
-                            if (controller.edgeMode === controller.AccessPoint) {
-                                modeLabel.text = "Access point mode"
-                                modeSwitch.checked = true
-                            } else {
-                                modeLabel.text = "Client mode"
-                                modeSwitch.checked = false
                             }
                         }
                     }
@@ -174,6 +197,11 @@ SetupPage {
                             clip:   true
 
                             property string _mainColor: "grey"
+
+                            function enableView() { enabled = true }
+                            function disableView() { enabled = false }
+
+                            function resetCurrentIndex() { currentIndex = -1 }
 
                             function currentListElement() {
                                 return model[currentIndex]
@@ -247,10 +275,6 @@ SetupPage {
                             }
 
                             highlight: Rectangle { color: savedNetworksListView._mainColor }
-
-                            Component.onCompleted: {
-                                currentIndex = -1
-                            }
                         }
 
                         GridLayout {
@@ -259,6 +283,9 @@ SetupPage {
                             columns: 4
 
                             property int _btnsHeight: ScreenTools.defaultFontPixelHeight * 3
+
+                            function disablePanel() { enabled = false }
+                            function enablePanel() { enabled = true;}
 
                             Item {
                                 Layout.fillWidth: true
@@ -644,7 +671,7 @@ SetupPage {
                                             id:             passwordField
                                             anchors         { left: parent.left; right: parent.right }
                                             maximumLength:  controller.passwdMaxLength
-                                            echoMode:       TextInput.Password
+                                            echoMode:       TextInput.PasswordEchoOnEdit
                                         }
                                     }
 
