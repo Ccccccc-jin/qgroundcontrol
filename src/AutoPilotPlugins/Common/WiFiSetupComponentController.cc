@@ -84,12 +84,14 @@ namespace impl {
     static const int PASSWD_LENGTH           = sizeof(mavlink_wifi_network_add_t::password);
     static char const* EDGE_WIFI_SETTING_KEY = "WifiSetup/EdgeDefaultNetwork";
 
+
     QByteArray toRawString(QString string, int rawSize = SSID_LENGTH)
     {
         auto rawBytes = QByteArray(rawSize, '\0');
         string.squeeze();
         return rawBytes.replace(0, string.length(), string.toUtf8());
     }
+
 
     QString decodeString(char const* str, int size) {
         return QString::fromUtf8(QByteArray(str, size).append('\0'));
@@ -101,7 +103,7 @@ namespace impl {
     }
 
 
-    mavlink_message_t makeAddNetworkMsg(QString const& ssid, int encryptType, QString const& passwd)
+    mavlink_message_t makeAddNetworkMsg(QString const& ssid, uint8_t encryptType, QString const& passwd)
     {
         mavlink_message_t msg;
         mavlink_msg_wifi_network_add_pack(mavlinkProtocol().getSystemId(),
@@ -121,7 +123,9 @@ namespace impl {
         return msg;
     }
 
-    mavlink_message_t makeConnectNetworkMsg(QString const& ssid) {
+
+    mavlink_message_t makeConnectNetworkMsg(QString const& ssid)
+    {
         mavlink_message_t msg;
         mavlink_msg_wifi_network_connect_pack(mavlinkProtocol().getSystemId(),
                                               mavlinkProtocol().getComponentId(),
@@ -136,8 +140,10 @@ int const WiFiSetupComponentController::_passwdMaxLength = impl::PASSWD_LENGTH;
 
 
 WiFiSetupComponentController::WiFiSetupComponentController()
-    : _encryptTypeStrings{"OPEN", "WEP", "WPA", "WPA2"}
-    , _edgeMode(EdgeMode::Undefined)
+    :
+      _connectionWasLost(false)
+    , _encryptTypeStrings{"OPEN", "WEP", "WPA", "WPA2"}
+    , _edgeMode(WifiStatus::Undefined)
 {
     QSettings appSettings;
     if (appSettings.contains(impl::EDGE_WIFI_SETTING_KEY)) {
@@ -150,12 +156,17 @@ WiFiSetupComponentController::WiFiSetupComponentController()
     connect(_vehicle, &Vehicle::mavlinkWifiStatus,
             this,     &WiFiSetupComponentController::_handleWifiStatus);
 
+    connect(_vehicle, &Vehicle::connectionLostChanged,
+            this,     &WiFiSetupComponentController::_handleConnectionLost);
+
 }
 
 
 void WiFiSetupComponentController::bootAsAccessPoint()
 {
     _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_WIFI_START_AP, true, 1);
+    _edgeMode = WifiStatus::Switching;
+    emit edgeModeChanged();
 }
 
 
@@ -163,6 +174,8 @@ void WiFiSetupComponentController::bootAsClient(QString const& name)
 {
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeConnectNetworkMsg(name));
+    _edgeMode = WifiStatus::Switching;
+    emit edgeModeChanged();
 }
 
 
@@ -215,13 +228,24 @@ void WiFiSetupComponentController::_handleWifiStatus(mavlink_message_t message)
     mavlink_wifi_status_t wifiStatus;
     mavlink_msg_wifi_status_decode(&message, &wifiStatus);
 
-    _edgeMode = static_cast<EdgeMode>(wifiStatus.state);
+    _edgeMode = static_cast<WifiStatus>(wifiStatus.state);
     auto ssid = impl::decodeString(wifiStatus.ssid, sizeof(wifiStatus.ssid));
 
-    _activeNetwork = _edgeMode == EdgeMode::Client ? ssid : QStringLiteral("");
+    _activeNetwork = _edgeMode == WifiStatus::Client ? ssid : QStringLiteral("");
 
     emit edgeModeChanged();
     emit activeNetworkChanged();
+}
+
+
+void WiFiSetupComponentController::_handleConnectionLost(bool isConnectionLost)
+{
+    if (!isConnectionLost && _connectionWasLost) {
+        requestWifiStatus();
+        updateNetwokrsList();
+    } else {
+        _connectionWasLost = true;
+    }
 }
 
 
