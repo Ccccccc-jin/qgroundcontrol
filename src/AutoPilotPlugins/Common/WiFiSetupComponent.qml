@@ -93,6 +93,10 @@ SetupPage {
                     requestWifiStatus()
                     updateNetwokrsList()
                 }
+
+                Component.onDestruction: {
+                    enableVehicleSetupButtons()
+                }
             }
 
             QGCPalette { id: palette; colorGroupEnabled: true }
