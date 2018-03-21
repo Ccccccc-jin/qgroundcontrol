@@ -859,6 +859,7 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
     uint8_t commandResult = MAV_RESULT_UNSUPPORTED;
 
     mavlink_msg_command_long_decode(&msg, &request);
+    auto compid = _vehicleComponentId;
 
     switch (request.command) {
     case MAV_CMD_COMPONENT_ARM_DISARM:
@@ -914,16 +915,19 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
 
     case MAV_CMD_WIFI_START_AP:
         _handleWifiStartAP(request);
+        compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
     case MAV_CMD_REQUEST_WIFI_STATUS:
         _handleRequestWifiStatus(request);
+        compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
     case MAV_CMD_REQUEST_WIFI_NETWORKS:
         _handleRequestWifiNetworks(request);
+        compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
@@ -931,7 +935,7 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
 
     mavlink_message_t commandAck;
     mavlink_msg_command_ack_pack_chan(_vehicleSystemId,
-                                      _vehicleComponentId,
+                                      compid,
                                       _mavlinkChannel,
                                       &commandAck,
                                       request.command,
