@@ -216,7 +216,7 @@ void WiFiSetupComponentController::setDefaultNetwork(const QString &netwkName)
 
 void WiFiSetupComponentController::requestWifiStatus(void)
 {
-    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_STATUS, false, 1);
+    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_STATUS, true, 1);
 }
 
 
@@ -224,7 +224,7 @@ void WiFiSetupComponentController::updateNetwokrsList()
 {
     _savedNetworks.clear();
     emit savedNetworksUpdated();
-    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, false, 1);
+    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
 }
 
 
@@ -248,6 +248,7 @@ void WiFiSetupComponentController::_handleConnectionLost(bool isConnectionLost)
     if (!isConnectionLost && _connectionWasLost) {
         requestWifiStatus();
         updateNetwokrsList();
+        _connectionWasLost = false;
     } else {
         _connectionWasLost = true;
     }
