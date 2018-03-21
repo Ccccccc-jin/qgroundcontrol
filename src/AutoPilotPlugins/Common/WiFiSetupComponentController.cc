@@ -223,6 +223,7 @@ void WiFiSetupComponentController::requestWifiStatus(void)
 void WiFiSetupComponentController::updateNetwokrsList()
 {
     _savedNetworks.clear();
+    emit savedNetworksUpdated();
     _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, false, 1);
 }
 
@@ -255,6 +256,7 @@ void WiFiSetupComponentController::_handleConnectionLost(bool isConnectionLost)
 
 void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message_t message)
 {
+    qDebug() << "in handle";
     mavlink_wifi_network_information_t wifiNetworkInfo;
     mavlink_msg_wifi_network_information_decode(&message, &wifiNetworkInfo);
 

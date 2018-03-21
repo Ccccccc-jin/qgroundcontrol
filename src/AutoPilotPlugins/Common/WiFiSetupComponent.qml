@@ -85,6 +85,12 @@ SetupPage {
 
                 }
 
+                onSavedNetworksUpdated: {
+                    if (savedNetworks.size === 0) {
+                        savedNetworksListView.resetCurrentIndex()
+                    }
+                }
+
                 Component.onCompleted: {
                     modeSwitch.setUndefined()
                     btnsPanel.disablePanel()
@@ -104,7 +110,6 @@ SetupPage {
             property real   _margins:      ScreenTools.defaultFontPixelHeight / 2
             property int    _firstColumn:  ScreenTools.defaultFontPixelWidth * 15
             property int    _secondColumn: ScreenTools.defaultFontPixelWidth * 25
-            property string _currentNetwork: ""
 
             Column {
                 width:    ScreenTools.defaultFontPixelWidth * 55
@@ -229,10 +234,6 @@ SetupPage {
                                 return model[currentIndex]
                             }
 
-                            function hasSelectedElement() {
-                                return currentIndex !== -1
-                            }
-
                             keyNavigationEnabled: true
                             headerPositioning: ListView.OverlayFooter
                             footerPositioning: headerPositioning
@@ -312,7 +313,7 @@ SetupPage {
                             Item {
                                 Layout.fillWidth: true
                                 height:  parent._btnsHeight
-                                enabled: savedNetworksListView.hasSelectedElement()
+                                enabled: savedNetworksListView.count > 0
 
                                 QGCButton {
                                     anchors.fill: parent; text: "Connect"
@@ -347,7 +348,7 @@ SetupPage {
                             Item {
                                 Layout.fillWidth: true
                                 height: parent._btnsHeight
-                                enabled: savedNetworksListView.hasSelectedElement()
+                                enabled: savedNetworksListView.count > 0
 
                                 QGCButton {
                                     anchors.fill: parent; text: "Delete"
@@ -382,7 +383,7 @@ SetupPage {
                             Item {
                                 Layout.fillWidth: true
                                 height:  parent._btnsHeight
-                                enabled: savedNetworksListView.hasSelectedElement()
+                                enabled: savedNetworksListView.count > 0
 
                                 QGCButton {
                                     anchors.fill: parent
