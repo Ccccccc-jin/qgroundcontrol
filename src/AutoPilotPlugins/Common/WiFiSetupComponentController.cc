@@ -181,7 +181,6 @@ void WiFiSetupComponentController::bootAsClient(QString const& name)
 
 void WiFiSetupComponentController::saveNetworkToEdge(QString const& name, int type, QString const& psw)
 {
-    qInfo() << "debug add";
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeAddNetworkMsg(name, type, psw));
     updateNetwokrsList();
@@ -190,7 +189,12 @@ void WiFiSetupComponentController::saveNetworkToEdge(QString const& name, int ty
 
 void WiFiSetupComponentController::removeNetworkFromEdge(QString const& name)
 {
-    qInfo() << "debug delete";
+    if (name == _defaultNetwork) {
+        _defaultNetwork.clear();
+        QSettings appSetting;
+        appSetting.remove(impl::EDGE_WIFI_SETTING_KEY);
+    }
+
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeRemoveNetworkMsg(name));
     updateNetwokrsList();

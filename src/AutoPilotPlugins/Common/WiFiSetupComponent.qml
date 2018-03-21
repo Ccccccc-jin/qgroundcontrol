@@ -150,9 +150,14 @@ SetupPage {
                             }
 
                             onClicked: {
-                                checked ?
-                                    controller.bootAsAccessPoint() :
+                                if (checked) {
+                                    controller.bootAsAccessPoint()
+                                } else if (controller.defaultNetwork.length > 0) {
                                     controller.bootAsClient(controller.defaultNetwork)
+                                } else {
+                                    switchWarnDialog.visible = true
+                                    checked = true
+                                }
                             }
 
                             style: SwitchStyle {
@@ -170,6 +175,19 @@ SetupPage {
                                     border.width:   1
                                     border.color:   "grey"
                                 }
+                            }
+
+
+                            MessageDialog {
+                                id:              switchWarnDialog
+                                visible:         false
+                                icon:            StandardIcon.Warning
+                                standardButtons: StandardButton.Ok
+                                title:           qsTr("Connect to Network")
+                                text:            qsTr("Can not connect to default network.Default network is unspecified.")
+
+
+                                onAccepted: { visible = false }
                             }
                         }
                     }
