@@ -860,6 +860,23 @@ void Vehicle::_handleCommandAck(mavlink_message_t& message)
         _startPlanRequest();
     }
 
+    // TODO: temporary fix. QGC should ignore acks which haven't
+    // sender compid which is equal to target compid of first command in queue.
+    // Exceptionally QGC should receive broadcasted messages (with target compid == 0)
+    // regardless of the compid of sender
+
+    if (_mavCommandQueue.count()) {
+        auto const& cmd = _mavCommandQueue[0];
+        auto isBroadcast = cmd.component == 0;
+        auto isSenderCompidSameAsTarget = message.compid == cmd.component;
+
+        if (!isBroadcast && !isSenderCompidSameAsTarget) {
+            qWarning() << QString("Command %1 sent to %2, but ack is received from %3")
+                      .arg(cmd.command).arg(cmd.component).arg(message.compid);
+            return;
+        }
+    }
+
     if (_mavCommandQueue.count() && ack.command == _mavCommandQueue[0].command) {
         _mavCommandAckTimer.stop();
         showError = _mavCommandQueue[0].showError;
