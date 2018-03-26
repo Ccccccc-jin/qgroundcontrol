@@ -112,14 +112,14 @@ SetupPage {
             property int    _secondColumn: ScreenTools.defaultFontPixelWidth * 25
 
             Column {
-                width:    ScreenTools.defaultFontPixelWidth * 55
+                width:    ScreenTools.defaultFontPixelWidth * 60
                 spacing: _margins
 
                 QGCLabel { text: qsTr("Status") }
 
                 Rectangle {
                     anchors { left: parent.left; right: parent.right }
-                    height: 50
+                    height: ScreenTools.defaultFontPixelHeight * 3
                     color:  palette.windowShade
 
                     GridLayout {
@@ -172,7 +172,7 @@ SetupPage {
                                 id: switchStyle
 
                                 groove: Rectangle {
-                                    implicitWidth:  50
+                                    implicitWidth:  ScreenTools.defaultFontPixelWidth * 7
                                     implicitHeight: modeLabel.height
                                     radius:         2
                                     color:          control.checked ?
@@ -208,7 +208,7 @@ SetupPage {
 
                 Rectangle {
                     anchors { left: parent.left; right: parent.right }
-                    height: width * 1.2
+                    height: width * 1.1
                     color:  palette.windowShade
 
                     Column {
@@ -305,7 +305,7 @@ SetupPage {
                             anchors  { left: parent.left; right: parent.right }
                             columns: 4
 
-                            property int _btnsHeight: ScreenTools.defaultFontPixelHeight * 3
+                            property int _btnsHeight: ScreenTools.defaultFontPixelHeight * 2.3
 
                             function disablePanel() { enabled = false }
                             function enablePanel() { enabled = true;}
@@ -397,11 +397,12 @@ SetupPage {
 
                                 QGCButton {
                                     anchors.fill: parent
-                                    text: "Set as default"
+                                    text: "Set by default"
                                     onClicked: {
                                         var netwkIdx =  savedNetworksListView.currentIndex
                                         var netwkName = controller.getSavedNetwork(netwkIdx)
-                                        controller.defaultNetwork = netwkName
+                                        controller.defaultNetwork = netwkName === controller.defaultNetwork ?
+                                                    "" : netwkName
                                     }
                                 }
                             }
