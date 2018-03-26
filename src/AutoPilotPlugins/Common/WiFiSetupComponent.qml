@@ -132,6 +132,9 @@ SetupPage {
                             id:            modeSwitch
                             anchors.right: parent.right
 
+                            readonly property string accessPointColor: "#3498db" // flatBlue
+                            readonly property string clientModeColor:  "#2ecc71" // flatGreen
+
                             function setAccessPointMode() {
                                 modeLabel.text = "Access point mode"
                                 checked = true
@@ -168,15 +171,12 @@ SetupPage {
                             style: SwitchStyle {
                                 id: switchStyle
 
-                                readonly property string flatBlueColor:  "#3498db"
-                                readonly property string flatGreenColor: "#2ecc71"
-
                                 groove: Rectangle {
                                     implicitWidth:  50
                                     implicitHeight: modeLabel.height
                                     radius:         2
                                     color:          control.checked ?
-                                                        switchStyle.flatBlueColor : switchStyle.flatGreenColor
+                                                        modeSwitch.accessPointColor : modeSwitch.clientModeColor
                                     border.width:   1
                                     border.color:   "grey"
                                 }
@@ -362,9 +362,19 @@ SetupPage {
                                     visible:         false
                                     icon:            StandardIcon.Warning
                                     standardButtons: StandardButton.Yes | StandardButton.No
-                                    title:           qsTr("Connect to Network: %1")
+                                    title:           qsTr("Delete network: %1")
                                         .arg(savedNetworksListView.currentListElement())
-                                    text:            qsTr("Do you want to remove selected Wi-Fi network from list?")
+
+                                    function colouredText(color, txt) {
+                                        return "<font color=\"" + color + "\">" + txt + "</font>"
+                                    }
+
+                                    text: controller.activeNetwork === savedNetworksListView.currentListElement() ?
+                                         colouredText("orange", "Warning")
+                                             + ": The network is active. If you remove this network, device would return to "
+                                             + colouredText(modeSwitch.accessPointColor,"Access point")
+                                             + " mode. Do you want to continue?"
+                                         : qsTr("Do you want to remove selected Wi-Fi network from list?")
 
                                     onYes: {
                                         var currentNetwkName = savedNetworksListView
