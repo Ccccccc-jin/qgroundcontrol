@@ -75,6 +75,9 @@ public:
     Q_INVOKABLE bool                endConfigurationEditing     (LinkConfiguration* config, LinkConfiguration* editedConfig);
     Q_INVOKABLE bool                endCreateConfiguration      (LinkConfiguration* config);
     Q_INVOKABLE void                removeConfiguration         (LinkConfiguration* config);
+    Q_INVOKABLE void                disconnectAll               (void);
+    Q_INVOKABLE void                setConnectionsSuspended     (QString reason);
+    Q_INVOKABLE void                setConnectionsAllowed       (void) { _connectionsSuspended = false; }
 
     // Property accessors
 
@@ -95,13 +98,6 @@ public:
     /// Suspend automatic confguration updates (during link maintenance for instance)
     void suspendConfigurationUpdates(bool suspend);
 
-    /// Sets the flag to suspend the all new connections
-    ///     @param reason User visible reason to suspend connections
-    void setConnectionsSuspended(QString reason);
-
-    /// Sets the flag to allow new connections to be made
-    void setConnectionsAllowed(void) { _connectionsSuspended = false; }
-
     /// Creates, connects (and adds) a link  based on the given configuration instance.
     /// Link takes ownership of config.
     LinkInterface* createConnectedLink(SharedLinkConfigurationPointer& config);
@@ -111,9 +107,6 @@ public:
 
     /// Creates, connects (and adds) a link  based on the given configuration name.
     LinkInterface* createConnectedLink(const QString& name);
-
-    /// Disconnects all existing links
-    void disconnectAll(void);
 
     /// Connect the specified link
     bool connectLink(LinkInterface* link);
