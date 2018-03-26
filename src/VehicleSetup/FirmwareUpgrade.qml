@@ -71,6 +71,16 @@ QGCView {
         corePlugin.vehicleSetupDisabled = true
     }
 
+    function disallowVehicleConnections() {
+        QGroundControl.linkManager.disconnectAll()
+        var reason = "Connection unavailable during firmware update"
+        QGroundControl.linkManager.setConnectionsSuspended(reason)
+    }
+
+    function allowVehicleConnections() {
+        QGroundControl.linkManager.setConnectionsAllowed()
+    }
+
     FirmwareUpgradeController {
         id: fwUpgradeController
         signal edgeNotInitialized
@@ -107,6 +117,10 @@ QGCView {
         onInfoMsgReceived:  { statusTextArea.appendInfoMessage(message); }
         onErrorMsgReceived: { statusTextArea.appendErrorMessage(message); }
         onWarnMsgReceived:  { statusTextArea.appendWarnMessage(message); }
+
+        Component.onDestruction: {
+            allowVehicleConnections()
+        }
     }
 
     DSM.StateMachine {
@@ -130,6 +144,7 @@ QGCView {
                progressBar.setVisibleProgressLabel(false)
                progressBar.changeProgressBarValue(0)
                fwUpgradeController.observeDevice()
+               allowVehicleConnections()
            }
         }
 
@@ -206,6 +221,7 @@ QGCView {
                 showDialog(firmwareSettingsComponent,
                        dialogTitle, qgcView.showDialogDefaultWidth,
                        StandardButton.Ok | StandardButton.Cancel)
+                disallowVehicleConnections()
             }
         }
 
