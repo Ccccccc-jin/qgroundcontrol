@@ -286,6 +286,7 @@ Rectangle {
                 visible:            QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.linuxFirmware : false
                 text:               qsTr("Vehicle")
                 Layout.fillWidth:   true
+                enabled:            !_corePlugin.vehicleSetupDisabled
 
                 onClicked:      showVehicleSelectorPanel()
             }
