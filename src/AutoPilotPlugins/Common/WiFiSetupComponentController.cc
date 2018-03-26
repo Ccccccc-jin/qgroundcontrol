@@ -195,6 +195,12 @@ void WiFiSetupComponentController::removeNetworkFromEdge(QString const& name)
         appSetting.remove(impl::EDGE_WIFI_SETTING_KEY);
     }
 
+    if (name == _activeNetwork) {
+        _activeNetwork.clear();
+        _edgeMode = WifiStatus::Switching;
+        emit edgeModeChanged();
+    }
+
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeRemoveNetworkMsg(name));
     updateNetwokrsList();
