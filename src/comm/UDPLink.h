@@ -164,6 +164,10 @@ public:
     QString getName() const;
 
     // Extensive statistics for scientific purposes
+    QHostAddress getReceiverHostAddress(void) const override {
+        return _receiverHostAddr;
+    }
+
     qint64 getConnectionSpeed() const;
     qint64 getCurrentInDataRate() const;
     qint64 getCurrentOutDataRate() const;
@@ -204,6 +208,7 @@ private:
 #if defined(QGC_ZEROCONF_ENABLED)
     DNSServiceRef  _dnssServiceRef;
 #endif
+    QHostAddress        _receiverHostAddr;
 
     bool                _running;
     QUdpSocket*         _socket;

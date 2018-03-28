@@ -24,6 +24,7 @@
 #include <QNetworkInterface>
 #include <iostream>
 #include <QHostInfo>
+#include <QNetworkDatagram>
 
 #include "UDPLink.h"
 #include "QGC.h"
@@ -73,6 +74,7 @@ UDPLink::UDPLink(SharedLinkConfigurationPointer& config)
     #if defined(QGC_ZEROCONF_ENABLED)
     , _dnssServiceRef(NULL)
     #endif
+    , _receiverHostAddr(QHostAddress::LocalHost)
     , _running(false)
     , _socket(NULL)
     , _udpConfig(qobject_cast<UDPConfiguration*>(config.data()))
@@ -175,26 +177,43 @@ void UDPLink::_writeBytes(const QByteArray data)
  **/
 void UDPLink::readBytes()
 {
+    auto constexpr databuffer_treshold = 10 * 1024;
     QByteArray databuffer;
+
     while (_socket->hasPendingDatagrams())
     {
-        QByteArray datagram;
-        datagram.resize(_socket->pendingDatagramSize());
-        QHostAddress sender;
-        quint16 senderPort;
-        _socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-        databuffer.append(datagram);
+        auto dgram = _socket->receiveDatagram(
+            _socket->pendingDatagramSize()
+        );
+
+        auto dgram_data = dgram.data();
+
+        _logInputDataRate(static_cast<quint64>(dgram_data.length()),
+                          QDateTime::currentMSecsSinceEpoch());
+
+        databuffer.append(std::move(dgram_data));
+
         //-- Wait a bit before sending it over
-        if(databuffer.size() > 10 * 1024) {
+        if(databuffer.size() > databuffer_treshold) {
             emit bytesReceived(this, databuffer);
             databuffer.clear();
         }
-        _logInputDataRate(datagram.length(), QDateTime::currentMSecsSinceEpoch());
+
+        // update dest ip
+        if (dgram.destinationAddress() != _receiverHostAddr) {
+            _receiverHostAddr = dgram.destinationAddress();
+            emit receiverHostAddressChanged();
+        }
+
         // TODO This doesn't validade the sender. Anything sending UDP packets to this port gets
         // added to the list and will start receiving datagrams from here. Even a port scanner
         // would trigger this.
         // Add host to broadcast list if not yet present, or update its port
-        _udpConfig->addHost(sender.toString(), (int)senderPort);
+
+        auto senderAddr = dgram.senderAddress().toString();
+        auto senderPort = static_cast<int>(dgram.senderPort());
+
+        _udpConfig->addHost(senderAddr, senderPort);
     }
     //-- Send whatever is left
     if(databuffer.size()) {
