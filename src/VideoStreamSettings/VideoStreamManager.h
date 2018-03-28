@@ -60,6 +60,7 @@ public:
 
 private slots:
     void    _mavlinkMessageReceived (const mavlink_message_t& message);
+    void    _onReceiverHostChanged  (void);
 
 signals:
     void    controllerSourceChanged();

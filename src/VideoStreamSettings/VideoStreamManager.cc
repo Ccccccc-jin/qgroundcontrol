@@ -34,6 +34,7 @@ VideoStreamManager::VideoStreamManager(Vehicle* vehicle)
     , _fpsMetaData        (FactMetaData::valueTypeFloat)
     , _rotationMetaData   (FactMetaData::valueTypeUint16)
 {
+    _targetIp = getLocalAddress();
     _mavlink = qgcApp()->toolbox()->mavlinkProtocol();
 
     QStringList  bitRateStrings, fpsStrings, rotationStrings;
@@ -61,6 +62,8 @@ VideoStreamManager::VideoStreamManager(Vehicle* vehicle)
     _rotationFact.setMetaData(&_rotationMetaData);
 
     connect(_vehicle, &Vehicle::mavlinkMessageReceived, this, &VideoStreamManager::_mavlinkMessageReceived);
+    connect(_vehicle->priorityLink(), &LinkInterface::receiverHostAddressChanged,
+            this,                     &VideoStreamManager::_onReceiverHostChanged);
 
     _vehicle->sendMavCommand(MAV_COMP_ID_CAMERA,
                              MAV_CMD_REQUEST_VIDEO_STREAM_INFORMATION,
@@ -121,17 +124,8 @@ QString VideoStreamManager::controllerSource()
 
 QString VideoStreamManager::getLocalAddress()
 {
-    QString localAddress("127.0.0.1");
-
-    foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
-        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost)) {
-             if (address.isInSubnet(QHostAddress::parseSubnet("192.168.0.0/24"))) {
-                localAddress = address.toString();
-             }
-        }
-    }
-
-    return localAddress;
+    return _vehicle->priorityLink()
+            ->getReceiverHostAddress().toString();
 }
 
 void VideoStreamManager::_mavlinkMessageReceived(const mavlink_message_t &message)
@@ -140,6 +134,12 @@ void VideoStreamManager::_mavlinkMessageReceived(const mavlink_message_t &messag
         case MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION:
              _handleVideoStreamInfo(message);
     }
+}
+
+void VideoStreamManager::_onReceiverHostChanged(void)
+{
+    _targetIp = getLocalAddress();
+    emit addressChanged();
 }
 
 void VideoStreamManager::_handleVideoStreamInfo(const mavlink_message_t &message)

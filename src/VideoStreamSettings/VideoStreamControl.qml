@@ -35,17 +35,12 @@ Rectangle {
     border.color:   qgcPal.globalTheme === QGCPalette.Light ? Qt.rgba(0,0,0,0.35) : Qt.rgba(1,1,1,0.35)
 
     property var  _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
-    property var  _controller: _activeVehicle ? _activeVehicle.videoStreamManager : null
+    property VideoStreamManager _controller: _activeVehicle ? _activeVehicle.videoStreamManager : null
     property bool _communicationLost: _activeVehicle ? _activeVehicle.connectionLost : false
 
     property real _margins:      ScreenTools.defaultFontPixelWidth
     property int  _firstColumn:  ScreenTools.defaultFontPixelWidth * 10
     property int  _secondColumn: ScreenTools.defaultFontPixelWidth * 15
-
-    function set_gcs_target() {
-        portField.text = QGroundControl.settingsManager.videoSettings.udpPort.rawValue
-        ipField.text   = _controller.getLocalAddress()
-    }
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
@@ -102,11 +97,6 @@ Rectangle {
                 id:     sendToComboBox
                 width:  _secondColumn
                 model:  ["This computer", "Manual"]
-                onCurrentIndexChanged: {
-                    if (currentIndex == 0) {
-                        set_gcs_target()
-                    }
-                }
             }
 
             Row {
