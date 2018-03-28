@@ -440,7 +440,7 @@ SetupPage {
 
                         } else if (networkEncryptionType !== WiFiSetupComponentController.OpenEncrypt
                                    && !controller.validatePassword(networkPasswd)) {
-                            warningPanel.show("Password should contains at least 8 characters")
+                            warningPanel.show("Invalid password. Password should contains at least 8 characters")
 
                         } else {
                             return true;
@@ -495,6 +495,7 @@ SetupPage {
                                 Column {
                                     anchors  { fill: parent; margins: _margins }
                                     spacing: _margins
+
 
                                     function childSpacing() { return spacing / 2 }
 
@@ -658,6 +659,9 @@ SetupPage {
                                             id:             networkNameField
                                             anchors         { left: parent.left; right: parent.right }
                                             maximumLength:  controller.ssidMaxLength
+                                            validator:      RegExpValidator {
+                                                regExp: /[\0040-\0176]*/
+                                            }
                                         }
                                     }
 
@@ -702,6 +706,9 @@ SetupPage {
                                             anchors         { left: parent.left; right: parent.right }
                                             maximumLength:  controller.passwdMaxLength
                                             echoMode:       TextInput.Password
+                                            validator:      RegExpValidator {
+                                                regExp: /[\0040-\0176]*/
+                                            }
                                         }
 
                                         Row {
