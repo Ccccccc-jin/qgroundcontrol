@@ -203,6 +203,8 @@ void WiFiSetupComponentController::removeNetworkFromEdge(QString const& name)
 
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeRemoveNetworkMsg(name));
+    _savedNetworks.removeOne(name);
+    emit savedNetworksUpdated();
     updateNetwokrsList();
 }
 
@@ -228,8 +230,6 @@ void WiFiSetupComponentController::requestWifiStatus(void)
 
 void WiFiSetupComponentController::updateNetwokrsList(void)
 {
-    _savedNetworks.clear();
-    emit savedNetworksUpdated();
     _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
 }
 
@@ -281,14 +281,19 @@ void WiFiSetupComponentController::_handleConnectionLost(bool isConnectionLost)
 
 void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message_t message)
 {
+    auto constexpr savedNetworkType = 0;
+
     mavlink_wifi_network_information_t wifiNetworkInfo;
     mavlink_msg_wifi_network_information_decode(&message, &wifiNetworkInfo);
 
-    if (wifiNetworkInfo.type == 0) {
+    if (wifiNetworkInfo.type == savedNetworkType) {
         auto ssid = impl::decodeString(wifiNetworkInfo.ssid,
                                        sizeof(wifiNetworkInfo.ssid));
 
-        _savedNetworks << ssid;
+        if (!_savedNetworks.contains(ssid)) {
+            _savedNetworks.prepend(ssid);
+        }
+
         emit savedNetworksUpdated();
     }
 }
