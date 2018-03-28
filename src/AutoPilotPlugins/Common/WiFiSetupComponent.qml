@@ -434,16 +434,12 @@ SetupPage {
                     id: viewDialog
                     anchors.fill: parent
 
-                    function isPasswdValid(passwd) {
-                        return (passwd === "" || passwd.length < 8)
-                    }
-
                     function areTheFieldsCorrect(networkSsid, networkEncryptionType, networkPasswd) {
                         if (networkSsid === "") {
                             warningPanel.show("Network wasn't selected")
 
                         } else if (networkEncryptionType !== WiFiSetupComponentController.OpenEncrypt
-                                   && isPasswdValid(networkPasswd)) {
+                                   && !controller.validatePassword(networkPasswd)) {
                             warningPanel.show("Password should contains at least 8 characters")
 
                         } else {

@@ -94,6 +94,8 @@ public:
         return _encryptTypeStrings[static_cast<int>(type)];
     }
 
+    Q_INVOKABLE bool validatePassword(QString const& passwd);
+
     WifiNetworksListModel* scannedNetworks(void) { return &_scannedNetworks; }
     void setDefaultNetwork(QString const& network);
 

@@ -82,8 +82,8 @@ QVariant WifiNetworksListModel::data(const QModelIndex &index, int role) const
 namespace impl {
     static const int SSID_LENGTH             = sizeof(mavlink_wifi_network_add_t::ssid);
     static const int PASSWD_LENGTH           = sizeof(mavlink_wifi_network_add_t::password);
+    static constexpr int PASSWD_MIN_LENGTH   = 8;
     static char const* EDGE_WIFI_SETTING_KEY = "WifiSetup/EdgeDefaultNetwork";
-
 
     QByteArray toRawString(QString string, int rawSize = SSID_LENGTH)
     {
@@ -226,11 +226,29 @@ void WiFiSetupComponentController::requestWifiStatus(void)
 }
 
 
-void WiFiSetupComponentController::updateNetwokrsList()
+void WiFiSetupComponentController::updateNetwokrsList(void)
 {
     _savedNetworks.clear();
     emit savedNetworksUpdated();
     _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_REQUEST_WIFI_NETWORKS, true, 1);
+}
+
+
+bool WiFiSetupComponentController::validatePassword(QString const& passwd)
+{
+    /// We have ASCII PSK (max 63 bytes length) and HEX (fixed 64 bytes length)
+    auto checkAsAsciiPSK = passwd.length() < _passwdMaxLength;
+    auto checkAsHexPSK   = passwd.length() == _passwdMaxLength;
+
+    if (checkAsAsciiPSK) {
+        return passwd.length() >= impl::PASSWD_MIN_LENGTH;
+
+    } else if (checkAsHexPSK) {
+        auto hexadecimalPattern = QRegExp("^[0-9A-Fa-f]*$");
+        return passwd.contains(hexadecimalPattern);
+    }
+
+    return false;
 }
 
 
@@ -263,7 +281,6 @@ void WiFiSetupComponentController::_handleConnectionLost(bool isConnectionLost)
 
 void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message_t message)
 {
-    qDebug() << "in handle";
     mavlink_wifi_network_information_t wifiNetworkInfo;
     mavlink_msg_wifi_network_information_decode(&message, &wifiNetworkInfo);
 
