@@ -314,6 +314,7 @@ SetupPage {
                                 Layout.fillWidth: true
                                 height:  parent._btnsHeight
                                 enabled: savedNetworksListView.count > 0
+                                      && savedNetworksListView.currentItem !== null
 
                                 QGCButton {
                                     anchors.fill: parent; text: "Connect"
@@ -349,6 +350,7 @@ SetupPage {
                                 Layout.fillWidth: true
                                 height: parent._btnsHeight
                                 enabled: savedNetworksListView.count > 0
+                                      && savedNetworksListView.currentItem !== null
 
                                 QGCButton {
                                     anchors.fill: parent; text: "Delete"
@@ -394,6 +396,7 @@ SetupPage {
                                 Layout.fillWidth: true
                                 height:  parent._btnsHeight
                                 enabled: savedNetworksListView.count > 0
+                                      && savedNetworksListView.currentItem !== null
 
                                 QGCButton {
                                     anchors.fill: parent

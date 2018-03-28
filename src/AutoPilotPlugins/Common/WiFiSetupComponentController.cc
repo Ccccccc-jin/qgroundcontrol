@@ -203,8 +203,10 @@ void WiFiSetupComponentController::removeNetworkFromEdge(QString const& name)
 
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
                                 impl::makeRemoveNetworkMsg(name));
+
     _savedNetworks.removeOne(name);
     emit savedNetworksUpdated();
+
     updateNetwokrsList();
 }
 
