@@ -17,6 +17,7 @@
 #include <QMetaType>
 #include <QSharedPointer>
 #include <QDebug>
+#include <QHostAddress>
 
 #include "QGCMAVLink.h"
 #include "LinkConfiguration.h"
@@ -63,6 +64,15 @@ public:
     virtual bool isConnected() const = 0;
 
     /* Connection characteristics */
+
+    /**
+     * @brief return an IP on which vehicle sends all messages
+     *
+     * @return address if function is supported by connections type, QHostAddress::Null otherwise
+     **/
+    virtual QHostAddress getReceiverHostAddress(void) const {
+        return QHostAddress::Null;
+    }
 
     /**
      * @Brief Get the maximum connection speed for this interface.
@@ -146,6 +156,7 @@ private slots:
     virtual void _writeBytes(const QByteArray) = 0;
     
 signals:
+    void receiverHostAddressChanged(void);
     void autoconnectChanged(bool autoconnect);
     void activeChanged(bool active);
     void _invokeWriteBytes(QByteArray);
