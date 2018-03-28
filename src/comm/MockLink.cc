@@ -482,6 +482,12 @@ void MockLink::_handleWifiNetworkDelete(const mavlink_message_t &msg)
             _savedWifiNetowrks.removeOne(netwk);
         }
     }
+
+    // If requested deletion of active network
+    // Vehicle return to Acccess Point
+    if (netwkForDelete == _activeNetwork) {
+        _handleWifiStartAP(mavlink_command_long_t());
+    }
 }
 
 void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
