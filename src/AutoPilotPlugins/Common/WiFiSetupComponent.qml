@@ -160,7 +160,8 @@ SetupPage {
                             onClicked: {
                                 if (checked) {
                                     controller.bootAsAccessPoint()
-                                } else if (controller.defaultNetwork.length > 0) {
+                                } else if (controller.defaultNetwork.length > 0
+                                        && controller.savedNetworksContains(controller.defaultNetwork)) {
                                     controller.bootAsClient(controller.defaultNetwork)
                                 } else {
                                     switchWarnDialog.visible = true
@@ -189,7 +190,7 @@ SetupPage {
                                 icon:            StandardIcon.Warning
                                 standardButtons: StandardButton.Ok
                                 title:           qsTr("Connect to Network")
-                                text:            qsTr("Can not connect to default network.Default network is unspecified.")
+                                text:            qsTr("Can not connect to default network. Default network is unspecified.")
 
 
                                 onAccepted: { visible = false }

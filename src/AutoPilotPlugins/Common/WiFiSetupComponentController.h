@@ -79,6 +79,8 @@ public:
 
     Q_PROPERTY(WifiNetworksListModel* scannedNetworks READ scannedNetworks NOTIFY scannedNetworksUpdated)
 
+    Q_INVOKABLE bool savedNetworksContains(QString netwk);
+
     Q_INVOKABLE void bootAsAccessPoint     (void);
     Q_INVOKABLE void bootAsClient          (QString const& netwkName);
 

@@ -162,6 +162,12 @@ WiFiSetupComponentController::WiFiSetupComponentController()
 }
 
 
+bool WiFiSetupComponentController::savedNetworksContains(QString netwk)
+{
+    return _savedNetworks.contains(netwk);
+}
+
+
 void WiFiSetupComponentController::bootAsAccessPoint()
 {
     _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_WIFI_START_AP, true, 1);
