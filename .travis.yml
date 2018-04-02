@@ -58,6 +58,8 @@ addons:
     - libgstreamer1.0-dev
     - libsdl2-dev
     - libudev-dev
+	- libusb-1.0.0-dev
+	- liblzma-dev
     - wget
 
 cache:
@@ -65,13 +67,16 @@ cache:
     - $HOME/.ccache
 
 before_install:
+  - export QT_VERSION=5.9.3
   # fetch entire git repo to properly determine the version
+
   - if [ "${CONFIG}" = "installer" ]; then
         cd ${TRAVIS_BUILD_DIR} && git fetch --unshallow && git fetch --all --tags;
     fi
 
   # install ccache for osx/ios
   - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then
+        brew install xz libusb &&
         wget https://s3.amazonaws.com/px4-travis/toolchain/macos/ccache &&
         chmod +x ccache && sudo mv ccache /usr/local/bin;
     fi
@@ -89,27 +94,11 @@ before_install:
 install:
   # linux dependencies: qt
   - if [ "${SPEC}" = "linux-g++-64" ]; then
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/Qt5.7.1-linux-min.tar.bz2 &&
-        tar jxf Qt5.7.1-linux-min.tar.bz2 -C /tmp &&
-        export PATH=/tmp/Qt5.7-linux/5.7/gcc_64/bin:$PATH &&
+        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/Qt${QT_VERSION}-linux-min.tar.bz2 &&
+        tar jxf Qt${QT_VERSION}-linux-min.tar.bz2 -C /tmp &&
+        export PATH=/tmp/Qt5.9-linux/5.9/gcc_64/bin:$PATH &&
         export DISPLAY=:99.0 &&
         sh -e /etc/init.d/xvfb start
-        ;
-    fi
-
-  # android dependencies: qt, gstreamer, android-ndk
-  - if [ "${SPEC}" = "android-g++" ]; then
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/Qt5.7.1-android-min.tar.bz2 &&
-        tar jxf Qt5.7.1-android-min.tar.bz2 -C /tmp &&
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/gstreamer-1.0-android-armv7-1.5.2.tar.bz2 &&
-        mkdir -p ${TRAVIS_BUILD_DIR}/gstreamer-1.0-android-armv7-1.5.2 &&
-        tar jxf gstreamer-1.0-android-armv7-1.5.2.tar.bz2 -C ${TRAVIS_BUILD_DIR}/gstreamer-1.0-android-armv7-1.5.2 &&
-        wget http://dl.google.com/android/ndk/android-ndk-r10e-linux-x86_64.bin &&
-        chmod +x android-ndk-r10e-linux-x86_64.bin &&
-        ./android-ndk-r10e-linux-x86_64.bin > /dev/null &&
-        export ANDROID_NDK_ROOT=`pwd`/android-ndk-r10e &&
-        export ANDROID_SDK_ROOT=/usr/local/android-sdk &&
-        export PATH=/tmp/Qt5.7-android/5.7/android_armv7/bin:`pwd`/android-ndk-r10e:$PATH && echo $PATH
         ;
     fi
 
@@ -148,22 +137,10 @@ before_script:
   - wget http://px4-travis.s3.amazonaws.com/Firmware/master/parameters.xml -O src/FirmwarePlugin/PX4/PX4ParameterFactMetaData.xml
   - wget http://px4-travis.s3.amazonaws.com/Firmware/master/airframes.xml -O src/AutoPilotPlugins/PX4/AirframeFactMetaData.xml
 
-  # switch android config from installer to release if the android storepass isn't available
-  - if [[ "${SPEC}" = "android-g++" && "${CONFIG}" = "installer" && -z ${ANDROID_STOREPASS} ]]; then
-        export CONFIG=release;
-    fi
-
-  # insert QGC version in AndroidManifest.xml
-  - if [ "${SPEC}" = "android-g++" ]; then
-        git remote set-branches origin 'master' &&
-        git fetch origin master &&
-        ./tools/update_android_version.sh;
-    fi
-
 script:
   # run qmake
   - mkdir ${SHADOW_BUILD_DIR} && cd ${SHADOW_BUILD_DIR}
-  - qmake -r ${TRAVIS_BUILD_DIR}/qgroundcontrol.pro CONFIG+=${CONFIG} CONFIG+=WarningsAsErrorsOn -spec ${SPEC}
+  - qmake -r ${TRAVIS_BUILD_DIR}/qgroundcontrol.pro CONFIG+=${CONFIG} -spec ${SPEC}
 
   # compile
   - if [ "${SPEC}" != "macx-ios-clang" ]; then
@@ -200,70 +177,3 @@ before_deploy:
   - if [[ "${SPEC}" = "linux-g++-64" && "${CONFIG}" = "installer" ]]; then
         ./deploy/create_linux_appimage.sh ${TRAVIS_BUILD_DIR} ${SHADOW_BUILD_DIR}/release ${SHADOW_BUILD_DIR}/release/package;
     fi
-
-deploy:
-  # deploy installers to s3 builds/ if on a branch
-  - provider: s3
-    access_key_id: AKIAIVORNALE7NHD3T6Q
-    secret_access_key:
-      secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
-    bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/release/package
-    upload-dir: builds/${TRAVIS_BRANCH}
-    acl: public_read
-    region: us-west-2
-    skip_cleanup: true
-    on:
-      all_branches: true
-      condition: $CONFIG = installer
-
-  # deploy tagged installers to s3 latest/
-  - provider: s3
-    access_key_id: AKIAIVORNALE7NHD3T6Q
-    secret_access_key:
-      secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
-    bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/release/package
-    upload-dir: latest
-    acl: public_read
-    region: us-west-2
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CONFIG = installer
-
-  # deploy tagged installers to s3 version folder
-  - provider: s3
-    access_key_id: AKIAIVORNALE7NHD3T6Q
-    secret_access_key:
-      secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
-    bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/release/package
-    upload-dir: ${TRAVIS_BRANCH}
-    acl: public_read
-    region: us-west-2
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CONFIG = installer
-
-  # deploy installers to Github releases if on a tag
-  - provider: releases
-    api-key:
-      secure: K/Zqr/FCC7QvzFxYvBtCinPkacQq2ubJ2qm982+38Zf/KjibVOF1dEbVdrGZmII6Tg5DaQzNXGYkg5PvYmJgT9xRsqeQjeYIUYqYZpAt+HYWA38AVfMU8jip/1P1wmwqD469nzJOBBa8yfsMs6Ca7tBaNl/zTxCRGnAgEzqtkdQ=
-    file_glob: true
-    file:
-      - ${SHADOW_BUILD_DIR}/release/package/qgroundcontrol.*
-      - ${SHADOW_BUILD_DIR}/release/package/QGroundControl.*
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CONFIG = installer
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/60b033428ae9dc715662
-    on_success: change
-    on_failure: always
-    on_start: never
