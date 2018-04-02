@@ -22,6 +22,15 @@ Item {
     property var  _activeVehicle:       QGroundControl.multiVehicleManager.activeVehicle
     property bool _communicationLost:   _activeVehicle ? _activeVehicle.connectionLost : false
 
+    function autopilotFirmwareVersion() {
+        return  !_activeVehicle || _activeVehicle.firmwareMajorVersion === -1 ?
+            qsTr("Unknown") : "v"
+                    + _activeVehicle.firmwareMajorVersion + "."
+                    + _activeVehicle.firmwareMinorVersion + "."
+                    + _activeVehicle.firmwarePatchVersion
+                    + _activeVehicle.firmwareVersionTypeString
+    }
+
     QGCPalette { id: qgcPal }
 
     // Easter egg mechanism
@@ -85,18 +94,42 @@ Item {
         }
     }
 
-    Image {
-        anchors.right:          parent.right
-        anchors.top:            parent.top
-        anchors.bottom:         parent.bottom
-        visible:                x > indicatorRow.width && !_communicationLost
-        fillMode:               Image.PreserveAspectFit
-        source:                 _outdoorPalette ? _brandImageOutdoor : _brandImageIndoor
+    RowLayout {
+        anchors.right: parent.right
+        height:        parent.height
+        visible:       _activeVehicle && x > indicatorRow.width && !_communicationLost
 
-        property bool   _outdoorPalette:        qgcPal.globalTheme === QGCPalette.Light
-        property bool   _corePluginBranding:    QGroundControl.corePlugin.brandImageIndoor.length != 0
-        property string _brandImageIndoor:      _corePluginBranding ? QGroundControl.corePlugin.brandImageIndoor : (_activeVehicle ? _activeVehicle.brandImageIndoor : "")
-        property string _brandImageOutdoor:     _corePluginBranding ? QGroundControl.corePlugin.brandImageOutdoor : (_activeVehicle ? _activeVehicle.brandImageOutdoor : "")
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredWidth:  autopilotLogo.width
+            Layout.preferredHeight: parent.height
+            Layout.alignment: Qt.AlignHCenter
+
+            Image {
+                id:                     autopilotLogo
+                height:                 parent.height
+                fillMode:               Image.PreserveAspectFit
+                source:                 _outdoorPalette ? _brandImageOutdoor : _brandImageIndoor
+
+                property bool   _outdoorPalette:        qgcPal.globalTheme === QGCPalette.Light
+                property bool   _corePluginBranding:    QGroundControl.corePlugin.brandImageIndoor.length != 0
+                property string _brandImageIndoor:      _corePluginBranding ? QGroundControl.corePlugin.brandImageIndoor : (_activeVehicle ? _activeVehicle.brandImageIndoor : "")
+                property string _brandImageOutdoor:     _corePluginBranding ? QGroundControl.corePlugin.brandImageOutdoor : (_activeVehicle ? _activeVehicle.brandImageOutdoor : "")
+            }
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredWidth: Math.max(type.width, ver.width)
+            Layout.preferredHeight: _col.height
+            Layout.alignment: Qt.AlignHCenter
+
+            Column {
+                id: _col
+                QGCLabel { id: type; text: _activeVehicle ? _activeVehicle.vehicleTypeString : "Unknown" }
+                QGCLabel { id: ver;  text: autopilotFirmwareVersion() }
+            }
+        }
     }
 
     Row {
