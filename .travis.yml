@@ -9,6 +9,8 @@ env:
     - JOBS=4
     - QT_FATAL_WARNINGS=1
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
+    - QT_SHORT_VERSION=5.9
+    - QT_FULL_VERSION=${QT_SHORT_VERSION}.3
 
 matrix:
     fast_finish: true
@@ -48,9 +50,9 @@ addons:
     - libsdl2-dev
     - libudev-dev
     - wget
-	- libusb-1.0.0-dev
-	- libblkid-dev
-	- liblzma-dev
+    - libusb-1.0.0-dev
+    - libblkid-dev
+    - liblzma-dev
 
 cache:
   directories:
@@ -69,12 +71,19 @@ before_install:
         export JOBS=$((`sysctl -n hw.ncpu`+1));
     fi
 
-install:
-  - export QT_FOLDER_NAME="Qt${QT_FULL_VERSION}-${SPEC}" &&
-    export QT_PACKAGE_NAME="${QT_FOLDER_NAME}.tar.bz2" &&
-    export QT_DIR="$/tmp/{QT_FOLDER_NAME}/${SPEC}"
+  - export QGC_CLOUD="https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies"
+  - export QT_FOLDER_NAME="Qt${QT_FULL_VERSION}-${SPEC}"
+  - export QT_PACKAGE_NAME="${QT_FOLDER_NAME}.tar.bz2"
+  - export QT_DIR="$/tmp/{QT_FOLDER_NAME}/${SPEC}/"
+  - export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_DIR}/plugins"
+  - export QML2_IMPORT_PATH="${QT_DIR}/qml"
+  - export PATH="${QT_DIR}/bin:$PATH"
+  - export QT_CLOUD="https://storage.googleapis.com/test-vld-bucket"
 
-  - wget "https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/${QT_PACKAGE_NAME}"
+
+install:
+
+  - wget "${QT_CLOUD}/${QT_PACKAGE_NAME}"
   - tar -jxf "${QT_PACKAGE_NAME}" -C /tmp
 
   # linux exports 
@@ -82,32 +91,27 @@ install:
         export PATH="${QT_DIR}/bin:$PATH" &&
         export DISPLAY=:99.0 &&
         sh -e /etc/init.d/xvfb start
-		;
+        ;
     fi
 
   # osx dependencies: qt, gstreamer, gstreamer-devel
   - if [ "${SPEC}" = "macx-clang" ]; then
         GSTRMR_PKG="gstreamer-1.0-1.5.2-x86_64.pkg" &&
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/${GSTRMR_PKG} &&
-        sudo installer -verboseR -pkg ${GSTRMR_PKG} -target / &&
-
+        wget "${QGC_CLOUD}/${GSTRMR_PKG}" &&
+        sudo installer -verboseR -pkg "${GSTRMR_PKG}" -target / &&
         GSTRMR_DEV_PKG="gstreamer-1.0-devel-1.5.2-x86_64.pkg" &&
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/${GSTRMR_DEV_PKG} &&
-        sudo installer -verboseR -pkg ${GSTRMR_DEV_PKG} -target / &&
-
-        wget https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/osx-gstreamer.tar.bz2 &&
-        sudo tar jxf osx-gstreamer.tar.bz2 -C /Library/Frameworks &&
-
-        export QT_QPA_PLATFORM_PLUGIN_PATH="{$QT_DIR}/plugins" &&
-        export QML2_IMPORT_PATH="${QT_DIR}/qml" &&
-        export PATH="${QT_DIR}/bin:$PATH"
+        wget "${QGC_CLOUD}/${GSTRMR_DEV_PKG}" &&
+        sudo installer -verboseR -pkg "${GSTRMR_DEV_PKG}" -target / &&
+        wget "${QGC_CLOUD}/osx-gstreamer.tar.bz2" &&
+        sudo tar jxf "osx-gstreamer.tar.bz2" -C /Library/Frameworks
         ;
     fi
 
 before_script:
   # grab latest PX4 parameter and airframe metadata
-  - wget http://px4-travis.s3.amazonaws.com/Firmware/master/parameters.xml -O src/FirmwarePlugin/PX4/PX4ParameterFactMetaData.xml
-  - wget http://px4-travis.s3.amazonaws.com/Firmware/master/airframes.xml -O src/AutoPilotPlugins/PX4/AirframeFactMetaData.xml
+  - PX4_PARAMS_CLOUD="http://px4-travis.s3.amazonaws.com/Firmware/master"
+  - wget ${PX4_PARAMS_CLOUD}/parameters.xml -O src/FirmwarePlugin/PX4/PX4ParameterFactMetaData.xml
+  - wget ${PX4_PARAMS_CLOUD}/airframes.xml  -O src/AutoPilotPlugins/PX4/AirframeFactMetaData.xml
 
 script:
   # run qmake
@@ -118,9 +122,7 @@ script:
   - if [ "${SPEC}" != "macx-ios-clang" ]; then
         make -j$JOBS;
     else
-        xcodebuild -IDEBuildOperationMaxNumberOfConcurrentCompileTasks=$JOBS \
-		           -configuration Release \
-				   CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty -c && $(exit ${PIPESTATUS[0]});
+        xcodebuild -IDEBuildOperationMaxNumberOfConcurrentCompileTasks=$JOBS -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO | xcpretty -c && $(exit ${PIPESTATUS[0]});
     fi
 
   # unit tests linux
