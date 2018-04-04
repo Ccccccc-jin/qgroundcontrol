@@ -28,7 +28,7 @@ matrix:
           env: SPEC=android-g++ CONFIG=installer
           sudo: false
         - os: osx
-          osx_image: xcode8.3
+          osx_image: xcode9
           env: SPEC=macx-clang CONFIG=installer
           sudo: required
 
@@ -96,6 +96,8 @@ install:
 
   # osx dependencies: qt, gstreamer, gstreamer-devel
   - if [ "${SPEC}" = "macx-clang" ]; then
+        brew update &&
+        brew install xz &&
         GSTRMR_PKG="gstreamer-1.0-1.5.2-x86_64.pkg" &&
         wget "${QGC_CLOUD}/${GSTRMR_PKG}" &&
         sudo installer -verboseR -pkg "${GSTRMR_PKG}" -target / &&
