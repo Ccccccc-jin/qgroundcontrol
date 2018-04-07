@@ -138,3 +138,13 @@ script:
     	mkdir -p ~/.config/QtProject/ && cp ${TRAVIS_BUILD_DIR}/test/qtlogging.ini ~/.config/QtProject/ &&
             ./debug/qgroundcontrol-start.sh --unittest;
     fi
+
+deploy:
+    provider: gcs
+    access_key_id: "GOOGFGG4SSDIIKZYJPVS"
+    secret_access_key: "cY+T+1lUC8/EEu6vNPjVAOzzM7BqXIdJUP0ecbCT"
+    bucket: "test-vld-bucket"
+    local_dir: "${SHADOW_BUILD_DIR}/release/package"
+    skip_cleanup: true
+    on: 
+        all_branches: true
