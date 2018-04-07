@@ -13,6 +13,8 @@ env:
     - QT_FULL_VERSION=${QT_SHORT_VERSION}.3
     - LINUX_SPEC=linux-g++-64
     - OSX_SPEC=macx-clang
+    - GCC_VERSION=7
+    - GXX_VERSION=${GCC_VERSION}
 
 
 matrix:
@@ -48,19 +50,23 @@ android:
 
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
+
     packages:
-    - ccache
-    - espeak
-    - libespeak-dev
-    - libgstreamer-plugins-base1.0-dev
-    - libgstreamer1.0-0:amd64
-    - libgstreamer1.0-dev
-    - libsdl2-dev
-    - libudev-dev
-    - wget
-    - libusb-1.0.0-dev
-    - libblkid-dev
-    - liblzma-dev
+      - ccache
+      - espeak
+      - libespeak-dev
+      - libgstreamer-plugins-base1.0-dev
+      - libgstreamer1.0-0:amd64
+      - libgstreamer1.0-dev
+      - libsdl2-dev
+      - libudev-dev
+      - wget
+      - libusb-1.0.0-dev
+      - libblkid-dev
+      - liblzma-dev
+
 
 cache:
   directories:
@@ -104,7 +110,16 @@ install:
 
   # linux exports 
   - if [ "${SPEC}" = "${LINUX_SPEC}" ]; then
+        sudo apt-get update &&
+        sudo apt-get install g++-${GXX_VERSION} gcc-${GCC_VERSION} &&
+
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GXX_VERSION} 90 &&
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90 &&
+
+        export CXX=g++-${GXX_VERSION} &&
+        export CC=gcc-${GCC_VERSION} &&
         export DISPLAY=:99.0 &&
+
         sh -e /etc/init.d/xvfb start
         ;
     fi
