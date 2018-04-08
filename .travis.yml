@@ -2,6 +2,7 @@
 
 language: cpp
 
+
 env:
   global:
     - CCACHE_CPP2=1
@@ -9,10 +10,13 @@ env:
     - JOBS=4
     - QT_FATAL_WARNINGS=1
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
+
     - QT_SHORT_VERSION=5.9
     - QT_FULL_VERSION=${QT_SHORT_VERSION}.3
+
     - LINUX_SPEC=linux-g++-64
     - OSX_SPEC=macx-clang
+
     - GCC_VERSION=7
     - GXX_VERSION=${GCC_VERSION}
 
@@ -30,22 +34,10 @@ matrix:
           env: SPEC="${LINUX_SPEC}" CONFIG=debug
           sudo: required
 
-        - os: android
-          language: android
-          env: SPEC=android-g++ CONFIG=installer
-          sudo: false
-
         - os: osx
           osx_image: xcode9
           env: SPEC="${OSX_SPEC}" CONFIG=installer
           sudo: required
-
-
-android:
-  components:
-    - android-21
-    - build-tools-21.1.1
-    - platform-tools
 
 
 addons:
@@ -104,7 +96,6 @@ before_install:
 
 
 install:
-
   - wget "${QT_CLOUD}/${QT_PACKAGE_NAME}"
   - tar -jxf "${QT_PACKAGE_NAME}" -C /tmp
 
@@ -156,6 +147,7 @@ script:
 
   # compile
   - make -j$JOBS;
+
 
 before_deploy:
   # create linux appimage
