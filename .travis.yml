@@ -6,7 +6,6 @@ language: cpp
 env:
   global:
     - CCACHE_CPP2=1
-    - CCACHE_DISABLE=1
     - JOBS=4
     - QT_FATAL_WARNINGS=1
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
@@ -116,7 +115,7 @@ install:
     fi
 
   - if [ "${SPEC}" = "${OSX_SPEC}" ]; then
-        brew update && brew install xz &&
+        brew update && brew install xz ccache &&
 
         GSTRMR_PKG="gstreamer-1.0-1.5.2-x86_64.pkg" &&
         GSTRMR_DEV_PKG="gstreamer-1.0-devel-1.5.2-x86_64.pkg" &&
@@ -131,6 +130,9 @@ install:
         sudo tar jxf "${OSX_GSTRMR}" -C /Library/Frameworks
         ;
     fi
+  
+  # print ccache stats
+  - ccache -s
 
 
 before_script:
