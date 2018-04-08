@@ -177,7 +177,8 @@ before_deploy:
   # create linux appimage
   - if [[ "${SPEC}" = "${LINUX_SPEC}" && "${CONFIG}" = "installer" ]]; then
         cd "${TRAVIS_BUILD_DIR}" &&
-        ./deploy/create_linux_appimage.sh "${TRAVIS_BUILD_DIR}" "${SHADOW_BUID_DIR}/release/package";
+        QGC_REL_DIR="${SHADOW_BUILD_DIR}/release" &&
+        ./deploy/create_linux_appimage.sh "${TRAVIS_BUILD_DIR}" "${QGC_REL_DIR}" "${QGC_REL_DIR}/package";
     fi
 
 
