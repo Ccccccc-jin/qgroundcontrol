@@ -18,74 +18,89 @@ install:
   - set PATH=C:\Qt\Tools\QtCreator\bin;C:\Qt\5.9.4\msvc2015\bin;%PATH%
   - mkdir %LOCALAPPDATA%\QtProject && copy test\qtlogging.ini %LOCALAPPDATA%\QtProject\
 
-  - mkdir "C:\Downloads"
-
   - ps: |
-      # Download and install GStreamer dev
-      Write-Host "Installing GStreamer..." -ForegroundColor Cyan
-      $msiPath = "$($env:USERPROFILE)\gstreamer-1.0-x86-1.5.2.msi"
-      Write-Host "Downloading..."
-      (New-Object Net.WebClient).DownloadFile('https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/gstreamer-1.0-x86-1.5.2.msi', $msiPath)
-      Write-Host "Installing..."
-      cmd /c start /wait msiexec /package $msiPath /passive ADDLOCAL=ALL
-      Write-Host "Installed" -ForegroundColor Green
+      function Print-Log { Write-Host $args[0] -ForegroundColor Cyan }
+      $Downloader = New-Object Net.WebClient
+
+      $ToolsPath = "c:\DevTools"
+      $DownloadsPath = "c:\Downloads"
+      $VStudioPath = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio 14.0\VC"
+
+      New-Item -ItemType directory -Path "${ToolsPath}" | out-null
+      New-Item -ItemType directory -Path "${DownloadsPath}" | out-null
+
+      $GStreamerCloudUrl = "https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies"
+
+      # Download and install GStreamer
+      Print-Log "- Installing GStreamer..."
+      $GStreamerMsiName = "gstreamer-1.0-x86-1.5.2.msi"
+      $msiPath = "$($env:USERPROFILE)\${GStreamerMsiName}"
+
+      Print-Log "+- Downloading GStreamer..."
+      $Downloader.DownloadFile("${GStreamerCloudUrl}/${GStreamerMsiName}", ${msiPath})
+      Print-Log "+- Installing GStreamer..."
+      cmd /c start /wait msiexec /package ${msiPath} /passive ADDLOCAL=ALL
+      Print-Log "- Installed`n"
       
       # Download and install GStreamer dev
-      Write-Host "Installing GStreamer dev..." -ForegroundColor Cyan
-      $msiPath = "$($env:USERPROFILE)\gstreamer-1.0-devel-x86-1.5.2.msi"
-      Write-Host "Downloading..."
-      (New-Object Net.WebClient).DownloadFile('https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/gstreamer-1.0-devel-x86-1.5.2.msi', $msiPath)
-      Write-Host "Installing..."
-      cmd /c start /wait msiexec /package $msiPath /passive ADDLOCAL=ALL
-      Write-Host "Installed" -ForegroundColor Green
+      Print-Log "- Installing GStreamer dev..."
+      $GStreamerDevMsiName = "gstreamer-1.0-devel-x86-1.5.2.msi"
+      $msiPath = "$($env:USERPROFILE)\${GStreamerDevMsiName}"
 
-     # Download and install 7z
-      Write-Host "Installing 7z" -ForegroundColor Cyan
-      Write-Host "Downloading..."
-      (New-Object System.Net.WebClient).DownloadFile("http://www.7-zip.org/a/7z1514-x64.exe", "c:\projects\7zip_installer.exe")
-      Write-Host "Installing..."
-      cmd /c start /wait c:\projects\7zip_installer.exe /S /D=c:\projects\7zip_tool
-      Write-Host "Installed" -ForegroundColor Green
+      Print-Log "+- Downloading GStreamer dev..."
+      $Downloader.DownloadFile("${GStreamerCloudUrl}/${GStreamerDevMsiName}", ${msiPath})
+      Print-Log "+- Installing GStreamer dev..."
+      cmd /c start /wait msiexec /package ${msiPath} /passive ADDLOCAL=ALL
+      Print-Log "- Installed`n" 
 
-     # Download and extract libusb
-      Write-Host "Fetching libusb dev..." -ForegroundColor Cyan
-      Write-Host "Downloading..."
-      (New-Object System.Net.WebClient).Downloadfile("http://github.com/libusb/libusb/releases/download/v1.0.21/libusb-1.0.21.7z", "c:\Downloads\libusb-1.0.21.7z")
-      New-Item -ItemType directory -Path "C:\libusb"
-      Write-Host "Extracting..."
-      cmd /c start /wait c:\projects\7zip_tool\7z x -y "c:\Downloads\libusb-1.0.21.7z" -o"c:\libusb"
-      Write-Host "Fetched" -ForegroundColor Green
+      # Download and install 7z
+      Print-Log "- Installing 7z"
+      $SevenZipUrl = "http://www.7-zip.org/a/7z1514-x64.exe"
+      $SevenZipInstallerDest = "${DownloadsPath}\7zip_installer.exe"
+
+      Print-Log "+- Downloading 7z..."
+      $Downloader.DownloadFile(${SevenZipUrl}, ${SevenZipInstallerDest})
+      Print-Log "+- Installing 7z..."
+      & "${SevenZipInstallerDest}" /S /D="${ToolsPath}\7zip_tool"
+      Print-Log "- Installed`n"
+
+      # Download and extract libusb
+      Print-Log "- Fetching libusb dev..."
+      $LibusbUrl = "http://github.com/libusb/libusb/releases/download/v1.0.21"
+      $LibusbPkgName = "libusb-1.0.21.7z"
+      $LibusbPath = "C:\libusb"
+
+      Print-Log "+- Downloading..."
+      $Downloader.Downloadfile("${LibusbUrl}/${LibusbPkgName}", "${DownloadsPath}\${LibusbPkgName}")
+      New-Item -ItemType directory -Path "${LibusbPath}"
+      Write-Host "+- Extracting..."
+      & "${ToolsPath}\7zip_tool\7z" x -y "${DownloadsPath}\${LibusbPkgName}" -o"${LibusbPath}"
+      Print-Log "- Fetched`n"
 
       # Download and extract liblzma
-      function Print-Log { Write-Host $args[0] -ForegroundColor Cyan }
-
-      $DownloadsPath = "C:\Downloads"
-      $VStudioPath = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio 14.0\VC"
+      Print-Log "-Fetching liblzma dev..."
 
       $LiblzmaPkgName = "xz-5.2.3-windows.zip" 
       $LiblzmaUrl = "https://tukaani.org/xz/$LiblzmaPkgName"
       $LiblzmaDestPath = "C:\liblzma"
       $LiblzmaPkgPath = "${DownloadsPath}\${LiblzmaPkgName}"
 
-      Print-Log "Fetching liblzma dev..."
+      Print-Log "+- Downloading liblzma zip archive..."
+      $Downloader.Downloadfile(${LiblzmaUrl}, ${LiblzmaPkgPath})
+      Print-Log "+- Downloaded."
 
-      Print-Log "Downloading liblzma zip archive..."
-      (New-Object System.Net.WebClient).Downloadfile(${LiblzmaUrl}, ${LiblzmaPkgPath})
-      Print-Log "Downloaded."
-
-      Print-Log "Extracting liblzma archive..."
+      Print-Log "+- Extracting liblzma archive..."
       New-Item -ItemType directory -Path "${LiblzmaDestPath}" | out-null
       Expand-Archive "${LiblzmaPkgPath}" -DestinationPath "${LiblzmaDestPath}"
-      Print-Log "Extracted."
+      Print-Log "+- Extracted."
 
-      Print-Log "Create liblzma.lib from liblzma.def"
+      Print-Log "+- Create liblzma.lib from liblzma.def"
       Set-Location "${LiblzmaDestPath}\doc"
-      Get-ChildItem "${VStudioPath}\bin"
       & "${VStudioPath}\bin\lib.exe" "/def:liblzma.def" "/out:liblzma.lib" "/machine:ix86"
       Copy-Item liblzma.lib -Destination ..\bin_i686\liblzma.lib
-      Print-Log "Created liblzma.lib"
+      Print-Log "+- Created liblzma.lib"
 
-      Print-Log "All Done. liblzma fetched."
+      Print-Log "- All Done. liblzma fetched.`n"
 
 build_script:
   - mkdir %SHADOW_BUILD_DIR% && cd %SHADOW_BUILD_DIR% && C:\Qt\5.8\msvc2015\bin\qmake -r CONFIG-=debug_and_release CONFIG+=%CONFIG% CONFIG+=WarningsAsErrorsOn %APPVEYOR_BUILD_FOLDER%\qgroundcontrol.pro
