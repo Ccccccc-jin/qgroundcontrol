@@ -58,6 +58,38 @@ install:
       cmd /c start /wait c:\projects\7zip_tool\7z x -y "c:\Downloads\libusb-1.0.21.7z" -o"c:\libusb"
       Write-Host "Fetched" -ForegroundColor Green
 
+  # Download and extract liblzma
+  - ps: |
+      function Print-Log { Write-Host $args[0] -ForegroundColor Cyan }
+
+      $DownloadsPath = "C:\Downloads"
+      $VStudioPath = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio 14.0\VC"
+
+      $LiblzmaPkgName = "xz-5.2.3-windows.zip" 
+      $LiblzmaUrl = "https://tukaani.org/xz/$LiblzmaPkgName"
+      $LiblzmaDestPath = "C:\liblzma"
+      $LiblzmaPkgPath = "${DownloadsPath}\${LiblzmaPkgName}"
+
+      Print-Log "Fetching liblzma dev..."
+
+      Print-Log "Downloading liblzma zip archive..."
+      (New-Object System.Net.WebClient).Downloadfile(${LiblzmaUrl}, ${LiblzmaPkgPath})
+      Print-Log "Downloaded."
+
+      Print-Log "Extracting liblzma archive..."
+      New-Item -ItemType directory -Path "${LiblzmaDestPath}" | out-null
+      Expand-Archive "${LiblzmaPkgPath}" -DestinationPath "${LiblzmaDestPath}"
+      Print-Log "Extracted."
+
+      Print-Log "Create liblzma.lib from liblzma.def"
+      Set-Location "${LiblzmaDestPath}\doc"
+      Get-ChildItem "${VStudioPath}\bin"
+      & "${VStudioPath}\bin\lib.exe" "/def:liblzma.def" "/out:liblzma.lib" "/machine:ix86"
+      Copy-Item liblzma.lib -Destination ..\bin_i686\liblzma.lib
+      Print-Log "Created liblzma.lib"
+
+      Print-Log "All Done. liblzma fetched."
+
 build_script:
   - mkdir %SHADOW_BUILD_DIR% && cd %SHADOW_BUILD_DIR% && C:\Qt\5.8\msvc2015\bin\qmake -r CONFIG-=debug_and_release CONFIG+=%CONFIG% CONFIG+=WarningsAsErrorsOn %APPVEYOR_BUILD_FOLDER%\qgroundcontrol.pro
   - cd %SHADOW_BUILD_DIR% && jom
