@@ -34,6 +34,17 @@ install:
       cmd /c start /wait msiexec /package $msiPath /passive ADDLOCAL=ALL
       Write-Host "Installed" -ForegroundColor Green
 
+  # Download 7z
+  - ps: |
+      Write-Host "Installing 7z" -ForegroundColor Cyan
+      Write-Host "Downloading..."
+      (New-Object System.Net.WebClient).Downloadfile("http://www.7-zip.org/a/7z1514-x64.exe", "c:\projects\7zip_installer.exe")
+      Write-Host "Installing..."
+      cmd /c start /wait c:\projects\7zip_installer.exe /S /D=c:\projects\7zip_tool
+      Write-Host "Installed" -ForegroundColor Green
+
+  - set PATH=c:\projects\7zip_tool;%PATH%
+
 build_script:
   - mkdir %SHADOW_BUILD_DIR% && cd %SHADOW_BUILD_DIR% && C:\Qt\5.8\msvc2015\bin\qmake -r CONFIG-=debug_and_release CONFIG+=%CONFIG% CONFIG+=WarningsAsErrorsOn %APPVEYOR_BUILD_FOLDER%\qgroundcontrol.pro
   - cd %SHADOW_BUILD_DIR% && jom
