@@ -17,6 +17,9 @@ install:
   - call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
   - set PATH=C:\Qt\Tools\QtCreator\bin;C:\Qt\5.8\msvc2015\bin;%PATH%
   - mkdir %LOCALAPPDATA%\QtProject && copy test\qtlogging.ini %LOCALAPPDATA%\QtProject\
+
+  - mkdir "C:\Downloads"
+
   - ps: |
       Write-Host "Installing GStreamer..." -ForegroundColor Cyan
       $msiPath = "$($env:USERPROFILE)\gstreamer-1.0-x86-1.5.2.msi"
@@ -34,16 +37,26 @@ install:
       cmd /c start /wait msiexec /package $msiPath /passive ADDLOCAL=ALL
       Write-Host "Installed" -ForegroundColor Green
 
-  # Download 7z
+  # Download and install 7z
   - ps: |
       Write-Host "Installing 7z" -ForegroundColor Cyan
       Write-Host "Downloading..."
-      (New-Object System.Net.WebClient).Downloadfile("http://www.7-zip.org/a/7z1514-x64.exe", "c:\projects\7zip_installer.exe")
+      (New-Object System.Net.WebClient).DownloadFile("http://www.7-zip.org/a/7z1514-x64.exe", "c:\projects\7zip_installer.exe")
       Write-Host "Installing..."
       cmd /c start /wait c:\projects\7zip_installer.exe /S /D=c:\projects\7zip_tool
       Write-Host "Installed" -ForegroundColor Green
 
   - set PATH=c:\projects\7zip_tool;%PATH%
+
+  # Download and extract libusb
+  - ps: |
+      Write-Host "Fetching libusb dev..." -ForegroundColor Cyan
+      Write-Host "Downloading..."
+      (New-Object System.Net.WebClient).Downloadfile("http://github.com/libusb/libusb/releases/download/v1.0.21/libusb-1.0.21.7z", "c:\Downloads\libusb-1.0.21.7z")
+      New-Item -ItemType directory -Path "C:\libusb"
+      Write-Host "Extracting..."
+      cmd /c start /wait c:\projects\7zip_tool\7z x -y "c:\Downloads\libusb-1.0.21.7z" -o"c:\libusb"
+      Write-Host "Fetched" -ForegroundColor Green
 
 build_script:
   - mkdir %SHADOW_BUILD_DIR% && cd %SHADOW_BUILD_DIR% && C:\Qt\5.8\msvc2015\bin\qmake -r CONFIG-=debug_and_release CONFIG+=%CONFIG% CONFIG+=WarningsAsErrorsOn %APPVEYOR_BUILD_FOLDER%\qgroundcontrol.pro
