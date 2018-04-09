@@ -172,13 +172,19 @@ before_deploy:
   - QGC_APP_DIR="${SHADOW_BUILD_DIR}/${BUILD_TYPE}"
   - export QGC_PKG_DIR="${QGC_APP_DIR}/package"
 
+  - cd "${TRAVIS_BUILD_DIR}" && mkdir -p "${QGC_PKG_DIR}"
+
   - if [[ "${SPEC}" = "${LINUX_SPEC}" ]]; then
-        cd "${TRAVIS_BUILD_DIR}" &&
-        mkdir -p "${QGC_PKG_DIR}" &&
         ./deploy/create_linux_appimage.sh "${TRAVIS_BUILD_DIR}" "${QGC_APP_DIR}" "${QGC_PKG_DIR}" &&
         mv "${QGC_PKG_DIR}/QGroundControl.AppImage" "${QGC_PKG_DIR}/QGroundControl-${BUILD_TYPE}.AppImage"
         ;
     fi
+
+  # make tarball with OSX debug app
+  - if [[ "${SPEC}" = "${OSX_SPEC}" && "${CONFIG}" = "debug" ]]; then
+        tar -cjf "${QGC_PKG_DIR}/QGroundControl.app.tar.bz2" "${QGC_APP_DIR}/QGroundControl.app"
+        ;
+    fi 
 
 
 deploy:
