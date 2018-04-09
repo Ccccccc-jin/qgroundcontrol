@@ -155,23 +155,7 @@ script:
   - qmake -r "${TRAVIS_BUILD_DIR}/qgroundcontrol.pro" CONFIG+=${CONFIG} -spec ${SPEC}
 
   # compile
-  - if [ "${SPEC}" != "macx-ios-clang" ]; then
-        make -j$JOBS;
-    else
-        XCBUILD_THREADS="-IDEBuildOperationMaxNumberOfConcurrentCompileTasks=$JOBS" &&
-        XCBUILD_CONFIG="-configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO" &&
-
-        xcodebuild  ${XCBUILD_THREADS} ${XCBUILD_CONFIG} | xcpretty -c && 
-        $(exit ${PIPESTATUS[0]});
-    fi
-
-  # unit tests linux
-  - if [[ "${SPEC}" = "${LINUX_SPEC}" && "${CONFIG}" = "debug" ]]; then
-        mkdir -p ~/.config/QtProject/ && 
-        cp ${TRAVIS_BUILD_DIR}/test/qtlogging.ini ~/.config/QtProject/ &&
-        ./debug/qgroundcontrol-start.sh --unittest;
-    fi
-
+  - make -j$JOBS;
 
 before_deploy:
   # create linux appimage
