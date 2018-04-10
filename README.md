@@ -3,6 +3,8 @@
 ## Open Source Micro Air Vehicle Ground Control Station
 [![Releases](https://img.shields.io/github/release/emlid/QGroundControl.svg)](https://github.com/emlid/QGroundControl/releases)
 [![Build Status](https://travis-ci.org/emlid/qgroundcontrol.svg?branch=edge-3.2.4)](https://travis-ci.org/emlid/qgroundcontrol)
+[![Build status](https://ci.appveyor.com/api/projects/status/abpfuwc50jtqitij/branch/edge-3.2.4?svg=true)](https://ci.appveyor.com/project/EmlidBuilderBot/qgroundcontrol)
+
 
 The license terms are set in the COPYING.md file.
 
