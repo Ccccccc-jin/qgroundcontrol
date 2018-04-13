@@ -4,26 +4,29 @@ build:
   verbosity: minimal
 
 environment:
-  DeployBucket: "test-vld-bucket"
   matrix:
   - BUILD: 'Release'
     CONFIG: installer
     ShadowBuildDir: C:\projects\qgroundcontrol\build_windows_install
     QtBinPath: C:\Qt\5.9\msvc2015\bin
+    VisualStudio: "Microsoft Visual Studio 14.0"
 
 install:
   - git submodule update --init --recursive
-  - call "%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
-  - set PATH=C:\Qt\Tools\QtCreator\bin;C:\Qt\5.9.4\msvc2015\bin;%PATH%
+  - call "%ProgramFiles(x86)%\%VISUALSTUDIO%\VC\vcvarsall.bat" x86
   - mkdir %LOCALAPPDATA%\QtProject && copy test\qtlogging.ini %LOCALAPPDATA%\QtProject\
 
   - ps: |
-      function Print-Log { Write-Host $args[0] -ForegroundColor Cyan }
+      # Set Path (Add Visual Studio and Qt)
+      $Env:Path = "C:\Qt\Tools\QtCreator\bin;${Env:QtBinPath};${Env:Path}"
+
+      # Set environment
+      function global:Print-Log { Write-Host "INFO: $args" -ForegroundColor Green }
       $Downloader = New-Object Net.WebClient
 
       $ToolsPath = "c:\DevTools"
       $DownloadsPath = "c:\Downloads"
-      $VStudioPath = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio 14.0\VC"
+      $VStudioPath = "${Env:ProgramFiles(x86)}\${Env:VisualStudio}\VC"
 
       New-Item -ItemType directory -Path "${ToolsPath}" | out-null
       New-Item -ItemType directory -Path "${DownloadsPath}" | out-null
@@ -65,8 +68,9 @@ install:
 
       # Download and extract libusb
       Print-Log "- Fetching libusb dev..."
-      $LibusbUrl = "http://github.com/libusb/libusb/releases/download/v1.0.21"
-      $LibusbPkgName = "libusb-1.0.21.7z"
+      $LibusbVersion = "1.0.21"
+      $LibusbUrl = "http://github.com/libusb/libusb/releases/download/v${LibusbVersion}"
+      $LibusbPkgName = "libusb-${LibusbVersion}.7z"
       $LibusbPath = "C:\libusb"
 
       Print-Log "+- Downloading..."
@@ -102,19 +106,22 @@ install:
       Print-Log "- All Done. liblzma fetched.`n"
 
 build_script:
+  # Get logical cores count
   - ps: |
-      # Compile Makefile
-      New-Item -ItemType directory -Path ${Env:ShadowBuildDir} | out-null
-      Set-Location ${Env:ShadowBuildDir}
-      & "${Env:QtBinPath}\qmake" -r `
-          CONFIG-=debug_and_release `
-          CONFIG+="${Env:Config}" `
-          "${Env:Appveyor_build_folder}\qgroundcontrol.pro"
+      $Env:Cores = Get-WmiObject -class Win32_Processor | `
+                      Select-Object -ExpandProperty NumberOfLogicalProcessors
+      Print-Log "Available threads count: ${Env:Cores}"
 
-      # compile sources
-      & "jom.exe"
+  # Generate makefile
+  - mkdir "%SHADOWBUILDDIR%"
+  - cd "%SHADOWBUILDDIR%"
+  - qmake -r "%APPVEYOR_BUILD_FOLDER%\qgroundcontrol.pro" CONFIG-=debug_and_release CONFIG+=%CONFIG%
 
-      # Copy QGC Installer
+  # Build
+  - jom -j%CORES%
+
+  # Copy QGC Installer
+  - ps: |
       if (${Env:Config} -eq "installer") {
           Copy-Item "${Env:ShadowBuildDir}\release\QGroundControl-installer.exe" `
               -Destination "${Env:Appveyor_build_folder}\QGroundControl-installer.exe"
