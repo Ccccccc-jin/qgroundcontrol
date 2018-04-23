@@ -193,6 +193,22 @@ QGCView {
                 }
             }
 
+            DSM.SignalTransition {
+                targetState: initial
+                signal:      fwUpgradeController.cancelled
+                onTriggered: {
+                    fwUpgradeController.flashingCancelledState()
+                }
+            }
+
+            DSM.SignalTransition {
+                targetState: initial
+                signal:      fwUpgradeController.connectionWithUpdaterAborted
+                onTriggered: {
+                    fwUpgradeController.flashingCancelledState()
+                }
+            }
+
             onEntered: {
                 disabledVisible(connectButton)
                 notVisible(cancelButton)
@@ -213,6 +229,14 @@ QGCView {
                 targetState: initial
                 signal:      fwUpgradeController.cancelled
                 onTriggered: { fwUpgradeController.flashingCancelledState() }
+            }
+
+            DSM.SignalTransition {
+                targetState: initial
+                signal:      fwUpgradeController.connectionWithUpdaterAborted
+                onTriggered: {
+                    fwUpgradeController.flashingCancelledState()
+                }
             }
 
             onEntered: {
@@ -251,6 +275,14 @@ QGCView {
             DSM.SignalTransition {
                 targetState: initial
                 signal:      fwUpgradeController.cancelled
+                onTriggered: {
+                    fwUpgradeController.flashingCancelledState()
+                }
+            }
+
+            DSM.SignalTransition {
+                targetState: initial
+                signal:      fwUpgradeController.connectionWithUpdaterAborted
                 onTriggered: {
                     fwUpgradeController.flashingCancelledState()
                 }
