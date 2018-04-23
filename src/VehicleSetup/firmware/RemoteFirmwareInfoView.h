@@ -2,7 +2,7 @@
 #define REMOTEFIRMWAREINFOVIEW_H
 
 #include <QObject>
-#include "FirmwareInfo.h"
+#include "util/FirmwareInfo.h"
 #include "RemoteFirmwareInfoViewBase.h"
 
 class RemoteFirmwareInfoView : public RemoteFirmwareInfoViewBase
