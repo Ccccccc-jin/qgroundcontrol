@@ -19,50 +19,35 @@
 
 #include <stdint.h>
 #include <memory>
-#include "DeviceObserver.h"
+#include "UsbPluginNotifier.h"
 #include "QGCFileDownload.h"
 #include "QGCXzDecompressor.h"
-#include "FirmwareVersion.h"
 
-#include "RemoteFirmwareManager.h"
+#include "util/FirmwareVersion.h"
+#include "util/RemoteFirmwareManager.h"
+
 #include "RemoteFirmwareInfoView.h"
 #include "FirmwareUpdateSettings.h"
 
-class FirmwareUpgrader;
+namespace client {
+    class UpdaterConnection;
+}
 
 class FirmwareUpgradeController : public FirmwareUpgradeControllerBase
 {
     Q_OBJECT
 public:
     explicit FirmwareUpgradeController(void);
-    ~FirmwareUpgradeController();
+    ~FirmwareUpgradeController(void) override;
 
     Q_INVOKABLE virtual void askForFirmwareFile(void) override;
     Q_INVOKABLE virtual void askForFirmwareDirectory(void) override;
     Q_INVOKABLE virtual bool hasEnoughDiskSpace(void) override;
 
-    virtual RemoteFirmwareInfoViewBase* remoteFirmwareInfo(void) override { return _remoteFirmwareInfoView.get(); }
+    virtual RemoteFirmwareInfoViewBase* remoteFirmwareInfo(void) override
+        { return _remoteFirmwareInfoView.get(); }
 
-    virtual QString      availableDiskSpace    (void) const override { return QString("%1 Mb").arg(_availableDiskSpace / 1024 / 1024); }
-    virtual QString      firmwareFilename      (void) const override { return _firmwareFilename;  }
-    virtual QString      firmwareVersion       (void) const override { return _firmwareVersion.toString(); }
-    virtual UpdateMethod updateMethod          (void) const override { return _updateMethod; }
-    virtual bool         checksumEnabled       (void) const override { return _settings.checksumEnabeld(); }
-    virtual bool         firmwareSavingEnabled (void) const override { return _firmwareSavingEnabled; }
-
-    virtual void enableChecksum(bool value) override {
-        _settings.setChecksumEnabled(value);
-    }
-
-    virtual void enableFirmwareSaving(bool value) override
-        { _firmwareSavingEnabled = value; }
-
-    virtual void setUpdateMethod(UpdateMethod value) override
-        { _updateMethod = value; emit updateMethodChanged(_updateMethod);}
-
-    virtual void setFirmwareFilename(QString const& firmwareFilename) override
-        { _firmwareFilename = firmwareFilename; }
-
+    QString availableDiskSpace(void) const override;
 
 public slots:
     void observeDevice    (void) override;
@@ -81,30 +66,28 @@ private slots:
 
 private:
     // Methods for connect signals/slots
+    qint64 _availableDiskSpace   (QString const& storage) const;
     void _initConnections        (void);
-    void _attachFirmwareUpgrader (void);
-    void _attachDeviceObserver   (void);
-    void _fetchFirmwareInfo  (void);
+    void _attachFirmwareUpdater (void);
+    void _attachConnection       (void);
+    void _attachPlugInNotifier   (void);
+    void _fetchFirmwareInfo      (void);
     void _attachFirmwareManager  (void);
 
     void _removeDownloadedFiles  (void);
 
-    void _flashSelectedFile(void);
-    bool _deviceAvailable  (void);
-    void _startPolling     (void);
+    void _flashSelectedFile (void);
+    bool _deviceAvailable   (void);
+    void _startPolling      (void);
+    void _initializeDevice  (void);
 
-    FirmwareVersion _firmwareVersion;
-    QString _firmwareFilename;
-    bool    _firmwareSavingEnabled;
-    qint64  _availableDiskSpace;
-
+    bool                                    _updaterAttached;
     RemoteFirmwareManager                   _remoteFwManager;
-    UpdateMethod                            _updateMethod;
-    DeviceObserver                          _deviceObserver;
+    UsbPluginNotifier                       _pluginNotifier;
+
+    std::unique_ptr<client::UpdaterConnection>      _connection;
     std::unique_ptr<QGCDownloadWatcher>     _downloadWatcher;
     std::unique_ptr<RemoteFirmwareInfoView> _remoteFirmwareInfoView;
-    std::unique_ptr<FirmwareUpgrader>       _fwUpgrader;
-    FirmwareUpdateSettings                  _settings;
 };
 
 #endif
