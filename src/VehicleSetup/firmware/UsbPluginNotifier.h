@@ -4,16 +4,19 @@
 #include <functional>
 #include <QtCore>
 
-class DeviceObserver : public QObject
+class UsbPluginNotifier : public QObject
 {
     Q_OBJECT
 public:
     using DeviceAvailablePredicate_t = std::function<bool(void)>;
 
-    explicit DeviceObserver(int interval = 1 , QObject *parent = nullptr);
+    explicit UsbPluginNotifier(int const& vid,
+                               QList<int> const& pids,
+                               int interval = 1 ,
+                               QObject *parent = nullptr);
 
-    void setDeviceAvailablePredicate(DeviceAvailablePredicate_t pred) { _deviceAvailable = pred; }
     void setInterval(int msec) { _pollingTimer.setInterval(msec); }
+    bool deviceAvailable(void) const;
 
 signals:
     void devicePlugged   (void);
@@ -27,10 +30,11 @@ private slots:
     void _onTimeout(void);
 
 private:
+    int _vid;
+    QList<int> _pids;
+
     QTimer _pollingTimer;
     bool   _deviceWasAvailable;
-
-    DeviceAvailablePredicate_t _deviceAvailable;
 };
 
 #endif // DEVICEOBSERVER_H
