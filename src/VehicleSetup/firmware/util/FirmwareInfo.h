@@ -1,7 +1,7 @@
 #ifndef FIRMWAREINFO_H
 #define FIRMWAREINFO_H
 
-#include <FirmwareVersion.h>
+#include "FirmwareVersion.h"
 
 class EdgeRemoteFirmwareInfo
 {
