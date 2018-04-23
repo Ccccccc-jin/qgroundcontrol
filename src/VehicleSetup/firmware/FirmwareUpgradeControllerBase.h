@@ -65,7 +65,7 @@ signals:
     void cancelled         (void);
     void deviceInitialized (bool status);
     void deviceFlashed     (bool status);
-    void connectionWithUpdaterError(void);
+    void connectionWithUpdaterAborted(void);
 
     void flasherProgressChanged(uint progress);
 
