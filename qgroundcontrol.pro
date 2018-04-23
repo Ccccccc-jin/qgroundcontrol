@@ -395,7 +395,6 @@ HEADERS += \
     src/api/QGCSettings.h \
     src/Vehicle/VehicleBatteries.h \
     src/QGCDownload.h \
-    src/VehicleSetup/firmware/upgraders/UpdateConfig.h
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
@@ -868,33 +867,28 @@ HEADERS+= \
         # Add QtRemoteObjects framework
         QT += remoteobjects
 
+        UPDATER_CLIENT_PATH = "$${PWD}/libs/firmwareupgrader/client"
+        include($${UPDATER_CLIENT_PATH}/UpdaterClient.pri)
+        INCLUDEPATH += $${UPDATER_CLIENT_PATH}
+
         HEADERS += \
-            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.h \
-            $$FIRMWARE_DIR/upgraders/ProcessStateLog.h \
-            $$FIRMWARE_DIR/upgraders/FirmwareVersion.h \
-            $$FIRMWARE_DIR/upgraders/RemoteFirmwareManager.h \
-            $$FIRMWARE_DIR/upgraders/FirmwareInfo.h \
+            $$FIRMWARE_DIR/util/FirmwareVersion.h \
+            $$FIRMWARE_DIR/util/RemoteFirmwareManager.h \
+            $$FIRMWARE_DIR/util/FirmwareInfo.h \
             $$FIRMWARE_DIR/FirmwareUpgradeController.h \
-            $$FIRMWARE_DIR/FirmwareUpgraderInterface.h \
-            $$FIRMWARE_DIR/upgraders/FlasherParameters.h \
-            $$FIRMWARE_DIR/DeviceObserver.h \
+            $$FIRMWARE_DIR/UsbPluginNotifier.h \
             $$FIRMWARE_DIR/RemoteFirmwareInfoView.h \
             $$FIRMWARE_DIR/FirmwareUpdateSettings.h \
             src/QGCXzDecompressor.h \
 
         SOURCES += \
-            $$FIRMWARE_DIR/upgraders/FirmwareUpgraderClient.cc \
-            $$FIRMWARE_DIR/upgraders/ProcessStateLog.cc \
-            $$FIRMWARE_DIR/upgraders/FirmwareVersion.cc \
-            $$FIRMWARE_DIR/upgraders/RemoteFirmwareManager.cc \
-            $$FIRMWARE_DIR/upgraders/FirmwareInfo.cc \
+            $$FIRMWARE_DIR/util/FirmwareVersion.cc \
+            $$FIRMWARE_DIR/util/RemoteFirmwareManager.cc \
+            $$FIRMWARE_DIR/util/FirmwareInfo.cc \
             $$FIRMWARE_DIR/FirmwareUpgradeController.cc \
-            $$FIRMWARE_DIR/FirmwareUpgraderInterface.cc \
-            $$FIRMWARE_DIR/DeviceObserver.cc \
+            $$FIRMWARE_DIR/UsbPluginNotifier.cc \
             $$FIRMWARE_DIR/RemoteFirmwareInfoView.cc \
             src/QGCXzDecompressor.cc \
-
-        REPC_REPLICA = $$FIRMWARE_DIR/upgraders/EdgeFirmwareUpdaterIPC.rep
 
         LinuxBuild {
             LIBS += -lusb-1.0 -llzma

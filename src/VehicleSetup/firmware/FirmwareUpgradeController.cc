@@ -2,23 +2,19 @@
 #include <QDebug>
 
 #include "FirmwareUpgradeController.h"
-#include "FirmwareUpgraderInterface.h"
+
 #include "QGCQFileDialog.h"
 #include "QGCFileDownload.h"
 #include "QGCXzDecompressor.h"
 #include "QGCApplication.h"
 
+#include "Client.h"
 
 FirmwareUpgradeController::FirmwareUpgradeController(void)
-    : _firmwareFilename(""),
-      _firmwareSavingEnabled(false),
-      _updateMethod(UpdateMethod::Auto),
-      _deviceObserver(1000),
-      _remoteFirmwareInfoView(new RemoteFirmwareInfoView()),
-      _fwUpgrader(FirmwareUpgrader::instance())
+    : _updaterAttached(false),
+      _pluginNotifier(0x0a5c, {0x2763, 0x2764, 0x0001}, 1000),
+      _remoteFirmwareInfoView(new RemoteFirmwareInfoView())
 {
-    FirmwareUpgrader::registerMetatypes();
-
     auto destPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     if (destPath.isEmpty()) {
         destPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
@@ -34,8 +30,7 @@ FirmwareUpgradeController::FirmwareUpgradeController(void)
 
 void FirmwareUpgradeController::_initConnections(void)
 {
-    _attachFirmwareUpgrader();
-    _attachDeviceObserver();
+    _attachPlugInNotifier();
     _attachFirmwareManager();
 
     using Controller = FirmwareUpgradeController;
@@ -43,52 +38,63 @@ void FirmwareUpgradeController::_initConnections(void)
 }
 
 
-void FirmwareUpgradeController::_attachFirmwareUpgrader(void)
+void FirmwareUpgradeController::_attachFirmwareUpdater(void)
 {
-    using FWUpgrader = FirmwareUpgrader;
+    using Updater = client::Updater;
     using Controller = FirmwareUpgradeController;
 
-    auto fwUpgraderPtr = _fwUpgrader.get();
+    _updaterAttached = true;
 
-    QObject::connect(this, &Controller::_cancel, fwUpgraderPtr, &FWUpgrader::cancel);
+    auto updaterWeakPtr = _connection->updater();
+    auto updater = updaterWeakPtr.lock();
 
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::infoMessageReceived,         this, &Controller::infoMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::errorMessageReceived,        this, &Controller::errorMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::warnMessageReceived,         this, &Controller::warnMsgReceived);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::progressChanged,             this, &Controller::flasherProgressChanged);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitialized,           this, &Controller::deviceInitialized);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::cancelled,                   this, &Controller::_onCancelled);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceFlashed,               this, &Controller::deviceFlashed);
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitializationStarted, this, &Controller::deviceInitializationStarted);
+    if (!updater) {
+        emit errorMsgReceived("Connection error: can not get communication interface");
+        return;
+    }
 
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::deviceInitialized,
+    QObject::connect(this, &Controller::_cancel, updater.get(), &Updater::cancel);
+
+    QObject::connect(updater.get(), &Updater::infoMessageReceived,   this, &Controller::infoMsgReceived);
+    QObject::connect(updater.get(), &Updater::errorMessageReceived,  this, &Controller::errorMsgReceived);
+    QObject::connect(updater.get(), &Updater::warnMessageReceived,   this, &Controller::warnMsgReceived);
+    QObject::connect(updater.get(), &Updater::updateProgressChanged, this, &Controller::flasherProgressChanged);
+    QObject::connect(updater.get(), &Updater::deviceInitialized,     this, &Controller::deviceInitialized);
+    QObject::connect(updater.get(), &Updater::cancelled,             this, &Controller::_onCancelled);
+    QObject::connect(updater.get(), &Updater::deviceFlashed,         this, &Controller::deviceFlashed);
+
+    QObject::connect(updater.get(), &Updater::deviceInitialized,
         [this] (bool status) {
             if (status) {
-                auto remoteFwVersion = _remoteFirmwareInfoView->remoteFirmwareInfo().version();
+                auto remoteFwVersion = _remoteFirmwareInfoView->
+                        remoteFirmwareInfo().version();
 
                 auto msg = QString("");
 
                 if (!remoteFwVersion.defined()) {
-                    msg = "Can not get info about remote firmware. Check for internet connection."
-                          " You can try to flash Edge with manually selected firmware in 'Advanced settings'.";
+                    msg = "Can not get info about remote firmware. "
+                          "Check for internet connection. "
+                          "You can try to flash Edge with manually "
+                          "selected firmware in 'Advanced settings'.";
 
                 } else  if (remoteFwVersion > _firmwareVersion) {
-                    msg = QString("New firmware available. Date ") + remoteFwVersion.releaseDate()
-                                + "\nClick 'Ok' and QGround automatically download firmware and flash Edge.";
+                    msg = QString("New firmware available. Date %1 \n"
+                                  "Click 'Ok' and QGround automatically download "
+                                  "firmware and flash Edge.").arg(remoteFwVersion.releaseDate());
 
                 } else if (remoteFwVersion == _firmwareVersion) {
-                    msg = "Your firmware is up to date. Cancel upgrading or select firmware manually in 'Advanced settings'";
+                    msg = "Your firmware is up to date. "
+                          "Cancel upgrading or select "
+                          "firmware manually in 'Advanced settings'";
                 }
 
                 emit firmwareInfoMsg(msg) ;
-
-                _availableDiskSpace = QStorageInfo(_remoteFwManager.destDirPath()).bytesFree();
                 emit availableDiskSpaceChanged();
             }
         }
     );
 
-    QObject::connect(fwUpgraderPtr, &FWUpgrader::firmwareVersionAvailable,
+    QObject::connect(updater.get(), &Updater::firmwareVersion,
         [this] (QString const& firmwareVersion) {
             _firmwareVersion = FirmwareVersion::fromString(firmwareVersion);
             emit firmwareVersionAvailable(firmwareVersion);
@@ -97,13 +103,60 @@ void FirmwareUpgradeController::_attachFirmwareUpgrader(void)
 }
 
 
-void FirmwareUpgradeController::_attachDeviceObserver(void)
+void FirmwareUpgradeController::_attachConnection(void)
+{
+    using Connection = client::UpdaterConnection;
+
+    Q_ASSERT(_connection.get());
+
+    QObject::connect(_connection.get(), &Connection::stateChanged,
+        [this] (Connection::State cur, Connection::State old) {
+            switch(cur) {
+                case Connection::Aborted:
+                    _updaterAttached = false;
+                    emit errorMsgReceived("Updater error: connection aborted");
+                    emit connectionWithUpdaterError();
+                    return;
+
+                case Connection::Disconneted:
+                    if (old == Connection::Connecting) {
+                        _updaterAttached = false;
+                        emit infoMsgReceived("Upgrade canceled");
+                        emit cancelled();
+                    }
+                    return;
+
+                case Connection::Errored: {
+                    _updaterAttached = false;
+                    auto msg = QString("Updater error: %1")
+                            .arg(_connection->detailedErrorDescription());
+                    emit errorMsgReceived(msg);
+                    emit connectionWithUpdaterError();
+                    return;
+                }
+
+                case Connection::Established:
+                    emit infoMsgReceived("Connection with updater established");
+                    return;
+
+                default:
+                    return;
+            }
+        }
+    );
+
+    QObject::connect(_connection.get(), &Connection::established,
+                     this,              &FirmwareUpgradeController::_initializeDevice);
+}
+
+
+void FirmwareUpgradeController::_attachPlugInNotifier(void)
 {
     using Controller = FirmwareUpgradeController;
 
-    QObject::connect(&_deviceObserver, &DeviceObserver::devicePlugged,   this, &Controller::devicePlugged);
-    QObject::connect(&_deviceObserver, &DeviceObserver::deviceUnplugged, this, &Controller::deviceUnplugged);
-    QObject::connect(this, &Controller::deviceInitializationStarted,    [this] () { _deviceObserver.stop(); } );
+    QObject::connect(&_pluginNotifier, &UsbPluginNotifier::devicePlugged,   this, &Controller::devicePlugged);
+    QObject::connect(&_pluginNotifier, &UsbPluginNotifier::deviceUnplugged, this, &Controller::deviceUnplugged);
+    QObject::connect(this, &Controller::deviceInitializationStarted,       [this] () { _pluginNotifier.stop(); } );
 }
 
 
@@ -182,7 +235,10 @@ void FirmwareUpgradeController::_attachFirmwareManager(void)
                      &_remoteFwManager, &RemoteFirmwareManager::cancel);
 
     QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::progressChanged,
-        [this] (qint64 curr, qint64 total) { emit flasherProgressChanged((curr * 100) / total); }
+        [this] (qint64 curr, qint64 total) {
+            auto percent = static_cast<uint>((curr * 100) / total);
+            emit flasherProgressChanged(percent);
+        }
     );
 
     QObject::connect(&_remoteFwManager, &RemoteFirmwareManager::archiveCached,
@@ -235,39 +291,104 @@ FirmwareUpgradeController::~FirmwareUpgradeController(void)
 
 void FirmwareUpgradeController::initializeDevice(void)
 {
-    _fwUpgrader->initializeDevice();
-    _fetchFirmwareInfo();
+    if (_connection) {
+        if (_connection->isEstablished()) {
+            emit deviceInitializationStarted();
+            _initializeDevice();
+            return;
+        }
+    } else {
+        _connection = client::makeConnection();
+        _attachConnection();
+    }
+
+    auto binaryPath = QCoreApplication::applicationDirPath() + "/fwupgrader";
+
+    _connection->establish(binaryPath);
+    emit deviceInitializationStarted();
 }
 
 
 void FirmwareUpgradeController::_flashSelectedFile(void)
 {
-    if (_firmwareFilename.isEmpty()) {
-        emit warnMsgReceived("File is not selected.");
+    if (!_connection->isEstablished()) {
+        emit errorMsgReceived("Connection error: ");
+        emit deviceFlashed(false);
         return;
     }
 
-    FlasherParameters params(FirmwareImage(_firmwareFilename),
-                             _settings.checksumEnabeld());
-    _fwUpgrader->flash(params);
+    if (_firmwareFilename.isEmpty()) {
+        emit warnMsgReceived("File is not selected.");
+        emit deviceFlashed(false);
+        return;
+    }
+
+    auto updaterWeakPtr = _connection->updater();
+    auto updater = updaterWeakPtr.lock();
+
+    if (!updater) {
+        emit errorMsgReceived("Connection error: .. ");
+        emit deviceFlashed(false);
+        return;
+    }
+
+    updater->flash(_firmwareFilename,
+                       _settings.checksumEnabeld());
 }
 
 
 bool FirmwareUpgradeController::_deviceAvailable(void)
 {
-    return _fwUpgrader->deviceAvailable();
+    return _pluginNotifier.deviceAvailable();
 }
 
+
+void FirmwareUpgradeController::_initializeDevice(void)
+{
+    if (!_connection->isEstablished()) {
+        qWarning() << "connection is not etablished";
+        return;
+    }
+
+    if (!_updaterAttached) {
+        _attachFirmwareUpdater();
+    }
+
+    auto updaterWeakPtr = _connection->updater();
+    auto updater = updaterWeakPtr.lock();
+    if (!updater) {
+        emit errorMsgReceived("Connection error: ..");
+        emit deviceFlashed(false);
+        return;
+    }
+
+    updater->initializeDevice();
+    _fetchFirmwareInfo();
+}
+
+
+QString FirmwareUpgradeController::availableDiskSpace(void) const
+{
+    auto inBytes = _availableDiskSpace(_remoteFwManager.destDirPath());
+    auto inMBytes = inBytes != 0 ? inBytes / (1024 * 1024) : 0;
+
+    return inMBytes < 1024 ?
+                QString("%1 Mb").arg(inMBytes) :
+                QString("%1 Gb").arg(inMBytes / 1024);
+}
+
+
+qint64 FirmwareUpgradeController::
+    _availableDiskSpace(QString const& storage) const
+{
+    return QStorageInfo(storage).bytesFree();
+}
 
 
 void FirmwareUpgradeController::observeDevice(void)
 {
     qInfo() << "Polling started...";
-    _deviceObserver.setDeviceAvailablePredicate(
-        [this] () { return _fwUpgrader->deviceAvailable(); }
-    );
-
-    _deviceObserver.observe();
+    _pluginNotifier.observe();
 }
 
 
@@ -280,8 +401,9 @@ void FirmwareUpgradeController::flash(void)
     } else {
         auto fwInfo = _remoteFirmwareInfoView->remoteFirmwareInfo();
         auto neededDiskSpace = fwInfo.imageSize() + fwInfo.archiveSize();
+        auto storage = _remoteFwManager.destDirPath();
 
-        if (neededDiskSpace > _availableDiskSpace) {
+        if (neededDiskSpace > _availableDiskSpace(storage)) {
             emit errorMsgReceived("Not enough disk space.");
             emit deviceFlashed(false);
             return;
@@ -413,7 +535,6 @@ void FirmwareUpgradeController::askForFirmwareDirectory(void)
         emit infoMsgReceived("Selected directory: " + firmwareDirectory);
 
         _remoteFwManager.setDestDirPath(firmwareDirectory);
-        _availableDiskSpace = QStorageInfo(firmwareDirectory).bytesFree();
 
         emit availableDiskSpaceChanged();
     }
@@ -423,6 +544,6 @@ void FirmwareUpgradeController::askForFirmwareDirectory(void)
 bool FirmwareUpgradeController::hasEnoughDiskSpace(void)
 {
     auto info = _remoteFirmwareInfoView->remoteFirmwareInfo();
-    return (info.imageSize() + info.archiveSize()) < _availableDiskSpace
+    return (info.imageSize() + info.archiveSize()) < _availableDiskSpace(_remoteFwManager.destDirPath())
             || _remoteFwManager.cached();
 }

@@ -3,6 +3,8 @@
 
 #include <QtCore>
 #include "RemoteFirmwareInfoViewBase.h"
+#include "FirmwareUpdateSettings.h"
+#include "util/FirmwareVersion.h"
 
 class FirmwareUpgradeControllerBase : public QObject
 {
@@ -27,18 +29,18 @@ public:
     Q_INVOKABLE virtual bool hasEnoughDiskSpace(void) = 0;
 
     virtual RemoteFirmwareInfoViewBase* remoteFirmwareInfo(void) = 0;
+    virtual QString availableDiskSpace(void) const = 0;
 
-    virtual QString      availableDiskSpace    (void) const = 0;
-    virtual QString      firmwareFilename      (void) const = 0;
-    virtual QString      firmwareVersion       (void) const = 0;
-    virtual UpdateMethod updateMethod          (void) const = 0;
-    virtual bool         checksumEnabled       (void) const = 0;
-    virtual bool         firmwareSavingEnabled (void) const = 0;
+    QString      firmwareFilename      (void) const { return _firmwareFilename; }
+    QString      firmwareVersion       (void) const { return _firmwareVersion.toString(); }
+    UpdateMethod updateMethod          (void) const { return _updateMethod; }
+    bool         checksumEnabled       (void) const { return _settings.checksumEnabeld(); }
+    bool         firmwareSavingEnabled (void) const { return _firmwareSavingEnabled; }
 
-    virtual void enableChecksum       (bool checksumEnabled) = 0;
-    virtual void enableFirmwareSaving (bool value) = 0;
-    virtual void setUpdateMethod      (UpdateMethod value) = 0;
-    virtual void setFirmwareFilename  (QString const& firmwareFilename) = 0;
+    void enableChecksum       (bool checksumEnabled)             { _settings.setChecksumEnabled(checksumEnabled); }
+    void enableFirmwareSaving (bool enableSaving)                { _firmwareSavingEnabled = enableSaving; }
+    void setUpdateMethod      (UpdateMethod updateMethod)        { _updateMethod = updateMethod; emit updateMethodChanged(updateMethod); }
+    void setFirmwareFilename  (QString const& firmwareFilename)  { _firmwareFilename = firmwareFilename; }
 
 public slots:
     virtual void observeDevice    (void) = 0;
@@ -63,6 +65,7 @@ signals:
     void cancelled         (void);
     void deviceInitialized (bool status);
     void deviceFlashed     (bool status);
+    void connectionWithUpdaterAborted(void);
 
     void flasherProgressChanged(uint progress);
 
@@ -73,8 +76,17 @@ signals:
 
 protected:
     explicit FirmwareUpgradeControllerBase(QObject* parent = nullptr)
-        : QObject(parent)
+        : QObject(parent),
+          _firmwareSavingEnabled(false),
+          _updateMethod(UpdateMethod::Auto)
     { }
+
+    FirmwareVersion        _firmwareVersion;
+    FirmwareUpdateSettings _settings;
+
+    bool         _firmwareSavingEnabled;
+    QString      _firmwareFilename;
+    UpdateMethod _updateMethod;
 };
 
 #endif // FIRMWAREUPGRADECONTROLLERBASE_H
