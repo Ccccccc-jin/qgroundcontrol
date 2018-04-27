@@ -115,7 +115,7 @@ void FirmwareUpgradeController::_attachConnection(void)
                 case Connection::Aborted:
                     _updaterAttached = false;
                     emit errorMsgReceived("Updater error: connection aborted");
-                    emit connectionWithUpdaterError();
+                    emit connectionWithUpdaterAborted();
                     return;
 
                 case Connection::Disconneted:
@@ -131,7 +131,7 @@ void FirmwareUpgradeController::_attachConnection(void)
                     auto msg = QString("Updater error: %1")
                             .arg(_connection->detailedErrorDescription());
                     emit errorMsgReceived(msg);
-                    emit connectionWithUpdaterError();
+                    emit connectionWithUpdaterAborted();
                     return;
                 }
 
