@@ -64,6 +64,29 @@ exists($$shell_path($$FW_UPGRADER_PRO)) {
                         $$shell_path($${FIRMWARE_UPGRADER_BUILD_DIR_NAME}/$${FW_UPGRADER_EXECUTABLE_PATH}) \
                         $$shell_path($${QGC_BIN_DIR}/$${FW_UPGRADER_EXECUTABLE_NAME}) \
 
+    MacBuild:installer {
+        # perform relocation for libusb
+
+        # 1. Get current location from binary file (using otool)
+        #    - otool prints somithing like '    path_to_lib (smth about version)', we need only path_to_lib
+        #      and extract it using regex
+        ERASE_VERSION_INFO_REGEX = s/(.*)//p
+        GET_LIBUSB_PATH_SCRIPT = otool -L \"$${QGC_BIN_DIR}/$${FW_UPGRADER_EXECUTABLE_NAME}\" \
+                                     | grep libusb \
+                                     | sed -ne \"$${ERASE_VERSION_INFO_REGEX}\"
+
+        RELATIVE_LIBUSB_PATH = "@executable_path/../Frameworks/libusb-1.0.0.dylib"
+
+        # 2. Change current path (path_to_lib) in executable
+        # relative path (all qgc frameworks located in Frameworks dir)
+        move_bin_to_qgc.commands += \
+            && install_name_tool -change \
+                                 "`$${GET_LIBUSB_PATH_SCRIPT}`" \
+                                 "$${RELATIVE_LIBUSB_PATH}" \
+                                 "$${QGC_BIN_DIR}/$${FW_UPGRADER_EXECUTABLE_NAME}" \
+    }
+
+
     # For manual building from console. Usage: make upgrader
 
     build_fwupg_manual.target  = "upgrader"
