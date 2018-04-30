@@ -399,6 +399,12 @@ void FirmwareUpgradeController::flash(void)
     if (_updateMethod == UpdateMethod::Manual) {
         _flashSelectedFile();
     } else {
+        if (!_pluginNotifier.deviceAvailable()) {
+            emit errorMsgReceived("Device is removed. Plug in device and try again.");
+            emit deviceFlashed(false);
+            return;
+        }
+
         auto fwInfo = _remoteFirmwareInfoView->remoteFirmwareInfo();
         auto neededDiskSpace = fwInfo.imageSize() + fwInfo.archiveSize();
         auto storage = _remoteFwManager.destDirPath();
