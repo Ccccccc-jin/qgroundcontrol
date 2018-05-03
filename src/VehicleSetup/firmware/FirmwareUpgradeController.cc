@@ -301,10 +301,21 @@ void FirmwareUpgradeController::initializeDevice(void)
         _connection = client::makeConnection();
         _attachConnection();
     }
+    auto updaterPath = QCoreApplication::applicationDirPath() + "/fwupgrader";
+    auto args = QStringList();
 
-    auto binaryPath = QCoreApplication::applicationDirPath() + "/fwupgrader";
+    // handle appimage
+#ifdef Q_OS_LINUX
+    constexpr auto appimageVarName = "APPIMAGE";
+    auto env = QProcessEnvironment::systemEnvironment();
 
-    _connection->establish(binaryPath);
+    if (env.contains(appimageVarName)) {
+        updaterPath = env.value(appimageVarName);
+        args << "--fwupg";
+    }
+#endif
+
+    _connection->establish(updaterPath, args);
     emit deviceInitializationStarted();
 }
 
