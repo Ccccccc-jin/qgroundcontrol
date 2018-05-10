@@ -1139,6 +1139,23 @@ contains (CONFIG, DISABLE_VIDEOSTREAMING) {
 }
 
 #-------------------------------------------------------------------------------------
+# Wifi Manager
+contains (CONFIG, DISABLE_WIFIMANAGER) {
+    message("Skipping support for wifi manager (manual override from command line)")
+# Otherwise the user can still disable this feature in the user_config.pri file.
+} else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_WIFIMANAGER) {
+    message("Skipping support for wifi manager (manual override from user_config.pri)")
+} else {
+    WIFI_MANAGER_DIR = $${PWD}/src/WifiManager
+
+    HEADERS += \
+        $${WIFI_MANAGER_DIR}/WifiManager.h \
+
+    SOURCES += \
+        $${WIFI_MANAGER_DIR}/WifiManager.cc \
+}
+
+#-------------------------------------------------------------------------------------
 # Android
 
 AndroidBuild {
