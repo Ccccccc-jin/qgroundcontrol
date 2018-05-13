@@ -467,6 +467,14 @@ void MockLink::_handleWifiNetworkAdd(const mavlink_message_t &msg)
     auto ssid = QByteArray(addNetwkMsg.ssid, sizeof(addNetwkMsg.ssid)).append('\0');
     _savedWifiNetowrks.push_back(std::pair<QString, WIFI_SECURITY_TYPE>
         (QString::fromUtf8(ssid), WIFI_SECURITY_TYPE(addNetwkMsg.security_type) ));
+
+
+    mavlink_message_t wifiAck;
+    mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                   msg.compid, _mavlinkChannel,
+                                   &wifiAck, msg.msgid, 0);
+
+    respondWithMavlinkMessage(wifiAck);
 }
 
 void MockLink::_handleWifiNetworkDelete(const mavlink_message_t &msg)
@@ -482,6 +490,13 @@ void MockLink::_handleWifiNetworkDelete(const mavlink_message_t &msg)
             _savedWifiNetowrks.removeOne(netwk);
         }
     }
+
+    mavlink_message_t wifiAck;
+    mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                   msg.compid, _mavlinkChannel,
+                                   &wifiAck, msg.msgid, 0);
+
+    respondWithMavlinkMessage(wifiAck);
 
     // If requested deletion of active network
     // Vehicle return to Acccess Point
@@ -501,6 +516,13 @@ void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
     if (_activeNetwork.isEmpty()) {
         qWarning() << "WIFI_NETWORK_CONNECT: ssid is empty";
     }
+
+    mavlink_message_t wifiAck;
+    mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                   msg.compid, _mavlinkChannel,
+                                   &wifiAck, msg.msgid, 0);
+
+    respondWithMavlinkMessage(wifiAck);
 
     _currentWifiStatus = 1; // Clien mode
     _handleRequestWifiStatus(mavlink_command_long_t());
@@ -925,14 +947,20 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
-    case MAV_CMD_REQUEST_WIFI_STATUS:
+    case MAV_CMD_GET_WIFI_STATUS:
         _handleRequestWifiStatus(request);
         compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
-    case MAV_CMD_REQUEST_WIFI_NETWORKS:
+    case MAV_CMD_GET_WIFI_NETWORKS_INFO:
         _handleRequestWifiNetworks(request);
+        compid = MAV_COMP_ID_WIFI;
+        commandResult = MAV_RESULT_ACCEPTED;
+        break;
+
+    case MAV_CMD_GET_WIFI_NETWORKS_COUNT:
+        _handleRequestWifiNetworksCount(request);
         compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
@@ -982,7 +1010,7 @@ void MockLink::_respondWithAutopilotVersion(void)
                                             (uint8_t *)&customVersion,       // os_custom_version,
                                             0,                               // vendor_id,
                                             0,                               // product_id,
-                                            0);                              // uid
+                                            0);                               // uid
     respondWithMavlinkMessage(msg);
 }
 
@@ -1291,7 +1319,7 @@ void MockLink::_handleRequestWifiStatus(const mavlink_command_long_t &request)
 void MockLink::_handleRequestWifiNetworks(const mavlink_command_long_t &request)
 {
     Q_UNUSED(request);
-    mavlink_wifi_network_information_t netwkInfo;
+    mavlink_wifi_network_info_t netwkInfo;
 
     for (auto const& network : _savedWifiNetowrks) {
         mavlink_message_t msg;
@@ -1301,11 +1329,24 @@ void MockLink::_handleRequestWifiNetworks(const mavlink_command_long_t &request)
         netwkInfo.security_type = network.second;
         netwkInfo.type = 0;
 
-        mavlink_msg_wifi_network_information_encode(
+        mavlink_msg_wifi_network_info_encode(
                     _vehicleSystemId, _vehicleComponentId, &msg, &netwkInfo);
 
         respondWithMavlinkMessage(msg);
     }
+}
+
+void MockLink::_handleRequestWifiNetworksCount(const mavlink_command_long_t &request)
+{
+    Q_UNUSED(request);
+    mavlink_message_t netwkInfo;
+
+    mavlink_msg_wifi_networks_count_pack_chan(_vehicleSystemId,
+                                              _vehicleComponentId,
+                                              _mavlinkChannel,
+                                              &netwkInfo, 0,
+                                              _savedWifiNetowrks.count());
+    respondWithMavlinkMessage(netwkInfo);
 }
 
 void MockLink::_handleLogRequestList(const mavlink_message_t& msg)

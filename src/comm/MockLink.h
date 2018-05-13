@@ -186,6 +186,7 @@ private:
     void _handleWifiStartAP(const mavlink_command_long_t& request);
     void _handleRequestWifiStatus(const mavlink_command_long_t& request);
     void _handleRequestWifiNetworks(const mavlink_command_long_t& request);
+    void _handleRequestWifiNetworksCount(const mavlink_command_long_t& request);
     void _handleLogRequestList(const mavlink_message_t& msg);
     void _handleLogRequestData(const mavlink_message_t& msg);
     float _floatUnionForParam(int componentId, const QString& paramName);
