@@ -182,10 +182,12 @@ private:
     void _handleWifiNetworkAdd(const mavlink_message_t& msg);
     void _handleWifiNetworkDelete(const mavlink_message_t& msg);
     void _handleWifiNetworkConnect(const mavlink_message_t& msg);
+    void _handleWifiConfigAp(const mavlink_message_t& msg);
     void _handlePreFlightCalibration(const mavlink_command_long_t& request);
     void _handleWifiStartAP(const mavlink_command_long_t& request);
     void _handleRequestWifiStatus(const mavlink_command_long_t& request);
     void _handleRequestWifiNetworks(const mavlink_command_long_t& request);
+    void _handleRequestWifiNetworksCount(const mavlink_command_long_t& request);
     void _handleLogRequestList(const mavlink_message_t& msg);
     void _handleLogRequestData(const mavlink_message_t& msg);
     float _floatUnionForParam(int componentId, const QString& paramName);
@@ -200,6 +202,17 @@ private:
     void _logDownloadWorker(void);
 
     static MockLink* _startMockLink(MockConfiguration* mockConfig);
+
+    static constexpr int _wifiSsidSize(void) {
+        return sizeof(mavlink_wifi_status_t::ssid);
+    }
+
+    static constexpr int _wifiPasswdSize(void) {
+        return sizeof(mavlink_wifi_network_add_t::password);
+    }
+
+    QByteArray _encodeString(QString str, int sz);
+    QString    _decodeString(QByteArray str);
 
     MockLinkMissionItemHandler  _missionItemHandler;
 
@@ -216,6 +229,7 @@ private:
     QMap<int, QMap<QString, QVariant> > _mapParamName2Value;
     QMap<QString, MAV_PARAM_TYPE>       _mapParamName2MavParamType;
     QString _activeNetwork;
+    QString _accessPointSsid;
     int _currentWifiStatus;
     QList<std::pair<QString, WIFI_SECURITY_TYPE>> _savedWifiNetowrks;
 

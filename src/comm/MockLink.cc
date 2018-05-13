@@ -56,7 +56,8 @@ MockLink::MockLink(SharedLinkConfigurationPointer& config)
     , _inNSH(false)
     , _mavlinkStarted(true)
     , _activeNetwork("")
-    , _currentWifiStatus(0)
+    , _accessPointSsid("ap_ssid")
+    , _currentWifiStatus(WIFI_STATE_AP)
     , _savedWifiNetowrks{
               { "SOME_NETWORK1", WIFI_SECURITY_TYPE_WPA },
               { "SOME_NETWORK2", WIFI_SECURITY_TYPE_OPEN },
@@ -428,6 +429,9 @@ void MockLink::_handleIncomingMavlinkBytes(const uint8_t* bytes, int cBytes)
             _handleWifiNetworkConnect(msg);
             break;
 
+        case MAVLINK_MSG_ID_WIFI_CONFIG_AP:
+            _handleWifiConfigAp(msg);
+
         default:
             break;
         }
@@ -461,49 +465,96 @@ void MockLink::_handleManualControl(const mavlink_message_t& msg)
 
 void MockLink::_handleWifiNetworkAdd(const mavlink_message_t &msg)
 {
-    mavlink_wifi_network_add_t addNetwkMsg;
-    mavlink_msg_wifi_network_add_decode(&msg, &addNetwkMsg);
+    auto addNetwkMsg = mavlink_wifi_network_add_t{};
+    ::mavlink_msg_wifi_network_add_decode(&msg, &addNetwkMsg);
 
-    auto ssid = QByteArray(addNetwkMsg.ssid, sizeof(addNetwkMsg.ssid)).append('\0');
-    _savedWifiNetowrks.push_back(std::pair<QString, WIFI_SECURITY_TYPE>
-        (QString::fromUtf8(ssid), WIFI_SECURITY_TYPE(addNetwkMsg.security_type) ));
+    auto ssid = _decodeString({addNetwkMsg.ssid, _wifiSsidSize()});
+    auto secType = static_cast<WIFI_SECURITY_TYPE>(addNetwkMsg.security_type);
+
+    _savedWifiNetowrks.push_back({ssid, secType});
+
+
+    mavlink_message_t wifiAck;
+    ::mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                     MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                     &wifiAck, MAVLINK_MSG_ID_WIFI_NETWORK_ADD, 0);
+
+    respondWithMavlinkMessage(wifiAck);
 }
 
 void MockLink::_handleWifiNetworkDelete(const mavlink_message_t &msg)
 {
-    mavlink_wifi_network_delete_t deleteNetwkMsg;
-    mavlink_msg_wifi_network_delete_decode(&msg, &deleteNetwkMsg);
+    auto deleteNetwkMsg = mavlink_wifi_network_delete_t{};
+    ::mavlink_msg_wifi_network_delete_decode(&msg, &deleteNetwkMsg);
 
-    auto ssid = QByteArray(deleteNetwkMsg.ssid, sizeof(deleteNetwkMsg.ssid)).append('\0');
-    auto netwkForDelete = QString::fromUtf8(ssid);
+    auto ssid = _decodeString({deleteNetwkMsg.ssid, _wifiSsidSize()});
 
     for (auto const& netwk : _savedWifiNetowrks) {
-        if (netwk.first == netwkForDelete) {
+        if (netwk.first == ssid) {
             _savedWifiNetowrks.removeOne(netwk);
         }
     }
 
+    mavlink_message_t wifiAck;
+    ::mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                     MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                     &wifiAck, MAVLINK_MSG_ID_WIFI_NETWORK_DELETE, 0);
+
+    respondWithMavlinkMessage(wifiAck);
+
     // If requested deletion of active network
     // Vehicle return to Acccess Point
-    if (netwkForDelete == _activeNetwork) {
+    if (ssid == _activeNetwork) {
         _handleWifiStartAP(mavlink_command_long_t());
     }
 }
 
 void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
 {
-    mavlink_wifi_network_connect_t connectNetwkMsg;
-    mavlink_msg_wifi_network_connect_decode(&msg, &connectNetwkMsg);
+    auto connectNetwkMsg = mavlink_wifi_network_connect_t{};
+    ::mavlink_msg_wifi_network_connect_decode(&msg, &connectNetwkMsg);
 
-    auto ssid = QByteArray(connectNetwkMsg.ssid, sizeof(connectNetwkMsg.ssid)).append('\0');
-    _activeNetwork =  QString::fromUtf8(ssid);
+    auto ssid = _decodeString({connectNetwkMsg.ssid, _wifiSsidSize()});
+    _activeNetwork = std::move(ssid);
 
     if (_activeNetwork.isEmpty()) {
         qWarning() << "WIFI_NETWORK_CONNECT: ssid is empty";
     }
 
-    _currentWifiStatus = 1; // Clien mode
+    mavlink_message_t wifiAck;
+    mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                   MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                   &wifiAck, MAVLINK_MSG_ID_WIFI_NETWORK_CONNECT, 0);
+
+    respondWithMavlinkMessage(wifiAck);
+
+    _currentWifiStatus = WIFI_STATE_CLIENT;
     _handleRequestWifiStatus(mavlink_command_long_t());
+}
+
+void MockLink::_handleWifiConfigAp(mavlink_message_t const& msg)
+{
+    auto configApMsg = mavlink_wifi_config_ap_t{};
+    ::mavlink_msg_wifi_config_ap_decode(&msg, &configApMsg);
+
+    auto newSsidIsEmpty = configApMsg.ssid[0] == '\0';
+
+    if (!newSsidIsEmpty) {
+        auto ssidSize = sizeof(configApMsg.ssid);
+        auto newSsidArray = QByteArray(ssidSize + 1, '\0')
+            .insert(0, configApMsg.ssid);
+
+        auto newSsid = QString::fromUtf8(newSsidArray);
+
+        _accessPointSsid = newSsid;
+    }
+
+    auto wifiAck = mavlink_message_t{};
+    ::mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                     MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                     &wifiAck, MAVLINK_MSG_ID_WIFI_CONFIG_AP, 0);
+
+    respondWithMavlinkMessage(wifiAck);
 }
 
 void MockLink::_setParamFloatUnionIntoMap(int componentId, const QString& paramName, float paramFloat)
@@ -925,14 +976,20 @@ void MockLink::_handleCommandLong(const mavlink_message_t& msg)
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
-    case MAV_CMD_REQUEST_WIFI_STATUS:
+    case MAV_CMD_GET_WIFI_STATUS:
         _handleRequestWifiStatus(request);
         compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
 
-    case MAV_CMD_REQUEST_WIFI_NETWORKS:
+    case MAV_CMD_GET_WIFI_NETWORKS_INFO:
         _handleRequestWifiNetworks(request);
+        compid = MAV_COMP_ID_WIFI;
+        commandResult = MAV_RESULT_ACCEPTED;
+        break;
+
+    case MAV_CMD_GET_WIFI_NETWORKS_COUNT:
+        _handleRequestWifiNetworksCount(request);
         compid = MAV_COMP_ID_WIFI;
         commandResult = MAV_RESULT_ACCEPTED;
         break;
@@ -982,7 +1039,7 @@ void MockLink::_respondWithAutopilotVersion(void)
                                             (uint8_t *)&customVersion,       // os_custom_version,
                                             0,                               // vendor_id,
                                             0,                               // product_id,
-                                            0);                              // uid
+                                            0);                               // uid
     respondWithMavlinkMessage(msg);
 }
 
@@ -1268,8 +1325,8 @@ void MockLink::_handleWifiStartAP(const mavlink_command_long_t &request)
         qWarning() << "WIFI_START_AP: device currently in AP";
     }
 
-    _currentWifiStatus = 0;
-    _activeNetwork = "";
+    _currentWifiStatus = WIFI_STATE_AP;
+    _activeNetwork.clear();
 
     _handleRequestWifiStatus(request);
 }
@@ -1277,35 +1334,53 @@ void MockLink::_handleWifiStartAP(const mavlink_command_long_t &request)
 void MockLink::_handleRequestWifiStatus(const mavlink_command_long_t &request)
 {
     Q_UNUSED(request);
-    mavlink_wifi_status_t wifiStatus;
-    mavlink_message_t msg;
+    auto msg = mavlink_message_t{};
 
-    std::memset(&wifiStatus.ssid, 0, sizeof(wifiStatus.ssid));
-    std::memcpy(&wifiStatus.ssid, _activeNetwork.toStdString().data(), _activeNetwork.size());
-    wifiStatus.state = _currentWifiStatus;
+    auto const& ssid = _currentWifiStatus == WIFI_STATE_CLIENT ?
+                         _activeNetwork : _accessPointSsid;
 
-    mavlink_msg_wifi_status_encode(_vehicleSystemId, _vehicleComponentId, &msg, &wifiStatus);
+    auto ssidArray = _encodeString(ssid, _wifiSsidSize());
+
+    ::mavlink_msg_wifi_status_pack(_vehicleSystemId,
+                                   MAV_COMP_ID_WIFI,
+                                   &msg,
+                                   _currentWifiStatus,
+                                   ssidArray.data());
+
     respondWithMavlinkMessage(msg);
 }
 
 void MockLink::_handleRequestWifiNetworks(const mavlink_command_long_t &request)
 {
     Q_UNUSED(request);
-    mavlink_wifi_network_information_t netwkInfo;
 
     for (auto const& network : _savedWifiNetowrks) {
         mavlink_message_t msg;
 
-        std::memset(&netwkInfo.ssid, 0, sizeof(netwkInfo));
-        std::memcpy(&netwkInfo.ssid, network.first.toStdString().data(), network.first.size());
-        netwkInfo.security_type = network.second;
-        netwkInfo.type = 0;
+        auto ssidArray = _encodeString(std::move(network.first), _wifiSsidSize());
 
-        mavlink_msg_wifi_network_information_encode(
-                    _vehicleSystemId, _vehicleComponentId, &msg, &netwkInfo);
+        ::mavlink_msg_wifi_network_info_pack(_vehicleSystemId,
+                                             MAV_COMP_ID_WIFI,
+                                             &msg,
+                                             ssidArray.data(),
+                                             network.second,
+                                             0); // Saved
 
         respondWithMavlinkMessage(msg);
     }
+}
+
+void MockLink::_handleRequestWifiNetworksCount(const mavlink_command_long_t &request)
+{
+    Q_UNUSED(request);
+    mavlink_message_t netwkInfo;
+
+    mavlink_msg_wifi_networks_count_pack_chan(_vehicleSystemId,
+                                              MAV_COMP_ID_WIFI,
+                                              _mavlinkChannel,
+                                              &netwkInfo, 0,
+                                              _savedWifiNetowrks.count());
+    respondWithMavlinkMessage(netwkInfo);
 }
 
 void MockLink::_handleLogRequestList(const mavlink_message_t& msg)
@@ -1394,4 +1469,14 @@ void MockLink::_logDownloadWorker(void)
             qWarning() << "MockLink::_logDownloadWorker open failed" << file.errorString();
         }
     }
+}
+
+QByteArray MockLink::_encodeString(QString str, int sz)
+{
+    return QByteArray(sz, '\0').insert(0, str);
+}
+
+QString MockLink::_decodeString(QByteArray str)
+{
+    return QString::fromUtf8(str.append('\0'));
 }
