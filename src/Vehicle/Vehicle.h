@@ -269,6 +269,7 @@ public:
     Q_PROPERTY(QVariantList         toolBarIndicators       READ toolBarIndicators                                      CONSTANT)
     Q_PROPERTY(QVariantList         cameraList              READ cameraList                                             CONSTANT)
     Q_PROPERTY(VideoStreamManager*  videoStreamManager      READ videoStreamManager                                     NOTIFY videoStreamManagerChanged)
+    Q_PROPERTY(WifiManager*         wifiManager             READ wifiManager)
 
     /// true: Vehicle is flying, false: Vehicle is on ground
     Q_PROPERTY(bool flying READ flying NOTIFY flyingChanged)
