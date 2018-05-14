@@ -2,29 +2,31 @@
 #include "QGCMAVLink.h"
 
 
-int WifiNetworkInfo::ssidMaxLength(void)
-{
-    return sizeof(mavlink_wifi_network_add_t::ssid);
-}
-
-
-int WifiNetworkInfo::passwordMaxLength(void)
-{
-    return sizeof(mavlink_wifi_network_add_t::password);
-}
-
-
-int WifiNetworkInfo::passwordMinLength(void)
-{
-    return 8;
-}
-
-
 WifiManagerBase::WifiManagerBase(QObject* parent)
     : QObject(parent),
       _wifiState(WifiState::Undefined),
       _activeNetworkSsid("Undefined")
-{ }
+{
+    QSettings appSettings;
+    if (appSettings.contains("WifiSetup/EdgeDefaultNetwork")) {
+        _defaultNetworkSsid = appSettings
+                .value("WifiSetup/EdgeDefaultNetwork")
+                .toString();
+    }
+}
+
+
+void WifiManagerBase::setDefaultNetworkSsid(QString ssid)
+{
+    QSettings appSettings;
+
+    appSettings.setValue("WifiSetup/EdgeDefaultNetwork", ssid);
+    _defaultNetworkSsid = std::move(ssid);
+
+    appSettings.sync();
+
+    emit defaultNetworkSsidChanged();
+}
 
 
 bool WifiManagerBase::switchToAccessPoint(void)
@@ -126,4 +128,36 @@ bool WifiManagerBase::deleteNetwork(QString const& ssid)
     }
 
     return _deleteNetwork(ssid);
+}
+
+
+bool WifiManagerBase::validatePassword(QString const& passwd)
+{
+    /// We have ASCII PSK (max 63 bytes length) and HEX (fixed 64 bytes length)
+    auto checkOnAsciiPSK = passwd.length() <  WifiNetworkInfo::passwordMaxLength();
+    auto checkOnHexPSK   = passwd.length() == WifiNetworkInfo::passwordMinLength();
+
+    if (checkOnAsciiPSK) {
+        return passwd.length() >= WifiNetworkInfo::passwordMinLength();
+
+    } else if (checkOnHexPSK) {
+        auto hexadecimalPattern = QRegExp("^[0-9A-Fa-f]*$");
+        return passwd.contains(hexadecimalPattern);
+    }
+
+    return false;
+}
+
+
+QString WifiManagerBase::wifiStateAsString(WifiState state) const
+{
+    static auto wifiStateMeta = QMetaEnum::fromType<WifiManagerBase::WifiState>();
+    return wifiStateMeta.valueToKey(state);
+}
+
+
+QString WifiManagerBase::securityTypeAsString(WifiNetworkInfo::SecurityType secType) const
+{
+    static auto secTypeMeta = QMetaEnum::fromType<WifiNetworkInfo::SecurityType>();
+    return secTypeMeta.valueToKey(secType);
 }
