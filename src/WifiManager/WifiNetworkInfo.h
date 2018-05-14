@@ -27,9 +27,9 @@ public:
     QString const&                ssid(void)         const { return _ssid; }
     WifiNetworkInfo::SecurityType securityType(void) const { return _secType; }
 
-    static int ssidMaxLength(void);
-    static int passwordMaxLength(void);
-    static int passwordMinLength(void);
+    Q_INVOKABLE static int ssidMaxLength(void);
+    Q_INVOKABLE static int passwordMaxLength(void);
+    Q_INVOKABLE static int passwordMinLength(void);
 
 private:
     QString      _ssid;
