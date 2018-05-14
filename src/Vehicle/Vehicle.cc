@@ -32,6 +32,7 @@
 #include "SettingsManager.h"
 #include "QGCQGeoCoordinate.h"
 #include "VideoStreamManager.h"
+#include "WifiManager/WifiManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -128,6 +129,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
     , _videoStreamManager(NULL)
+    , _wifiManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
@@ -292,6 +294,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
     , _videoStreamManager(NULL)
+    , _wifiManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
@@ -342,6 +345,8 @@ void Vehicle::_commonInit(void)
 
     connect(this, &Vehicle::coordinateChanged,      this, &Vehicle::_updateDistanceToHome);
     connect(this, &Vehicle::homePositionChanged,    this, &Vehicle::_updateDistanceToHome);
+
+    _wifiManager = new WifiManager(this);
 
     _missionManager = new MissionManager(this);
     connect(_missionManager, &MissionManager::error,                    this, &Vehicle::_missionManagerError);
@@ -633,14 +638,6 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
 
     case MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
         _handleCameraImageCaptured(message);
-        break;
-
-    case MAVLINK_MSG_ID_WIFI_NETWORK_INFORMATION:
-        emit mavlinkWifiNetworkInformation(message);
-        break;
-
-    case MAVLINK_MSG_ID_WIFI_STATUS:
-        emit mavlinkWifiStatus(message);
         break;
 
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
@@ -1868,6 +1865,7 @@ void Vehicle::_parametersReady(bool parametersReady)
     if (parametersReady) {
         _setupAutoDisarmSignalling();
         _startPlanRequest();
+        _wifiManager->reloadWifiInfoFromVehicle();
         setJoystickEnabled(_joystickEnabled);
     }
 }
