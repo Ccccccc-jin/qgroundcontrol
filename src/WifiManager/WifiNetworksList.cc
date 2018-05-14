@@ -39,9 +39,21 @@ void WifiNetworksList::remove(QString const& ssid)
 }
 
 
+int WifiNetworksList::size(void)
+{
+    return _networks.size();
+}
+
+
 bool WifiNetworksList::contains(QString const& ssid)
 {
     return _networks.contains(WifiNetworkInfo{ssid});
+}
+
+
+QVariant WifiNetworksList::at(int idx)
+{
+    return _networks.at(idx).ssid();
 }
 
 
