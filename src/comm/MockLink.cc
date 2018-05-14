@@ -56,7 +56,7 @@ MockLink::MockLink(SharedLinkConfigurationPointer& config)
     , _inNSH(false)
     , _mavlinkStarted(true)
     , _activeNetwork("")
-    , _currentWifiStatus(0)
+    , _currentWifiStatus(WIFI_STATE_AP)
     , _savedWifiNetowrks{
               { "SOME_NETWORK1", WIFI_SECURITY_TYPE_WPA },
               { "SOME_NETWORK2", WIFI_SECURITY_TYPE_OPEN },
@@ -1312,7 +1312,7 @@ void MockLink::_handleRequestWifiStatus(const mavlink_command_long_t &request)
     std::memcpy(&wifiStatus.ssid, _activeNetwork.toStdString().data(), _activeNetwork.size());
     wifiStatus.state = _currentWifiStatus;
 
-    mavlink_msg_wifi_status_encode(_vehicleSystemId, _vehicleComponentId, &msg, &wifiStatus);
+    mavlink_msg_wifi_status_encode(_vehicleSystemId, MAV_COMP_ID_WIFI, &msg, &wifiStatus);
     respondWithMavlinkMessage(msg);
 }
 
@@ -1330,7 +1330,7 @@ void MockLink::_handleRequestWifiNetworks(const mavlink_command_long_t &request)
         netwkInfo.type = 0;
 
         mavlink_msg_wifi_network_info_encode(
-                    _vehicleSystemId, _vehicleComponentId, &msg, &netwkInfo);
+                    _vehicleSystemId, MAV_COMP_ID_WIFI, &msg, &netwkInfo);
 
         respondWithMavlinkMessage(msg);
     }
@@ -1342,7 +1342,7 @@ void MockLink::_handleRequestWifiNetworksCount(const mavlink_command_long_t &req
     mavlink_message_t netwkInfo;
 
     mavlink_msg_wifi_networks_count_pack_chan(_vehicleSystemId,
-                                              _vehicleComponentId,
+                                              MAV_COMP_ID_WIFI,
                                               _mavlinkChannel,
                                               &netwkInfo, 0,
                                               _savedWifiNetowrks.count());
