@@ -53,7 +53,6 @@
 #include "RCChannelMonitorController.h"
 #include "SyslinkComponentController.h"
 #include "VehicleSelectorController.h"
-#include "WiFiSetupComponentController.h"
 #include "AutoPilotPlugin.h"
 #include "VehicleComponent.h"
 #include "FirmwarePluginManager.h"
@@ -83,6 +82,7 @@
 #include "SettingsManager.h"
 #include "QGCCorePlugin.h"
 #include "VideoStreamManager.h"
+#include "WifiManager/WifiManager.h"
 
 #ifndef NO_SERIAL_LINK
 #include "SerialLink.h"
@@ -369,6 +369,8 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<GeoFenceController>  ("QGroundControl.Controllers",          1, 0, "GeoFenceController",     "Reference only");
     qmlRegisterUncreatableType<RallyPointController>("QGroundControl.Controllers",          1, 0, "RallyPointController",    "Reference only");
     qmlRegisterUncreatableType<VideoStreamManager>  ("QGroundControl.Controllers",          1, 0, "VideoStreamManager",     "Reference only");
+    qmlRegisterUncreatableType<WifiManager>         ("QGroundControl.Controllers",          1, 0, "WifiManager",            "Reference only");
+    qmlRegisterUncreatableType<WifiNetworkInfo>     ("QGroundControl.Controllers",          1, 0, "WifiNetworkInfo",        "Reference only");
 
     qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<ESP8266ComponentController>     ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
@@ -381,7 +383,6 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
     qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
     qmlRegisterType<VehicleSelectorController>      ("QGroundControl.Controllers", 1, 0, "VehicleSelectorController");
-    qmlRegisterType<WiFiSetupComponentController>   ("QGroundControl.Controllers", 1, 0, "WiFiSetupComponentController");
 
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
