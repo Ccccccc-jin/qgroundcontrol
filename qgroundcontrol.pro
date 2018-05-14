@@ -1150,9 +1150,11 @@ contains (CONFIG, DISABLE_WIFIMANAGER) {
 
     HEADERS += \
         $${WIFI_MANAGER_DIR}/WifiManager.h \
+        $${WIFI_MANAGER_DIR}/WifiManagerBase.h \
 
     SOURCES += \
         $${WIFI_MANAGER_DIR}/WifiManager.cc \
+        $${WIFI_MANAGER_DIR}/WifiManagerBase.cc \
 }
 
 #-------------------------------------------------------------------------------------
