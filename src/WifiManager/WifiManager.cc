@@ -112,7 +112,7 @@ bool WifiManager::_deleteNetwork(QString const& ssid)
 
 void WifiManager::_onMavlinkMessageReceived(mavlink_message_t const& msg)
 {
-    if (msg.compid != MAV_COMP_ID_WIFI) {
+    if (msg.compid != MAV_COMP_ID_WIFI || msg.msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         return;
     }
 
@@ -134,7 +134,9 @@ void WifiManager::_onMavlinkMessageReceived(mavlink_message_t const& msg)
             break;
 
         default:
-            _setErrorString("Unrecognized message from WiFi component");
+            auto errmsg = QString("Unrecognized message from WiFi component %1")
+                              .arg(msg.msgid);
+            _setErrorString(errmsg);
     }
 }
 
