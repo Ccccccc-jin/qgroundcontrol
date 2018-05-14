@@ -1,5 +1,6 @@
 #include "WifiManagerBase.h"
 #include "QGCMAVLink.h"
+#include "QGCApplication.h"
 
 
 WifiManagerBase::WifiManagerBase(QObject* parent)

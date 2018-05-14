@@ -20,7 +20,7 @@ public:
 
     Q_PROPERTY(WifiState         wifiState          READ wifiState          NOTIFY wifiStateChanged)
     Q_PROPERTY(QString           activeNetworkSsid  READ activeNetworkSsid  NOTIFY activeNetworkSsidChanged)
-    Q_PROPERTY(WifiNetworksList* savedNetworks      READ savedNetworksList)
+    Q_PROPERTY(WifiNetworksList* savedNetworks      READ savedNetworksInfoList)
     Q_PROPERTY(QString           defaultNetworkSsid READ defaultNetworkSsid WRITE  setDefaultNetworkSsid
                                                                             NOTIFY defaultNetworkSsidChanged)
 
