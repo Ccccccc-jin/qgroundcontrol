@@ -45,6 +45,12 @@ bool WifiNetworksList::contains(QString const& ssid)
 }
 
 
+QVariant WifiNetworksList::at(int idx)
+{
+    return _networks.at(idx).ssid();
+}
+
+
 void WifiNetworksList::clear(void)
 {
     Base::beginRemoveRows(QModelIndex(), 0, rowCount());

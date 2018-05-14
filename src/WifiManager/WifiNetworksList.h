@@ -20,7 +20,8 @@ public:
     void add(WifiNetworkInfo network);
 
     void remove   (QString const& ssid);
-    bool contains (QString const& ssid);
+    Q_INVOKABLE bool contains (QString const& ssid);
+    Q_INVOKABLE QVariant at(int idx);
 
     void clear(void);
 
