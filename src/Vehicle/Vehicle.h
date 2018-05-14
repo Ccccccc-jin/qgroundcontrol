@@ -40,6 +40,7 @@ class JoystickManager;
 class UASMessage;
 class SettingsManager;
 class VideoStreamManager;
+class WifiManager;
 
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
@@ -455,6 +456,7 @@ public:
     GeoFenceManager*    geoFenceManager(void)   { return _geoFenceManager; }
     RallyPointManager*  rallyPointManager(void) { return _rallyPointManager; }
     VideoStreamManager* videoStreamManager(void) { return _videoStreamManager; }
+    WifiManager*        wifiManager(void)       { return _wifiManager; }
 
     QGeoCoordinate homePosition(void);
 
@@ -753,10 +755,6 @@ signals:
     // Mavlink Serial Data
     void mavlinkSerialControl(uint8_t device, uint8_t flags, uint16_t timeout, uint32_t baudrate, QByteArray data);
 
-    // Mavlink Wi-Fi
-    void mavlinkWifiNetworkInformation(mavlink_message_t message);
-    void mavlinkWifiStatus(mavlink_message_t message);
-
 private slots:
     void _mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message);
     void _linkInactiveOrDeleted(LinkInterface* link);
@@ -933,6 +931,8 @@ private:
     ParameterManager*    _parameterManager;
 
     VideoStreamManager*  _videoStreamManager;
+
+    WifiManager*         _wifiManager;
 
     bool    _armed;         ///< true: vehicle is armed
     uint8_t _base_mode;     ///< base_mode from HEARTBEAT
