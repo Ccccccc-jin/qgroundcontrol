@@ -1146,13 +1146,15 @@ contains (CONFIG, DISABLE_WIFIMANAGER) {
 } else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_WIFIMANAGER) {
     message("Skipping support for wifi manager (manual override from user_config.pri)")
 } else {
-    WIFI_MANAGER_DIR = $${PWD}/src/WifiManager
+    WIFI_MANAGER_DIR = src/WifiManager
 
     HEADERS += \
         $${WIFI_MANAGER_DIR}/WifiManager.h \
+        $${WIFI_MANAGER_DIR}/WifiManagerBase.h \
 
     SOURCES += \
         $${WIFI_MANAGER_DIR}/WifiManager.cc \
+        $${WIFI_MANAGER_DIR}/WifiManagerBase.cc \
 }
 
 #-------------------------------------------------------------------------------------
