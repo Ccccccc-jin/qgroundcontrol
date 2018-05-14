@@ -2,39 +2,7 @@
 #define WIFIMANAGERBASE_H
 
 #include <QtCore>
-
-
-class WifiNetworkInfo
-{
-public:
-    enum SecurityType {
-        Open,
-        WEP,
-        WPA,
-        WPA2
-    };
-    Q_ENUMS(SecurityType)
-
-    WifiNetworkInfo(QString ssid,
-                    SecurityType secType = SecurityType::Open)
-        : _ssid(std::move(ssid)),
-          _secType(secType)
-    { }
-
-    bool operator ==(WifiNetworkInfo const& info) { return _ssid == info._ssid; }
-    bool operator !=(WifiNetworkInfo const& info) { return !(*(this) == info); }
-
-    QString const&                ssid(void)         const { return _ssid; }
-    WifiNetworkInfo::SecurityType securityType(void) const { return _secType; }
-
-    static int ssidMaxLength(void);
-    static int passwordMaxLength(void);
-    static int passwordMinLength(void);
-
-private:
-    QString      _ssid;
-    SecurityType _secType;
-};
+#include "WifiNetworksList.h"
 
 
 class WifiManagerBase : public QObject
@@ -48,29 +16,48 @@ public:
         Client,
         Switching
     };
-    Q_ENUMS(WifiState)
+    Q_ENUM(WifiState)
+
+    Q_PROPERTY(WifiState         wifiState          READ wifiState             NOTIFY wifiStateChanged)
+    Q_PROPERTY(QString           activeNetworkSsid  READ activeNetworkSsid     NOTIFY activeNetworkSsidChanged)
+    Q_PROPERTY(WifiNetworksList* savedNetworks      READ savedNetworksInfoList CONSTANT)
+    Q_PROPERTY(QString           defaultNetworkSsid READ defaultNetworkSsid    WRITE  setDefaultNetworkSsid
+                                                                               NOTIFY defaultNetworkSsidChanged)
 
     virtual ~WifiManagerBase(void) = default;
 
-    WifiState const&                  wifiState(void)             const { return _wifiState; }
-    QString const&                    activeNetworkSsid(void)     const { return _activeNetworkSsid; }
-    std::list<WifiNetworkInfo> const& savedNetworksInfoList(void) const { return _savedNetworksInfoList; }
+    WifiState const&  wifiState(void)             const { return _wifiState; }
+    QString const&    activeNetworkSsid(void)     const { return _activeNetworkSsid; }
+    WifiNetworksList* savedNetworksInfoList(void)       { return &_savedNetworksInfoList; }
+    QString const&    defaultNetworkSsid(void)    const { return _defaultNetworkSsid; }
 
-    bool switchToAccessPoint(void);
-    bool switchToClient(QString const& ssid);
+    void setDefaultNetworkSsid(QString ssid);
 
-    bool addNetwork(QString const& ssid,
-                    QString const& passwd,
-                    WifiNetworkInfo::SecurityType secType);
+    Q_INVOKABLE int ssidMaxLength(void);
+    Q_INVOKABLE int passwordMaxLength(void);
+    Q_INVOKABLE int passwordMinLength(void);
 
-    bool deleteNetwork(QString const& ssid);
+    Q_INVOKABLE bool switchToAccessPoint(void);
+    Q_INVOKABLE bool switchToClient(QString const& ssid);
 
-    QString const& errorString(void) const { return _errorString; }
+    Q_INVOKABLE bool addNetwork(QString const& ssid,
+                                QString const& passwd,
+                                int secType);
+
+    Q_INVOKABLE bool deleteNetwork(QString const& ssid);
+
+    Q_INVOKABLE bool validatePassword(QString const& passwd);
+
+    Q_INVOKABLE QString const& errorString(void) const { return _errorString; }
+
+    Q_INVOKABLE QString wifiStateAsString(WifiState state) const;
+    Q_INVOKABLE QString securityTypeAsString(int secType) const;
 
 signals:
     void wifiStateChanged(void);
     void activeNetworkSsidChanged(void);
     void savedNetworksListChanged(void);
+    void defaultNetworkSsidChanged(void);
 
 protected:
     WifiManagerBase(QObject* parent = nullptr);
@@ -92,29 +79,20 @@ protected:
     }
 
     void _addNetworkToList(WifiNetworkInfo netwkInfo) {
-        _savedNetworksInfoList.push_back(std::move(netwkInfo));
-        emit savedNetworksListChanged();
+        _savedNetworksInfoList.add(std::move(netwkInfo));
     }
 
     void _removeNetworkFromList(QString const& ssid) {
-        _savedNetworksInfoList
-                .remove_if([&ssid] (WifiNetworkInfo const& netwk) { return netwk.ssid() == ssid; });
-        emit savedNetworksListChanged();
+        _savedNetworksInfoList.remove(ssid);
     }
 
     void _clearSavedNetworksInfoList(void) {
         _savedNetworksInfoList.clear();
-        emit savedNetworksListChanged();
     }
 
     bool _listContainsNetwork(QString const& ssid)
     {
-        auto const& list = _savedNetworksInfoList;
-
-        auto condition = [&ssid] (WifiNetworkInfo const& info) { return info.ssid() == ssid; };
-        auto netwk = std::find_if(list.cbegin(), list.cend(), condition);
-
-        return netwk != list.cend();
+        return _savedNetworksInfoList.contains(ssid);
     }
 
 private:
@@ -131,9 +109,10 @@ private:
 
     WifiState                  _wifiState;
     QString                    _activeNetworkSsid;
-    std::list<WifiNetworkInfo> _savedNetworksInfoList;
+    WifiNetworksList           _savedNetworksInfoList;
 
     QString                    _errorString;
+    QString                    _defaultNetworkSsid;
 };
 
 
