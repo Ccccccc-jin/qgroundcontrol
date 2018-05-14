@@ -20,6 +20,11 @@ public:
     WifiManager(Vehicle* vehicle, QObject* parent = nullptr);
     ~WifiManager(void) = default;
 
+    void reloadWifiInfoFromVehicle(void) {
+        _requestWifiStatus();
+        _requestSavedNetworksCount();
+    }
+
 signals:
     void _savedNetworksCountReceived(void);
 
