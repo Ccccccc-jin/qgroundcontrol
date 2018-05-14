@@ -26,17 +26,22 @@ void WifiNetworksList::add(WifiNetworkInfo network)
 
 void WifiNetworksList::remove(QString const& ssid)
 {
+    auto idx = _networks.indexOf(WifiNetworkInfo{ssid});
+
+    if (idx == -1) {
+        qWarning() << "Trying to delete element, which doesn't exist";
+        return;
+    }
+
+    Base::beginRemoveRows(QModelIndex(), idx, idx);
+    _networks.removeAt(idx);
+    Base::endRemoveRows();
 }
 
 
 bool WifiNetworksList::contains(QString const& ssid)
 {
-    auto const& list = _networks;
-
-    auto condition = [&ssid] (WifiNetworkInfo const& info) { return info.ssid() == ssid; };
-    auto netwk = std::find_if(list.cbegin(), list.cend(), condition);
-
-    return netwk != list.cend();
+    return _networks.contains(WifiNetworkInfo{ssid});
 }
 
 

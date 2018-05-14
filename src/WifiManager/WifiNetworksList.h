@@ -4,7 +4,7 @@
 #include <QtCore>
 #include <memory>
 
-#include "WifiManagerBase.h"
+#include "WifiNetworkInfo.h"
 
 class WifiNetworksList : public QAbstractListModel
 {
@@ -31,7 +31,7 @@ public:
     QVariant data(QModelIndex const& index, int role = Qt::DisplayRole) const override;
 
 private:
-    std::vector<WifiNetworkInfo> _networks;
+    QList<WifiNetworkInfo> _networks;
 };
 
 #endif
