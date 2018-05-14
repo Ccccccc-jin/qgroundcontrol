@@ -20,6 +20,11 @@ public:
     WifiManager(Vehicle* vehicle, QObject* parent = nullptr);
     ~WifiManager(void) = default;
 
+    void reloadWifiInfoFromVehicle(void) {
+        _requestWifiStatus();
+        _requestSavedNetworksCount();
+    }
+
 signals:
     void _savedNetworksCountReceived(void);
 
@@ -27,16 +32,6 @@ private:
     enum NetworkType : int8_t {
         Saved = 0,
         Scanned
-    };
-
-    struct Message {
-        int msgid;
-        QVariantList args;
-
-        Message(int messageId, QVariantList argsList = {})
-            : msgid(messageId),
-              args(std::move(argsList))
-        { }
     };
 
     bool _switchToAccessPoint(void) override;
@@ -51,6 +46,7 @@ private:
 
     void _onMavlinkMessageReceived(mavlink_message_t const& msg);
     void _onNetworksListRequestTimeout(void);
+    void _onAckTimerTimeout           (void);
     void _onSavedNetworksCountReceived(void);
 
     void _requestWifiStatus         (void);
@@ -63,15 +59,17 @@ private:
     void _handleWifiNetworksCount (mavlink_message_t const& msg);
 
     void _handleConnectionLost(bool isConnectionLost);
+    void _sendMessage(mavlink_message_t msg);
 
     int                 _savedNetworksCount;
     int                 _receivedSavedNetworksCount;
 
+    QTimer              _ackTimer;
     QTimer              _netwksListRequestTimer;
     int                 _retryCount;
-
     Vehicle*            _vehicle;
-    std::queue<Message> _messageQueue;
+
+    std::queue<mavlink_message_t> _messageQueue;
 };
 
 #endif

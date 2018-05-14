@@ -36,8 +36,14 @@ WifiManager::WifiManager(Vehicle* vehicle, QObject* parent)
     _netwksListRequestTimer.setSingleShot(true);
     _netwksListRequestTimer.setInterval(2000);
 
+    _ackTimer.setSingleShot(true);
+    _ackTimer.setInterval(2000);
+
     QObject::connect(&_netwksListRequestTimer, &QTimer::timeout,
                      this, &WifiManager::_onNetworksListRequestTimeout);
+
+    QObject::connect(&_ackTimer, &QTimer::timeout,
+                     this, &WifiManager::_onAckTimerTimeout);
 
     QObject::connect(_vehicle, &Vehicle::mavlinkMessageReceived,
                      this,     &WifiManager::_onMavlinkMessageReceived);
@@ -66,8 +72,7 @@ bool WifiManager::_switchToClient(QString const& ssid)
                                             util::mavlinkProtocol().getComponentId(),
                                             &msg, rawSsid.data());
 
-    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
-    _messageQueue.push({MAVLINK_MSG_ID_WIFI_NETWORK_CONNECT});
+    _sendMessage(msg);
     return true;
 }
 
@@ -86,8 +91,7 @@ bool WifiManager::_addNetwork(QString const& ssid,
                                       &msg, rawSsid.data(), rawPasswd.data(),
                                       static_cast<uint16_t>(secType));
 
-    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
-    _messageQueue.push({MAVLINK_MSG_ID_WIFI_NETWORK_ADD, {ssid, secType}});
+    _sendMessage(msg);
 
     return true;
 }
@@ -103,8 +107,7 @@ bool WifiManager::_deleteNetwork(QString const& ssid)
                                            util::mavlinkProtocol().getComponentId(),
                                            &msg, rawSsid);
 
-    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
-    _messageQueue.push({MAVLINK_MSG_ID_WIFI_NETWORK_DELETE, {ssid}});
+    _sendMessage(msg);
 
     return true;
 }
@@ -112,7 +115,7 @@ bool WifiManager::_deleteNetwork(QString const& ssid)
 
 void WifiManager::_onMavlinkMessageReceived(mavlink_message_t const& msg)
 {
-    if (msg.compid != MAV_COMP_ID_WIFI) {
+    if (msg.compid != MAV_COMP_ID_WIFI || msg.msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         return;
     }
 
@@ -134,7 +137,9 @@ void WifiManager::_onMavlinkMessageReceived(mavlink_message_t const& msg)
             break;
 
         default:
-            _setErrorString("Unrecognized message from WiFi component");
+            auto errmsg = QString("Unrecognized message from WiFi component %1")
+                              .arg(msg.msgid);
+            Base::_setErrorString(errmsg);
     }
 }
 
@@ -151,6 +156,15 @@ void WifiManager::_onNetworksListRequestTimeout(void)
         _netwksListRequestTimer.start();
         _requestSavedNetworksInfo();
     }
+}
+
+
+void WifiManager::_onAckTimerTimeout(void)
+{
+    auto msg = QString("Timeout: ack on msg %1 didn't receive.")
+            .arg(_messageQueue.front().msgid);
+    Base::_setErrorString(msg);
+    _messageQueue.pop();
 }
 
 
@@ -190,40 +204,57 @@ void WifiManager::_requestSavedNetworksInfo(void)
 void WifiManager::_handleWifiAck(mavlink_message_t const& msg)
 {
     if (_messageQueue.empty()) {
-        _setErrorString("Wifi ack received, but message queue is empty");
-        return;
-    }
-
-    if (msg.msgid != _messageQueue.front().msgid) {
-        _setErrorString("Invalid sequence. Received ack on command, "
-                        "which is not latest");
+        Base::_setErrorString("Wifi ack received, but message queue is empty");
         return;
     }
 
     mavlink_wifi_ack_t wifiAck;
     ::mavlink_msg_wifi_ack_decode(&msg, &wifiAck);
 
+    if (wifiAck.message_id != _messageQueue.front().msgid) {
+        auto msg = QString("Invalid sequence. Received ack on message, "
+                           "which is not latest. Latest msg is %1. "
+                           "Msg queue size %2").arg(_messageQueue.front().msgid)
+                                               .arg(_messageQueue.size());
+
+        Base::_setErrorString(msg);
+        return;
+    }
+
     if (wifiAck.result != 0) {
         auto message = QString("Command %1 is not performed.")
                               .arg(wifiAck.message_id);
-        _setErrorString(std::move(message));
+        Base::_setErrorString(std::move(message));
     }
 
     switch (wifiAck.message_id) {
         case MAVLINK_MSG_ID_WIFI_NETWORK_DELETE: {
-            auto netwkSsid = _messageQueue.front().args.first().toString();
-            Base::_removeNetworkFromList(netwkSsid);
+            auto const& msg = _messageQueue.front();
+            auto deleteMsg = mavlink_wifi_network_delete_t{};
+
+            ::mavlink_msg_wifi_network_delete_decode(&msg, &deleteMsg);
+
+            auto ssid = util::decodeString(deleteMsg.ssid,
+                                           sizeof(deleteMsg.ssid));
+
+            Base::_removeNetworkFromList(ssid);
             break;
         }
 
         case MAVLINK_MSG_ID_WIFI_NETWORK_ADD: {
             auto const& msg = _messageQueue.front();
-            auto netwkSsid    = msg.args.value(0).toString();
-            auto netwkSecType = msg.args.value(1)
-                    .value<WifiNetworkInfo::SecurityType>();
+            auto netwkMsg = mavlink_wifi_network_add_t{};
+
+            ::mavlink_msg_wifi_network_add_decode(&msg, &netwkMsg);
+
+            auto ssid = util::decodeString(netwkMsg.ssid,
+                                           sizeof(netwkMsg.ssid));
+
+            using SecType = WifiNetworkInfo::SecurityType;
+            auto secType = static_cast<SecType>(netwkMsg.security_type);
 
             Base::_addNetworkToList(
-                WifiNetworkInfo{std::move(netwkSsid), netwkSecType}
+                WifiNetworkInfo{std::move(ssid), secType}
             );
 
             break;
@@ -231,6 +262,15 @@ void WifiManager::_handleWifiAck(mavlink_message_t const& msg)
     }
 
     _messageQueue.pop();
+
+
+    if (!_messageQueue.empty()) {
+        _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
+                                    _messageQueue.front());
+        _ackTimer.start();
+    } else {
+        _ackTimer.stop();
+    }
 }
 
 
@@ -242,8 +282,8 @@ void WifiManager::_handleWifiStatus(mavlink_message_t const& msg)
     auto ssid = util::decodeString(wifiStatus.ssid,
                                    sizeof(wifiStatus.ssid));
 
-    Base::_setWifiState(static_cast<WifiState>(wifiStatus.state));
     Base::_setActiveNetworkSsid(std::move(ssid));
+    Base::_setWifiState(static_cast<WifiState>(wifiStatus.state));
 }
 
 
@@ -253,7 +293,7 @@ void WifiManager::_handleWifiNetworkInfo(mavlink_message_t const& msg)
     ::mavlink_msg_wifi_network_info_decode(&msg, &netwkInfo);
 
     if (_savedNetworksCount == -1) {
-        _setErrorString("Networks info is received before networks count");
+        Base::_setErrorString("Networks info is received before networks count");
 
     } else if (netwkInfo.type == NetworkType::Saved) {
         auto ssid = util::decodeString(netwkInfo.ssid, sizeof(netwkInfo.ssid));
@@ -269,7 +309,6 @@ void WifiManager::_handleWifiNetworkInfo(mavlink_message_t const& msg)
         }
 
         using SecType = WifiNetworkInfo::SecurityType;
-
         Base::_addNetworkToList(
             WifiNetworkInfo{
                 std::move(ssid),
@@ -284,6 +323,8 @@ void WifiManager::_handleWifiNetworksCount(mavlink_message_t const& msg)
 {
     mavlink_wifi_networks_count_t netwkCount;
     ::mavlink_msg_wifi_networks_count_decode(&msg, &netwkCount);
+
+    Base::_clearSavedNetworksInfoList();
 
     if (netwkCount.type == NetworkType::Saved) {
         _savedNetworksCount = netwkCount.count;
@@ -303,4 +344,15 @@ void WifiManager::_handleConnectionLost(bool isConnectionLost)
 
     _requestWifiStatus();
     _requestSavedNetworksCount();
+}
+
+
+void WifiManager::_sendMessage(mavlink_message_t msg)
+{
+    _messageQueue.push(std::move(msg));
+
+    if (_messageQueue.size() == 1) {
+        _vehicle->sendMessageOnLink(_vehicle->priorityLink(), std::move(msg));
+        _ackTimer.start();
+    }
 }
