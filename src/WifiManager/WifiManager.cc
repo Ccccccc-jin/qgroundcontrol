@@ -270,8 +270,11 @@ void WifiManager::_handleWifiNetworkInfo(mavlink_message_t const& msg)
             _netwksListRequestTimer.start();
         }
 
-        using SecType = WifiNetworkInfo::SecurityType;
+        if (Base::_listContainsNetwork(ssid)) {
+            return;
+        }
 
+        using SecType = WifiNetworkInfo::SecurityType;
         Base::_addNetworkToList(
             WifiNetworkInfo{
                 std::move(ssid),
