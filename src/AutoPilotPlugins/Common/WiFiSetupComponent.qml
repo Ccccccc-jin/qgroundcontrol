@@ -449,7 +449,7 @@ SetupPage {
                         if (networkSsid === "") {
                             warningPanel.show("Network wasn't selected")
 
-                        } else if (networkEncryptionType !== WiFiSetupComponentController.OpenEncrypt
+                        } else if (networkEncryptionType !== WifiNetworkInfo.Open
                                    && !_wifiManager.validatePassword(networkPasswd)) {
                             warningPanel.show("Invalid password. Password should contains at least 8 characters")
 
@@ -556,7 +556,6 @@ SetupPage {
 
                                                     function accept() {
                                                         networkListButton.checked = false
-                                                        networkListPanel.hide()
 
                                                         networkNamePanel.show()
                                                         encryptionTypePanel.show()
@@ -669,7 +668,7 @@ SetupPage {
                                         QGCTextField {
                                             id:             networkNameField
                                             anchors         { left: parent.left; right: parent.right }
-                                            maximumLength:  WifiNetworkInfo.ssidMaxLength()
+                                            maximumLength:  _wifiManager.ssidMaxLength()
                                             validator:      RegExpValidator {
                                                 regExp: /[\0040-\0176]*/
                                             }
@@ -690,10 +689,15 @@ SetupPage {
                                             id:      encryptionTypeCombo
                                             anchors  { left: parent.left; right: parent.right }
                                             width:   _secondColumn
-                                            model:   _wifiManager.encryptTypeStrings
+                                            model:   [
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.Open),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WEP),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WPA),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WPA2)
+                                            ]
 
                                             onActivated: {
-                                                if (index === WiFiSetupComponentController.OpenEncrypt) {
+                                                if (index === WifiNetworkInfo.Open) {
                                                     passwordPanel.hide()
                                                 } else {
                                                     passwordPanel.show()
@@ -715,7 +719,7 @@ SetupPage {
                                         QGCTextField {
                                             id:             passwordField
                                             anchors         { left: parent.left; right: parent.right }
-                                            maximumLength:  WifiNetworkInfo.passwordMaxLength()
+                                            maximumLength:  _wifiManager.passwordMaxLength()
                                             echoMode:       TextInput.Password
                                             validator:      RegExpValidator {
                                                 regExp: /[\0040-\0176]*/
