@@ -36,8 +36,14 @@ WifiManager::WifiManager(Vehicle* vehicle, QObject* parent)
     _netwksListRequestTimer.setSingleShot(true);
     _netwksListRequestTimer.setInterval(2000);
 
+    _ackTimer.setSingleShot(true);
+    _ackTimer.setInterval(2000);
+
     QObject::connect(&_netwksListRequestTimer, &QTimer::timeout,
                      this, &WifiManager::_onNetworksListRequestTimeout);
+
+    QObject::connect(&_ackTimer, &QTimer::timeout,
+                     this, &WifiManager::_onAckTimerTimeout);
 
     QObject::connect(_vehicle, &Vehicle::mavlinkMessageReceived,
                      this,     &WifiManager::_onMavlinkMessageReceived);
@@ -150,6 +156,15 @@ void WifiManager::_onNetworksListRequestTimeout(void)
         _netwksListRequestTimer.start();
         _requestSavedNetworksInfo();
     }
+}
+
+
+void WifiManager::_onAckTimerTimeout(void)
+{
+    auto msg = QString("Timeout: ack on msg %1 didn't receive.")
+            .arg(_messageQueue.front().msgid);
+    Base::_setErrorString(msg);
+    _messageQueue.pop();
 }
 
 

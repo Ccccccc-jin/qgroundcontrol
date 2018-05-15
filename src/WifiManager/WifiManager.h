@@ -46,6 +46,7 @@ private:
 
     void _onMavlinkMessageReceived(mavlink_message_t const& msg);
     void _onNetworksListRequestTimeout(void);
+    void _onAckTimerTimeout           (void);
     void _onSavedNetworksCountReceived(void);
 
     void _requestWifiStatus         (void);
