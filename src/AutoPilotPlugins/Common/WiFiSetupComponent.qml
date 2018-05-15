@@ -16,6 +16,8 @@ import QtQuick.Dialogs         1.2
 import QtQuick.Layouts         1.2
 
 import QGroundControl               1.0
+import QGroundControl.FactSystem    1.0
+import QGroundControl.FactControls  1.0
 import QGroundControl.Palette       1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.Controllers   1.0
@@ -25,6 +27,9 @@ import QGroundControl.ScreenTools   1.0
 SetupPage {
     id:             wifiPage
     pageComponent:  pageComponent
+
+    property var corePlugin: QGroundControl.corePlugin
+    FactPanelController { id: factController; factPanel: wifiPage }
 
     Component {
         id: pageComponent
@@ -115,9 +120,10 @@ SetupPage {
                 width:    ScreenTools.defaultFontPixelWidth * 60
                 spacing: _margins
 
-                QGCLabel { text: qsTr("Status") }
+                QGCLabel { text: "Status" }
 
                 Rectangle {
+                    id: wifiStatus
                     anchors { left: parent.left; right: parent.right }
                     height: ScreenTools.defaultFontPixelHeight * 3
                     color:  palette.windowShade
@@ -200,17 +206,25 @@ SetupPage {
                 }
 
                 Item {
-                    id:     blank
                     anchors { left: parent.left; right: parent.right }
                     height: _margins / 2
                 }
 
-                QGCLabel { text: qsTr("Saved networks") }
+                QGCDropDownSetting {
+                    width: parent.width
+                    title: qsTr("Saved networks")
+
+                    onStateChanged: {
+                        networksSettings.visible = currentState == openedState
+                    }
+                }
 
                 Rectangle {
-                    anchors { left: parent.left; right: parent.right }
-                    height: width * 1.1
-                    color:  palette.windowShade
+                    id:      networksSettings
+                    anchors  { left: parent.left; right: parent.right }
+                    height:  width * 1.1
+                    color:   palette.windowShade
+                    visible: false
 
                     Column {
                         spacing:         _margins
@@ -427,6 +441,55 @@ SetupPage {
                                 }
                             }
                         }
+                    }
+                }
+
+
+                Item {
+                    anchors { left: parent.left; right: parent.right }
+                    height: _margins / 2
+                }
+
+                QGCDropDownSetting {
+                    width: parent.width
+                    title: qsTr("Hotspot settings")
+
+                    onStateChanged: {
+                        wifiSettings.visible = currentState == openedState
+                    }
+                }
+
+                Rectangle {
+                    id: wifiSettings
+                    anchors { left: parent.left; right: parent.right }
+                    height:  wifiChannelTxtField.y + wifiChannelTxtField.height + 2 * _margins
+                    color:   palette.windowShade
+                    visible: false
+
+                    property Fact txPowerFact: factController.getParameterFact(controller.componentId, "WIFI_TX_POWER")
+                    property Fact channel:     factController.getParameterFact(controller.componentId, "WIFI_CHANNEL")
+
+                    GridLayout {
+                        anchors {
+                            fill: parent
+                            margins: _margins
+                        }
+                        columns: 2
+
+                        QGCLabel { text: qsTr("Tx Power:") }
+                        FactTextField {
+                            anchors.right: parent.right
+                            id:   wifiTxPowerTxtField
+                            fact: wifiSettings.txPowerFact
+                        }
+
+                        QGCLabel { text: qsTr("Channel:") }
+                        FactTextField {
+                            anchors.right: parent.right
+                            id:   wifiChannelTxtField
+                            fact: wifiSettings.channel
+                        }
+
                     }
                 }
             }

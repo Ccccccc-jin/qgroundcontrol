@@ -76,6 +76,7 @@ public:
     Q_PROPERTY(QStringList encryptTypeStrings  MEMBER _encryptTypeStrings   CONSTANT)
     Q_PROPERTY(int         ssidMaxLength       MEMBER _ssidMaxLength        CONSTANT)
     Q_PROPERTY(int         passwdMaxLength     MEMBER _passwdMaxLength      CONSTANT)
+    Q_PROPERTY(int         componentId         READ   componentId           CONSTANT)
 
     Q_PROPERTY(WifiNetworksListModel* scannedNetworks READ scannedNetworks NOTIFY scannedNetworksUpdated)
 
@@ -100,6 +101,7 @@ public:
 
     WifiNetworksListModel* scannedNetworks(void) { return &_scannedNetworks; }
     void setDefaultNetwork(QString const& network);
+    int componentId(void) const;
 
 signals:
     void savedNetworksUpdated  (void);

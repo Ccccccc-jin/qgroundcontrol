@@ -305,3 +305,9 @@ void WiFiSetupComponentController::_handleWiFiNetworkInformation(mavlink_message
         emit savedNetworksUpdated();
     }
 }
+
+
+int WiFiSetupComponentController::componentId(void) const
+{
+    return MAV_COMP_ID_WIFI;
+}
