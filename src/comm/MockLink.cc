@@ -471,8 +471,8 @@ void MockLink::_handleWifiNetworkAdd(const mavlink_message_t &msg)
 
     mavlink_message_t wifiAck;
     mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
-                                   msg.compid, _mavlinkChannel,
-                                   &wifiAck, msg.msgid, 0);
+                                   MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                   &wifiAck, MAVLINK_MSG_ID_WIFI_NETWORK_ADD, 0);
 
     respondWithMavlinkMessage(wifiAck);
 }
@@ -519,8 +519,8 @@ void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
 
     mavlink_message_t wifiAck;
     mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
-                                   msg.compid, _mavlinkChannel,
-                                   &wifiAck, msg.msgid, 0);
+                                   MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                   &wifiAck, MAVLINK_MSG_ID_WIFI_NETWORK_CONNECT, 0);
 
     respondWithMavlinkMessage(wifiAck);
 
