@@ -524,7 +524,7 @@ void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
 
     respondWithMavlinkMessage(wifiAck);
 
-    _currentWifiStatus = 1; // Clien mode
+    _currentWifiStatus = WIFI_STATE_CLIENT;
     _handleRequestWifiStatus(mavlink_command_long_t());
 }
 
@@ -1296,8 +1296,8 @@ void MockLink::_handleWifiStartAP(const mavlink_command_long_t &request)
         qWarning() << "WIFI_START_AP: device currently in AP";
     }
 
-    _currentWifiStatus = 0;
-    _activeNetwork = "";
+    _currentWifiStatus = WIFI_STATE_AP;
+    _activeNetwork = "wifi_ap";
 
     _handleRequestWifiStatus(request);
 }
