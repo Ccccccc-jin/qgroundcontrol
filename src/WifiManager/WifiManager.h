@@ -34,16 +34,6 @@ private:
         Scanned
     };
 
-    struct Message {
-        int msgid;
-        QVariantList args;
-
-        Message(int messageId, QVariantList argsList = {})
-            : msgid(messageId),
-              args(std::move(argsList))
-        { }
-    };
-
     bool _switchToAccessPoint(void) override;
     bool _switchToClient(QString const& ssid) override;
 
@@ -68,15 +58,17 @@ private:
     void _handleWifiNetworksCount (mavlink_message_t const& msg);
 
     void _handleConnectionLost(bool isConnectionLost);
+    void _sendMessage(mavlink_message_t msg);
 
     int                 _savedNetworksCount;
     int                 _receivedSavedNetworksCount;
 
+    QTimer              _ackTimer;
     QTimer              _netwksListRequestTimer;
     int                 _retryCount;
-
     Vehicle*            _vehicle;
-    std::queue<Message> _messageQueue;
+
+    std::queue<mavlink_message_t> _messageQueue;
 };
 
 #endif
