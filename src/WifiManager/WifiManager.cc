@@ -60,7 +60,7 @@ bool WifiManager::_switchToAccessPoint(void)
 bool WifiManager::_switchToClient(QString const& ssid)
 {
     mavlink_message_t msg;
-    auto rawSsid = util::toRawString(ssid, WifiNetworkInfo::ssidMaxLength());
+    auto rawSsid = util::toRawString(ssid, ssidMaxLength());
 
     ::mavlink_msg_wifi_network_connect_pack(util::mavlinkProtocol().getSystemId(),
                                             util::mavlinkProtocol().getComponentId(),
@@ -78,8 +78,8 @@ bool WifiManager::_addNetwork(QString const& ssid,
 {
     mavlink_message_t msg;
 
-    auto rawSsid   = util::toRawString(ssid, WifiNetworkInfo::ssidMaxLength());
-    auto rawPasswd = util::toRawString(passwd, WifiNetworkInfo::passwordMaxLength());
+    auto rawSsid   = util::toRawString(ssid, ssidMaxLength());
+    auto rawPasswd = util::toRawString(passwd, passwordMaxLength());
 
     mavlink_msg_wifi_network_add_pack(util::mavlinkProtocol().getSystemId(),
                                       util::mavlinkProtocol().getComponentId(),
@@ -97,7 +97,7 @@ bool WifiManager::_deleteNetwork(QString const& ssid)
 {
 
     mavlink_message_t msg;
-    auto rawSsid = util::toRawString(ssid, WifiNetworkInfo::ssidMaxLength());
+    auto rawSsid = util::toRawString(ssid, ssidMaxLength());
 
     ::mavlink_msg_wifi_network_delete_pack(util::mavlinkProtocol().getSystemId(),
                                            util::mavlinkProtocol().getComponentId(),

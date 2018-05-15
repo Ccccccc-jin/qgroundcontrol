@@ -33,6 +33,10 @@ public:
 
     void setDefaultNetworkSsid(QString ssid);
 
+    Q_INVOKABLE int ssidMaxLength(void);
+    Q_INVOKABLE int passwordMaxLength(void);
+    Q_INVOKABLE int passwordMinLength(void);
+
     Q_INVOKABLE bool switchToAccessPoint(void);
     Q_INVOKABLE bool switchToClient(QString const& ssid);
 

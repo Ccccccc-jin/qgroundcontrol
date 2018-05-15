@@ -17,6 +17,24 @@ WifiManagerBase::WifiManagerBase(QObject* parent)
 }
 
 
+int WifiManagerBase::ssidMaxLength(void)
+{
+    return sizeof(mavlink_wifi_network_add_t::ssid);
+}
+
+
+int WifiManagerBase::passwordMaxLength(void)
+{
+    return sizeof(mavlink_wifi_network_add_t::password);
+}
+
+
+int WifiManagerBase::passwordMinLength(void)
+{
+    return 8;
+}
+
+
 void WifiManagerBase::setDefaultNetworkSsid(QString ssid)
 {
     QSettings appSettings;
@@ -92,19 +110,19 @@ bool WifiManagerBase::addNetwork(QString const& ssid,
         return false;
     }
 
-    if (ssid.length() > WifiNetworkInfo::ssidMaxLength() || ssid.isEmpty()) {
+    if (ssid.length() > ssidMaxLength() || ssid.isEmpty()) {
         auto msg = QString("Ssid is bigger than maximum %1 or empty")
-                       .arg(WifiNetworkInfo::ssidMaxLength());
+                       .arg(ssidMaxLength());
         _setErrorString(msg);
         return false;
     }
 
-    if (passwd.length() > WifiNetworkInfo::passwordMaxLength()
-     || passwd.length() < WifiNetworkInfo::passwordMinLength())
+    if (passwd.length() > passwordMaxLength()
+     || passwd.length() < passwordMinLength())
     {
         auto msg = QString("Password is bigger than %1 or less than %2")
-                      .arg(WifiNetworkInfo::passwordMaxLength())
-                      .arg(WifiNetworkInfo::passwordMinLength());
+                      .arg(passwordMaxLength())
+                      .arg(passwordMinLength());
         _setErrorString(msg);
         return false;
     }
@@ -135,11 +153,11 @@ bool WifiManagerBase::deleteNetwork(QString const& ssid)
 bool WifiManagerBase::validatePassword(QString const& passwd)
 {
     /// We have ASCII PSK (max 63 bytes length) and HEX (fixed 64 bytes length)
-    auto checkOnAsciiPSK = passwd.length() <  WifiNetworkInfo::passwordMaxLength();
-    auto checkOnHexPSK   = passwd.length() == WifiNetworkInfo::passwordMinLength();
+    auto checkOnAsciiPSK = passwd.length() <  passwordMaxLength();
+    auto checkOnHexPSK   = passwd.length() == passwordMinLength();
 
     if (checkOnAsciiPSK) {
-        return passwd.length() >= WifiNetworkInfo::passwordMinLength();
+        return passwd.length() >= passwordMinLength();
 
     } else if (checkOnHexPSK) {
         auto hexadecimalPattern = QRegExp("^[0-9A-Fa-f]*$");
