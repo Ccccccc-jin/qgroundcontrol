@@ -21,15 +21,6 @@ FactPanel {
     anchors.fill:   parent
     color:          qgcPal.windowShadeDark
 
-    WiFiSetupComponentController {
-        id:        controller
-        factPanel: panel
-
-        Component.onCompleted: {
-            requestWifiStatus()
-        }
-    }
-
     QGCPalette { id: palette; colorGroupEnabled: true }
 
     Column {
