@@ -74,8 +74,11 @@ bool WifiManagerBase::switchToClient(QString const& ssid)
 {
     switch (_wifiState) {
         case WifiState::Client:
-            _setErrorString("Wifi already in Client mode");
-            return false;
+            if (ssid == _activeNetworkSsid) {
+                _setErrorString("Wifi already connected to this network");
+                return false;
+            }
+            break;
 
         case WifiState::Switching:
             _setErrorString("Wifi in Switching state");
