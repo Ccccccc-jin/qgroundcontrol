@@ -196,14 +196,17 @@ void WifiManager::_handleWifiAck(mavlink_message_t const& msg)
         return;
     }
 
-    if (msg.msgid != _messageQueue.front().msgid) {
-        _setErrorString("Invalid sequence. Received ack on command, "
-                        "which is not latest");
-        return;
-    }
-
     mavlink_wifi_ack_t wifiAck;
     ::mavlink_msg_wifi_ack_decode(&msg, &wifiAck);
+
+    if (wifiAck.message_id != _messageQueue.front().msgid) {
+        auto msg = QString("Invalid sequence. Received ack on command, "
+                           "which is not latest. Latest msg is %1. "
+                           "Msg queue size %2").arg(_messageQueue.front().msgid).arg(_messageQueue.size());
+
+        _setErrorString(msg);
+        return;
+    }
 
     if (wifiAck.result != 0) {
         auto message = QString("Command %1 is not performed.")
