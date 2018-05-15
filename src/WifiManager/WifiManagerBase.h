@@ -42,7 +42,7 @@ public:
 
     Q_INVOKABLE bool addNetwork(QString const& ssid,
                                 QString const& passwd,
-                                WifiNetworkInfo::SecurityType secType);
+                                int secType);
 
     Q_INVOKABLE bool deleteNetwork(QString const& ssid);
 
@@ -51,7 +51,7 @@ public:
     Q_INVOKABLE QString const& errorString(void) const { return _errorString; }
 
     Q_INVOKABLE QString wifiStateAsString(WifiState state) const;
-    Q_INVOKABLE QString securityTypeAsString(WifiNetworkInfo::SecurityType secType) const;
+    Q_INVOKABLE QString securityTypeAsString(int secType) const;
 
 signals:
     void wifiStateChanged(void);

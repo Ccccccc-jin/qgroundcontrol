@@ -101,8 +101,10 @@ bool WifiManagerBase::switchToClient(QString const& ssid)
 
 bool WifiManagerBase::addNetwork(QString const& ssid,
                                  QString const& passwd,
-                                 WifiNetworkInfo::SecurityType secType)
+                                 int securityType)
 {
+    auto secType = static_cast<WifiNetworkInfo::SecurityType>(securityType);
+
     if (_listContainsNetwork(ssid)) {
         auto msg = QString("Can not add %1 network. "
                            "Network with same ssid already exists").arg(ssid);
@@ -117,8 +119,8 @@ bool WifiManagerBase::addNetwork(QString const& ssid,
         return false;
     }
 
-    if (passwd.length() > passwordMaxLength()
-     || passwd.length() < passwordMinLength())
+    if (secType != WifiNetworkInfo::Open && (passwd.length() > passwordMaxLength()
+     || passwd.length() < passwordMinLength()))
     {
         auto msg = QString("Password is bigger than %1 or less than %2")
                       .arg(passwordMaxLength())
@@ -175,8 +177,8 @@ QString WifiManagerBase::wifiStateAsString(WifiState state) const
 }
 
 
-QString WifiManagerBase::securityTypeAsString(WifiNetworkInfo::SecurityType secType) const
+QString WifiManagerBase::securityTypeAsString(int secType) const
 {
     static auto secTypeMeta = QMetaEnum::fromType<WifiNetworkInfo::SecurityType>();
-    return secTypeMeta.valueToKey(secType);
+    return secTypeMeta.valueToKey(static_cast<WifiNetworkInfo::SecurityType>(secType));
 }
