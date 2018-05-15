@@ -26,6 +26,23 @@ SetupPage {
     id:             wifiPage
     pageComponent:  pageComponent
 
+    property WifiManager _wifiManager: QGroundControl.multiVehicleManager
+                                             .activeVehicle
+                                             .wifiManager
+    function wifiStateAsString(wifiState) {
+        switch(wifiState) {
+            case WifiManager.AccessPoint: return "Access Point"
+            case WifiManager.Client:      return "Client mode"
+            case WifiManager.Undefined:   return "Undefined"
+            case WifiManager.Switching:   return "Switching..."
+        }
+    }
+
+    property var corePlugin: QGroundControl.corePlugin
+
+    function enableVehicleSetupButtons()  { corePlugin.vehicleSetupDisabled = false }
+    function disableVehicleSetupButtons() { corePlugin.vehicleSetupDisabled = true }
+
     Component {
         id: pageComponent
 
@@ -34,61 +51,51 @@ SetupPage {
             spacing:  _margins
             width:    availableWidth
 
-            WiFiSetupComponentController {
-                id:        controller
-                factPanel: wifiPage.viewPanel
+            function setComponentActiveState() {
+                btnsPanel.enablePanel()
+                savedNetworksListView.enableView()
+                savedNetworksListView.resetCurrentIndex()
+                enableVehicleSetupButtons()
+            }
 
-                property var corePlugin: QGroundControl.corePlugin
+            function setComponentInactiveState() {
+                btnsPanel.disablePanel()
+                savedNetworksListView.disableView()
+            }
 
-                function enableVehicleSetupButtons()  { corePlugin.vehicleSetupDisabled = false }
-                function disableVehicleSetupButtons() { corePlugin.vehicleSetupDisabled = true }
+            function updateWifiState(wifiState) {
+                switch(wifiState) {
+                    case WifiManager.AccessPoint:
+                        modeSwitch.setAccessPointMode()
+                        setComponentActiveState()
+                        break
 
-                function setComponentActiveState() {
-                    btnsPanel.enablePanel()
-                    savedNetworksListView.enableView()
-                    savedNetworksListView.resetCurrentIndex()
-                    enableVehicleSetupButtons()
+                    case WifiManager.Client:
+                        modeSwitch.setClientMode()
+                        setComponentActiveState()
+                        break
+
+                    case WifiManager.Undefined:
+                        modeSwitch.setUndefined()
+                        setComponentInactiveState()
+                        break
+
+                    case WifiManager.Switching:
+                        modeSwitch.setSwitching()
+                        setComponentInactiveState()
+                        disableVehicleSetupButtons()
+                        break
+
+                    default:
+                        console.log("Undefined wifistatus")
+                        break
                 }
+            }
 
-                function setComponentInactiveState() {
-                    btnsPanel.disablePanel()
-                    savedNetworksListView.disableView()
-                }
-
-                onEdgeModeChanged: {
-                    switch(controller.edgeMode) {
-                        case WiFiSetupComponentController.AccessPoint:
-                            modeSwitch.setAccessPointMode()
-                            setComponentActiveState()
-                            break
-
-                        case WiFiSetupComponentController.Client:
-                            modeSwitch.setClientMode()
-                            setComponentActiveState()
-                            break
-
-                        case WiFiSetupComponentController.Undefined:
-                            modeSwitch.setUndefined()
-                            setComponentInactiveState()
-                            break
-
-                        case WiFiSetupComponentController.Switching:
-                            modeSwitch.setSwitching()
-                            setComponentInactiveState()
-                            disableVehicleSetupButtons()
-                            break
-
-                        default:
-                            console.log("Undefined wifistatus")
-                            break
-                    }
-
-                }
-
-                onSavedNetworksUpdated: {
-                    if (savedNetworks.size === 0) {
-                        savedNetworksListView.resetCurrentIndex()
-                    }
+            Connections {
+                target: _wifiManager
+                onWifiStateChanged: {
+                    settingColumn.updateWifiState(_wifiManager.wifiState)
                 }
 
                 Component.onCompleted: {
@@ -96,8 +103,7 @@ SetupPage {
                     btnsPanel.disablePanel()
                     savedNetworksListView.disableView()
 
-                    requestWifiStatus()
-                    updateNetwokrsList()
+                    settingColumn.updateWifiState(_wifiManager.wifiState)
                 }
 
                 Component.onDestruction: {
@@ -136,33 +142,35 @@ SetupPage {
                             readonly property string clientModeColor:  "#2ecc71" // flatGreen
 
                             function setAccessPointMode() {
-                                modeLabel.text = "Access point mode"
+                                modeLabel.text = wifiStateAsString(WifiManager.AccessPoint)
                                 checked = true
                                 enabled = true
                             }
 
                             function setClientMode() {
-                                modeLabel.text = "Client mode"
+                                modeLabel.text = wifiStateAsString(WifiManager.Client)
                                 checked = false
                                 enabled = true
                             }
 
                             function setUndefined() {
-                                modeLabel.text = "Undefined"
+                                modeLabel.text = wifiStateAsString(WifiManager.Undefined)
                                 enabled = false
                             }
 
                             function setSwitching() {
-                                modeLabel.text = "Switching..."
+                                modeLabel.text = wifiStateAsString(WifiManager.Switching)
                                 enabled = false
                             }
 
                             onClicked: {
                                 if (checked) {
-                                    controller.bootAsAccessPoint()
-                                } else if (controller.defaultNetwork.length > 0
-                                        && controller.savedNetworksContains(controller.defaultNetwork)) {
-                                    controller.bootAsClient(controller.defaultNetwork)
+                                    _wifiManager.switchToAccessPoint()
+
+                                } else if (_wifiManager.defaultNetworkSsid.length > 0
+                                        && _wifiManager.savedNetworks.contains(_wifiManager.defaultNetworkSsid) ) {
+                                    _wifiManager.switchToClient(_wifiManager.defaultNetworkSsid)
+
                                 } else {
                                     switchWarnDialog.visible = true
                                     checked = true
@@ -232,7 +240,7 @@ SetupPage {
                             function resetCurrentIndex() { currentIndex = -1 }
 
                             function currentListElement() {
-                                return model[currentIndex]
+                                return currentIndex != -1 ? model.at(currentIndex) : null
                             }
 
                             keyNavigationEnabled: true
@@ -247,7 +255,7 @@ SetupPage {
 
                             footer: header
 
-                            model: controller.savedNetworks
+                            model: _wifiManager.savedNetworks
 
                             delegate: Item {
                                 height: ScreenTools.defaultFontPixelHeight * 3
@@ -259,7 +267,7 @@ SetupPage {
 
                                     QGCLabel {
                                         id:             networkLabel
-                                        text:           modelData
+                                        text:           ssid
                                         font.pointSize: ScreenTools.mediumFontPointSize
                                     }
 
@@ -272,14 +280,14 @@ SetupPage {
 
                                         QGCLabel {
                                             text:           "Default"
-                                            visible:        modelData === controller.defaultNetwork
+                                            visible:        ssid === _wifiManager.defaultNetworkSsid
                                             font.pointSize: parent.statusLabelFontSize
                                             color:          palette.primaryButton
                                         }
 
                                         QGCLabel {
                                             text:           "Connected"
-                                            visible:        modelData === controller.activeNetwork
+                                            visible:        ssid === _wifiManager.activeNetworkSsid
                                             font.pointSize: parent.statusLabelFontSize
                                             color:          "green"
                                         }
@@ -316,6 +324,7 @@ SetupPage {
                                 height:  parent._btnsHeight
                                 enabled: savedNetworksListView.count > 0
                                       && savedNetworksListView.currentItem !== null
+                                      && savedNetworksListView.currentListElement() !== _wifiManager.activeNetworkSsid
 
                                 QGCButton {
                                     anchors.fill: parent; text: "Connect"
@@ -329,15 +338,13 @@ SetupPage {
                                     visible:         false
                                     icon:            StandardIcon.Warning
                                     standardButtons: StandardButton.Yes | StandardButton.No
-                                    title:           qsTr("Connect to Network: %1")
-                                        .arg(savedNetworksListView.currentListElement())
+                                    title:           qsTr("Connect to Network: %1").arg(savedNetworksListView.currentListElement())
                                     text:            qsTr("Do you want to connect to a selected Wi-Fi network?")
 
                                     onYes: {
-                                        var currentNetwkName = savedNetworksListView
-                                            .currentListElement()
+                                        var currentNetwkName = savedNetworksListView.currentListElement()
 
-                                        controller.bootAsClient(currentNetwkName)
+                                        _wifiManager.switchToClient(currentNetwkName)
                                         connectDialog.visible = false
                                     }
 
@@ -372,7 +379,7 @@ SetupPage {
                                         return "<font color=\"" + color + "\">" + txt + "</font>"
                                     }
 
-                                    text: controller.activeNetwork === savedNetworksListView.currentListElement() ?
+                                    text: _wifiManager.activeNetworkSsid === savedNetworksListView.currentListElement() ?
                                          colouredText("orange", "Warning")
                                              + ": The network is active. If you remove this network, device would return to "
                                              + colouredText(modeSwitch.accessPointColor,"Access point")
@@ -383,7 +390,7 @@ SetupPage {
                                         var currentNetwkName = savedNetworksListView
                                             .currentListElement()
 
-                                        controller.removeNetworkFromEdge(currentNetwkName)
+                                        _wifiManager.deleteNetwork(currentNetwkName)
                                         connectDialog.visible = false
                                     }
 
@@ -404,8 +411,8 @@ SetupPage {
                                     text: "Set by default"
                                     onClicked: {
                                         var netwkIdx =  savedNetworksListView.currentIndex
-                                        var netwkName = controller.getSavedNetwork(netwkIdx)
-                                        controller.defaultNetwork = netwkName === controller.defaultNetwork ?
+                                        var netwkName = _wifiManager.savedNetworks.at(netwkIdx)
+                                        _wifiManager.defaultNetworkSsid = netwkName === _wifiManager.defaultNetworkSsid ?
                                                     "" : netwkName
                                     }
                                 }
@@ -442,8 +449,8 @@ SetupPage {
                         if (networkSsid === "") {
                             warningPanel.show("Network wasn't selected")
 
-                        } else if (networkEncryptionType !== WiFiSetupComponentController.OpenEncrypt
-                                   && !controller.validatePassword(networkPasswd)) {
+                        } else if (networkEncryptionType !== WifiNetworkInfo.Open
+                                   && !_wifiManager.validatePassword(networkPasswd)) {
                             warningPanel.show("Invalid password. Password should contains at least 8 characters")
 
                         } else {
@@ -459,17 +466,17 @@ SetupPage {
 
                         if (networkListButton.checked) {
                             networkSsid = scannedNetworksList.selectedNetworkSsid
-                            networkEncryptionType = controller
-                                .encryptTypeStrings.indexOf(scannedNetworksList.selectedNetworkEncryptionType)
+                            networkEncryptionType = _wifiManager.
+                                securiptyTypeStringList.indexOf(scannedNetworksList.selectedNetworkEncryptionType)
                         } else {
                             networkSsid = networkNameField.text
                             networkEncryptionType = encryptionTypeCombo.currentIndex
                         }
 
                         if (areTheFieldsCorrect(networkSsid, networkEncryptionType, networkPasswd)) {
-                            controller.saveNetworkToEdge(networkSsid,
-                                                         networkEncryptionType,
-                                                         networkPasswd)
+                            _wifiManager.addNetwork(networkSsid,
+                                                    networkEncryptionType,
+                                                    networkPasswd)
                             hideDialog()
                         }
                     }
@@ -549,7 +556,6 @@ SetupPage {
 
                                                     function accept() {
                                                         networkListButton.checked = false
-                                                        networkListPanel.hide()
 
                                                         networkNamePanel.show()
                                                         encryptionTypePanel.show()
@@ -569,87 +575,6 @@ SetupPage {
                                     }
 
                                     Column {
-                                        id:      networkListPanel
-                                        width:   parent.width
-                                        spacing: parent.childSpacing()
-
-                                        function hide() { visible = false; scannedNetworksList.currentIndex = -1 }
-                                        function show() { visible = true }
-
-                                        QGCLabel { text: qsTr("Choose network from list") }
-
-                                        QGCListView {
-                                            id:      scannedNetworksList
-                                            anchors  { left: parent.left; right: parent.right }
-                                            height:  ScreenTools.defaultFontPixelHeight * 10
-                                            focus:   true
-                                            clip:    true
-
-                                            property string _mainColor: "grey"
-                                            property string selectedNetworkSsid: ""
-                                            property string selectedNetworkEncryptionType: ""
-
-                                            keyNavigationEnabled: true
-                                            headerPositioning: ListView.OverlayFooter
-                                            footerPositioning: headerPositioning
-
-                                            header: Rectangle {
-                                                width:  scannedNetworksList.width;
-                                                color:  scannedNetworksList._mainColor
-                                                height: 1
-                                            }
-
-                                            footer: header
-
-                                            model: controller.scannedNetworks
-
-                                            delegate: Item {
-                                                height: networkInfoColumn.height; width: scannedNetworksList.width
-
-                                                Column {
-                                                    id:     networkInfoColumn
-                                                    anchors {
-                                                        left: parent.left
-                                                        right: parent.right
-                                                        leftMargin: _margins
-                                                    }
-
-                                                    QGCLabel { text: ssid }
-
-                                                    QGCLabel {
-                                                        text:  encryptionType
-                                                        color: palette.primaryButton
-                                                    }
-                                                }
-
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    onClicked:    {
-                                                        scannedNetworksList.currentIndex = index
-                                                        var openEncryptionType = controller
-                                                            .encryptionTypeAsString(controller.OpenEncrypt)
-
-                                                        if (encryptionType === openEncryptionType) {
-                                                            passwordPanel.hide()
-                                                        } else {
-                                                            passwordPanel.show()
-                                                        }
-
-                                                        scannedNetworksList.selectedNetworkSsid = ssid
-                                                        scannedNetworksList.selectedNetworkEncryptionType = encryptionType
-                                                    }
-                                                }
-                                            }
-
-                                            highlight: Rectangle { color: scannedNetworksList._mainColor }
-
-                                            Component.onCompleted: {
-                                                currentIndex = -1
-                                            }
-                                        }
-                                    }
-
-                                    Column {
                                         id:      networkNamePanel
                                         width:   parent.width
                                         spacing: parent.childSpacing()
@@ -662,7 +587,7 @@ SetupPage {
                                         QGCTextField {
                                             id:             networkNameField
                                             anchors         { left: parent.left; right: parent.right }
-                                            maximumLength:  controller.ssidMaxLength
+                                            maximumLength:  _wifiManager.ssidMaxLength()
                                             validator:      RegExpValidator {
                                                 regExp: /[\0040-\0176]*/
                                             }
@@ -683,10 +608,15 @@ SetupPage {
                                             id:      encryptionTypeCombo
                                             anchors  { left: parent.left; right: parent.right }
                                             width:   _secondColumn
-                                            model:   controller.encryptTypeStrings
+                                            model:   [
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.Open),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WEP),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WPA),
+                                                _wifiManager.securityTypeAsString(WifiNetworkInfo.WPA2)
+                                            ]
 
                                             onActivated: {
-                                                if (index === WiFiSetupComponentController.OpenEncrypt) {
+                                                if (index === WifiNetworkInfo.Open) {
                                                     passwordPanel.hide()
                                                 } else {
                                                     passwordPanel.show()
@@ -708,7 +638,7 @@ SetupPage {
                                         QGCTextField {
                                             id:             passwordField
                                             anchors         { left: parent.left; right: parent.right }
-                                            maximumLength:  controller.passwdMaxLength
+                                            maximumLength:  _wifiManager.passwordMaxLength()
                                             echoMode:       TextInput.Password
                                             validator:      RegExpValidator {
                                                 regExp: /[\0040-\0176]*/
