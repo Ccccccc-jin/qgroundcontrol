@@ -282,8 +282,8 @@ void WifiManager::_handleWifiStatus(mavlink_message_t const& msg)
     auto ssid = util::decodeString(wifiStatus.ssid,
                                    sizeof(wifiStatus.ssid));
 
-    Base::_setWifiState(static_cast<WifiState>(wifiStatus.state));
     Base::_setActiveNetworkSsid(std::move(ssid));
+    Base::_setWifiState(static_cast<WifiState>(wifiStatus.state));
 }
 
 
