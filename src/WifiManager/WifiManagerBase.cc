@@ -164,12 +164,6 @@ bool WifiManagerBase::deleteNetwork(QString const& ssid)
         return false;
     }
 
-    if (ssid == _activeNetworkSsid) {
-        auto msg = QString("Can not delete network %1. "
-                           "Network is active.").arg(ssid);
-        _setErrorString(msg);
-    }
-
     return _deleteNetwork(ssid);
 }
 
