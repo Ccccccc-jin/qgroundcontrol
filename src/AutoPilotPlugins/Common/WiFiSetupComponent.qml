@@ -40,6 +40,10 @@ SetupPage {
         }
     }
 
+    function colouredText(color, txt) {
+        return "<font color=\"" + color + "\">" + txt + "</font>"
+    }
+
     property var corePlugin: QGroundControl.corePlugin
 
     function enableVehicleSetupButtons()  { corePlugin.vehicleSetupDisabled = false }
@@ -137,7 +141,31 @@ SetupPage {
                         anchors  { fill: parent; margins: _margins }
                         columns: 2
 
-                        QGCLabel { id: modeLabel }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            id: stateRow
+                            spacing: _margins
+
+                            QGCLabel { id: state }
+                            QGCLabel { text: ":"; visible: netwkSsid.text !== "" }
+                            QGCLabel { id: netwkSsid; anchors.right: parent.right }
+
+                            function setState(wifiState) {
+                                state.text = wifiStateAsString(wifiState)
+
+                                if (wifiState === WifiManager.AccessPoint) {
+                                    netwkSsid.text = _wifiManager.activeNetworkSsid
+                                    netwkSsid.color = modeSwitch.accessPointColor
+
+                                } else if (wifiState === WifiManager.Client) {
+                                    netwkSsid.text = _wifiManager.activeNetworkSsid
+                                    netwkSsid.color = modeSwitch.clientModeColor
+
+                                } else {
+                                    netwkSsid.text = ""
+                                }
+                            }
+                        }
 
                         Switch {
                             id:            modeSwitch
@@ -147,24 +175,24 @@ SetupPage {
                             readonly property string clientModeColor:  "#2ecc71" // flatGreen
 
                             function setAccessPointMode() {
-                                modeLabel.text = wifiStateAsString(WifiManager.AccessPoint)
+                                stateRow.setState(WifiManager.AccessPoint)
                                 checked = true
                                 enabled = true
                             }
 
                             function setClientMode() {
-                                modeLabel.text = wifiStateAsString(WifiManager.Client)
+                                stateRow.setState(WifiManager.Client)
                                 checked = false
                                 enabled = true
                             }
 
                             function setUndefined() {
-                                modeLabel.text = wifiStateAsString(WifiManager.Undefined)
+                                stateRow.setState(WifiManager.Undefined)
                                 enabled = false
                             }
 
                             function setSwitching() {
-                                modeLabel.text = wifiStateAsString(WifiManager.Switching)
+                                stateRow.setState(WifiManager.Switching)
                                 enabled = false
                             }
 
@@ -187,7 +215,7 @@ SetupPage {
 
                                 groove: Rectangle {
                                     implicitWidth:  ScreenTools.defaultFontPixelWidth * 7
-                                    implicitHeight: modeLabel.height
+                                    implicitHeight: stateRow.height
                                     radius:         2
                                     color:          control.checked ?
                                                         modeSwitch.accessPointColor : modeSwitch.clientModeColor
@@ -388,9 +416,6 @@ SetupPage {
                                     title:           qsTr("Delete network: %1")
                                         .arg(savedNetworksListView.currentListElement())
 
-                                    function colouredText(color, txt) {
-                                        return "<font color=\"" + color + "\">" + txt + "</font>"
-                                    }
 
                                     text: _wifiManager.activeNetworkSsid === savedNetworksListView.currentListElement() ?
                                          colouredText("orange", "Warning")
@@ -457,42 +482,6 @@ SetupPage {
 
                 QGCDropDownSetting {
                     width: parent.width
-                    title: qsTr("Access point settings")
-
-                    onStateChanged: {
-                        apSettings.visible = currentState == openedState
-                    }
-                }
-
-                Rectangle {
-                    id:     apSettings
-                    anchors { left: parent.left; right: parent.right }
-                    height:  passwordTxtField.y + passwordTxtField.height + 2 * _margins
-                    color:   palette.windowShade
-                    visible: false
-
-                    GridLayout {
-                        anchors {
-                            fill: parent
-                            margins: _margins
-                        }
-                        columns: 2
-
-                        QGCLabel { text: qsTr("Password:") }
-                        TextField {
-                            id:   passwordTxtField
-                        }
-                    }
-                }
-
-
-                Item {
-                    anchors { left: parent.left; right: parent.right }
-                    height: _margins / 2
-                }
-
-                QGCDropDownSetting {
-                    width: parent.width
                     title: qsTr("Wifi settings")
 
                     onStateChanged: {
@@ -503,7 +492,7 @@ SetupPage {
                 Rectangle {
                     id: wifiSettings
                     anchors { left: parent.left; right: parent.right }
-                    height:  wifiChannelTxtField.y + wifiChannelTxtField.height + 2 * _margins
+                    height:  openDialogBtnItem.y + openDialogBtnItem.height + 2 * _margins
                     color:   palette.windowShade
                     visible: false
 
@@ -519,18 +508,138 @@ SetupPage {
 
                         QGCLabel { text: qsTr("Tx Power:") }
                         FactTextField {
+                            anchors.right: parent.right
                             id:   wifiTxPowerTxtField
                             fact: wifiSettings.txPowerFact
                         }
 
                         QGCLabel { text: qsTr("Channel:") }
                         FactTextField {
+                            anchors.right: parent.right
                             id:   wifiChannelTxtField
                             fact: wifiSettings.channel
                         }
 
+                        QGCLabel { text: qsTr("Hotspot preferences:") }
+
+                        Item {
+                            id: openDialogBtnItem
+                            anchors.right: parent.right
+                            width: wifiChannelTxtField.width
+                            height: wifiChannelTxtField.height
+
+                            QGCButton {
+                                text: "Open dialog"
+                                anchors.fill: parent
+
+                                onClicked: {
+                                var dialogTitle = "Hotspot preferences"
+                                showDialog(apSettingsComponent,
+                                       dialogTitle, qgcView.showDialogDefaultWidth,
+                                       StandardButton.Ok | StandardButton.Cancel)
+
+                                }
+                            }
+                        }
                     }
                 }
+            }
+
+            Component {
+                id: apSettingsComponent
+
+                QGCViewDialog {
+                    id: apSettingsDialog
+                    anchors.fill: parent
+
+                    function accept() {
+                        if (_wifiManager.validatePassword(passwdTxtField.text)) {
+                            if (passwdTxtField.text === repeatPasswdTxtField.text) {
+                                hideDialog()
+                            } else {
+                                infoLabel.text = "Passwords is not equal"
+                            }
+                        } else {
+                            infoLabel.text = "Invalid password. Password should contain at least 8 characters"
+                        }
+                    }
+
+                    function reject() {
+                        hideDialog()
+                    }
+
+                    QGCFlickable {
+                        anchors.fill: parent
+                        contentHeight: apSettingsColumn.height
+
+                        Column {
+                            id: apSettingsColumn
+                            anchors  { left: parent.left; right: parent.right; margins: _margins }
+                            spacing: _margins
+
+                            QGCLabel {
+                                text: "Change a password of WiFi access point"
+                            }
+
+                            Item {
+                                anchors { left: parent.left; right: parent.right }
+                                height: _margins
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: Math.max(passwdLabel.height, passwdTxtField.height)
+
+                                QGCLabel {
+                                    id:   passwdLabel
+                                    text: qsTr("Password:")
+                                    anchors.left: parent.left
+                                }
+
+                                QGCTextField {
+                                    id: passwdTxtField
+                                    anchors.verticalCenter: passwdLabel.verticalCenter
+                                    anchors.right: parent.right
+                                    maximumLength: _wifiManager.ssidMaxLength()
+                                    echoMode:      TextInput.Password
+                                    validator:     RegExpValidator {
+                                        regExp: /[\0040-\0176]*/
+                                    }
+                                }
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: Math.max(repeatPasswdLabel.height, repeatPasswdTxtField.height)
+
+                                QGCLabel {
+                                    id:   repeatPasswdLabel
+                                    text: qsTr("Repeat password:")
+                                    anchors.left: parent.left
+                                }
+
+                                QGCTextField {
+                                    id: repeatPasswdTxtField
+                                    anchors.verticalCenter: repeatPasswdLabel.verticalCenter
+                                    anchors.right: parent.right
+                                    maximumLength: _wifiManager.ssidMaxLength()
+                                    echoMode:      TextInput.Password
+                                    validator:     RegExpValidator {
+                                        regExp: /[\0040-\0176]*/
+                                    }
+                                }
+                            }
+
+                            QGCLabel { text: "Warning"; color: "orange"; visible: infoLabel.text !== "" }
+                            QGCLabel {
+                                id:       infoLabel
+                                width:    parent.width
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+                }
+
             }
 
             Component {
