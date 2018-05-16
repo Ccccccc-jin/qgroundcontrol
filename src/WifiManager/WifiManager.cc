@@ -56,6 +56,22 @@ WifiManager::WifiManager(Vehicle* vehicle, QObject* parent)
 }
 
 
+bool WifiManager::_configureAccessPoint(QString ssid, QString passwd)
+{
+    auto rawSsid   = util::toRawString(std::move(ssid), Base::ssidMaxLength());
+    auto rawPasswd = util::toRawString(std::move(passwd), Base::passwordMaxLength());
+
+    auto msg = mavlink_message_t{};
+    ::mavlink_msg_wifi_config_ap_pack(util::mavlinkProtocol().getSystemId(),
+                                      util::mavlinkProtocol().getComponentId(),
+                                      &msg,
+                                      rawSsid.data(),
+                                      rawPasswd.data());
+    _sendMessage(msg);
+    return true;
+}
+
+
 bool WifiManager::_switchToAccessPoint(void)
 {
    _vehicle->sendMavCommand(MAV_COMP_ID_WIFI, MAV_CMD_WIFI_START_AP, true, 1);
@@ -66,7 +82,7 @@ bool WifiManager::_switchToAccessPoint(void)
 bool WifiManager::_switchToClient(QString const& ssid)
 {
     mavlink_message_t msg;
-    auto rawSsid = util::toRawString(ssid, ssidMaxLength());
+    auto rawSsid = util::toRawString(ssid, Base::ssidMaxLength());
 
     ::mavlink_msg_wifi_network_connect_pack(util::mavlinkProtocol().getSystemId(),
                                             util::mavlinkProtocol().getComponentId(),
@@ -83,8 +99,8 @@ bool WifiManager::_addNetwork(QString const& ssid,
 {
     mavlink_message_t msg;
 
-    auto rawSsid   = util::toRawString(ssid, ssidMaxLength());
-    auto rawPasswd = util::toRawString(passwd, passwordMaxLength());
+    auto rawSsid   = util::toRawString(ssid, Base::ssidMaxLength());
+    auto rawPasswd = util::toRawString(passwd, Base::passwordMaxLength());
 
     mavlink_msg_wifi_network_add_pack(util::mavlinkProtocol().getSystemId(),
                                       util::mavlinkProtocol().getComponentId(),
@@ -101,7 +117,7 @@ bool WifiManager::_deleteNetwork(QString const& ssid)
 {
 
     mavlink_message_t msg;
-    auto rawSsid = util::toRawString(ssid, ssidMaxLength());
+    auto rawSsid = util::toRawString(ssid, Base::ssidMaxLength());
 
     ::mavlink_msg_wifi_network_delete_pack(util::mavlinkProtocol().getSystemId(),
                                            util::mavlinkProtocol().getComponentId(),
@@ -222,47 +238,47 @@ void WifiManager::_handleWifiAck(mavlink_message_t const& msg)
     }
 
     if (wifiAck.result != 0) {
-        auto message = QString("Command %1 is not performed.")
-                              .arg(wifiAck.message_id);
+        auto message = QString("Command %1 failed with code %2")
+                              .arg(wifiAck.message_id).arg(wifiAck.result);
         Base::_setErrorString(std::move(message));
-    }
 
-    switch (wifiAck.message_id) {
-        case MAVLINK_MSG_ID_WIFI_NETWORK_DELETE: {
-            auto const& msg = _messageQueue.front();
-            auto deleteMsg = mavlink_wifi_network_delete_t{};
+    } else {
+        switch (wifiAck.message_id) {
+            case MAVLINK_MSG_ID_WIFI_NETWORK_DELETE: {
+                auto const& msg = _messageQueue.front();
+                auto deleteMsg = mavlink_wifi_network_delete_t{};
 
-            ::mavlink_msg_wifi_network_delete_decode(&msg, &deleteMsg);
+                ::mavlink_msg_wifi_network_delete_decode(&msg, &deleteMsg);
 
-            auto ssid = util::decodeString(deleteMsg.ssid,
-                                           sizeof(deleteMsg.ssid));
+                auto ssid = util::decodeString(deleteMsg.ssid,
+                                               sizeof(deleteMsg.ssid));
 
-            Base::_removeNetworkFromList(ssid);
-            break;
-        }
+                Base::_removeNetworkFromList(ssid);
+                break;
+            }
 
-        case MAVLINK_MSG_ID_WIFI_NETWORK_ADD: {
-            auto const& msg = _messageQueue.front();
-            auto netwkMsg = mavlink_wifi_network_add_t{};
+            case MAVLINK_MSG_ID_WIFI_NETWORK_ADD: {
+                auto const& msg = _messageQueue.front();
+                auto netwkMsg = mavlink_wifi_network_add_t{};
 
-            ::mavlink_msg_wifi_network_add_decode(&msg, &netwkMsg);
+                ::mavlink_msg_wifi_network_add_decode(&msg, &netwkMsg);
 
-            auto ssid = util::decodeString(netwkMsg.ssid,
-                                           sizeof(netwkMsg.ssid));
+                auto ssid = util::decodeString(netwkMsg.ssid,
+                                               sizeof(netwkMsg.ssid));
 
-            using SecType = WifiNetworkInfo::SecurityType;
-            auto secType = static_cast<SecType>(netwkMsg.security_type);
+                using SecType = WifiNetworkInfo::SecurityType;
+                auto secType = static_cast<SecType>(netwkMsg.security_type);
 
-            Base::_addNetworkToList(
-                WifiNetworkInfo{std::move(ssid), secType}
-            );
+                Base::_addNetworkToList(
+                    WifiNetworkInfo{std::move(ssid), secType}
+                );
 
-            break;
+                break;
+            }
         }
     }
 
     _messageQueue.pop();
-
 
     if (!_messageQueue.empty()) {
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(),

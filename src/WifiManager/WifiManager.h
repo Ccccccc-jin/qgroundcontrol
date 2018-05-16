@@ -34,6 +34,7 @@ private:
         Scanned
     };
 
+    bool _configureAccessPoint(QString ssid, QString passwd) override;
     bool _switchToAccessPoint(void) override;
     bool _switchToClient(QString const& ssid) override;
 

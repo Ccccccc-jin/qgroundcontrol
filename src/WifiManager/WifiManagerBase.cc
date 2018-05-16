@@ -48,6 +48,18 @@ void WifiManagerBase::setDefaultNetworkSsid(QString ssid)
 }
 
 
+bool WifiManagerBase::configureAccessPoint(QString ssid, QString passwd)
+{
+    if (!validatePassword(passwd)) {
+        _setErrorString("Password is not valid");
+    } else if (!ssid.isEmpty() && ssid.length() > ssidMaxLength()) {
+        _setErrorString(QString("Ssid is longer than %1").arg(ssid));
+    }
+
+    return _configureAccessPoint(std::move(ssid), std::move(passwd));
+}
+
+
 bool WifiManagerBase::switchToAccessPoint(void)
 {
     switch (_wifiState) {
@@ -184,4 +196,12 @@ QString WifiManagerBase::securityTypeAsString(int secType) const
 {
     static auto secTypeMeta = QMetaEnum::fromType<WifiNetworkInfo::SecurityType>();
     return secTypeMeta.valueToKey(static_cast<WifiNetworkInfo::SecurityType>(secType));
+}
+
+
+void WifiManagerBase::_setErrorString(QString errorString)
+{
+    qWarning() << errorString;
+    qgcApp()->showMessage("WiFi: " + errorString);
+    _errorString = std::move(errorString);
 }
