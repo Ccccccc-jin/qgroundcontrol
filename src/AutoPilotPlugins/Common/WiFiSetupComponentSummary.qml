@@ -10,6 +10,7 @@
 import QtQuick 2.3
 import QtQuick.Controls 1.2
 
+import QGroundControl               1.0
 import QGroundControl.FactSystem    1.0
 import QGroundControl.FactControls  1.0
 import QGroundControl.Controls      1.0
@@ -21,6 +22,13 @@ FactPanel {
     anchors.fill:   parent
     color:          qgcPal.windowShadeDark
 
+    FactPanelController {
+        id: controller;
+        factPanel: panel
+
+        property WifiManager wifiManager: vehicle.wifiManager
+    }
+
     QGCPalette { id: palette; colorGroupEnabled: true }
 
     Column {
@@ -28,13 +36,13 @@ FactPanel {
 
         VehicleSummaryRow {
             labelText:  qsTr("Mode:")
-            valueText:  controller.activeNetwork ? qsTr("Client") : qsTr("AP")
+            valueText:  controller.wifiManager.wifiStateAsString(controller.wifiManager.wifiState)
         }
 
         VehicleSummaryRow {
             labelText:  qsTr("Network SSID:")
-            valueText:  controller.activeNetwork
-            visible:    controller.activeNetwork !== ""
+            valueText: controller.wifiManager.activeNetworkSsid
+            visible:   controller.wifiManager.activeNetworkSsid !== ""
         }
     }
 }
