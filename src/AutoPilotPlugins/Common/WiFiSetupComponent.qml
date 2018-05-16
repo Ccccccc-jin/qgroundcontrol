@@ -556,6 +556,7 @@ SetupPage {
                     function accept() {
                         if (_wifiManager.validatePassword(passwdTxtField.text)) {
                             if (passwdTxtField.text === repeatPasswdTxtField.text) {
+                                _wifiManager.configureAccessPoint("", passwdTxtField.text)
                                 hideDialog()
                             } else {
                                 infoLabel.text = "Passwords is not equal"
