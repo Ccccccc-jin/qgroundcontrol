@@ -554,16 +554,33 @@ SetupPage {
                     anchors.fill: parent
 
                     function accept() {
-                        if (_wifiManager.validatePassword(passwdTxtField.text)) {
-                            if (passwdTxtField.text === repeatPasswdTxtField.text) {
-                                _wifiManager.configureAccessPoint("", passwdTxtField.text)
-                                hideDialog()
-                            } else {
-                                infoLabel.text = "Passwords is not equal"
-                            }
-                        } else {
-                            infoLabel.text = "Invalid password. Password should contain at least 8 characters"
+                        var ssid = ""
+                        var passwd = ""
+
+                        if (passwdTxtField.text ===  "" && ssidTxtField.text === "") {
+                            infoLabel.text = "All the fields are empty."
+                            return;
                         }
+
+                        ssid = ssidTxtField.text
+
+                        if (passwdTxtField.text !== "") {
+                            if (_wifiManager.validatePassword(passwdTxtField.text)) {
+                                if (passwdTxtField.text === repeatPasswdTxtField.text) {
+                                    passwd = passwdTxtField.text;
+                                } else {
+                                    infoLabel.text = "Passwords is not equal"
+                                    return;
+                                }
+
+                            } else {
+                                infoLabel.text = "Invalid password. Password should contain at least 8 characters"
+                                return;
+                            }
+                        }
+
+                        _wifiManager.configureAccessPoint(ssid, passwd)
+                        hideDialog()
                     }
 
                     function reject() {
@@ -580,12 +597,33 @@ SetupPage {
                             spacing: _margins
 
                             QGCLabel {
-                                text: "Change a password of WiFi access point"
+                                text: "Change SSID or/and password of WiFi access point. "
+                                      + "If you don't want to change SSID/password, leave a field empty."
+                                width:    parent.width
+                                wrapMode: Text.WordWrap
                             }
 
                             Item {
                                 anchors { left: parent.left; right: parent.right }
                                 height: _margins
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: Math.max(ssidLabel.height, ssidTxtField.height)
+
+                                QGCLabel {
+                                    id:   ssidLabel
+                                    text: qsTr("SSID :")
+                                    anchors.left: parent.left
+                                }
+
+                                QGCTextField {
+                                    id: ssidTxtField
+                                    anchors.verticalCenter: ssidLabel.verticalCenter
+                                    anchors.right: parent.right
+                                    maximumLength: _wifiManager.ssidMaxLength()
+                                }
                             }
 
                             Item {
