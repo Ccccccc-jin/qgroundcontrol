@@ -182,6 +182,7 @@ private:
     void _handleWifiNetworkAdd(const mavlink_message_t& msg);
     void _handleWifiNetworkDelete(const mavlink_message_t& msg);
     void _handleWifiNetworkConnect(const mavlink_message_t& msg);
+    void _handleWifiConfigAp(const mavlink_message_t& msg);
     void _handlePreFlightCalibration(const mavlink_command_long_t& request);
     void _handleWifiStartAP(const mavlink_command_long_t& request);
     void _handleRequestWifiStatus(const mavlink_command_long_t& request);

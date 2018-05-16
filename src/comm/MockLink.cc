@@ -55,7 +55,7 @@ MockLink::MockLink(SharedLinkConfigurationPointer& config)
     , _vehicleComponentId(MAV_COMP_ID_AUTOPILOT1)
     , _inNSH(false)
     , _mavlinkStarted(true)
-    , _activeNetwork("")
+    , _activeNetwork("wifi_ap")
     , _currentWifiStatus(WIFI_STATE_AP)
     , _savedWifiNetowrks{
               { "SOME_NETWORK1", WIFI_SECURITY_TYPE_WPA },
@@ -428,6 +428,9 @@ void MockLink::_handleIncomingMavlinkBytes(const uint8_t* bytes, int cBytes)
             _handleWifiNetworkConnect(msg);
             break;
 
+        case MAVLINK_MSG_ID_WIFI_CONFIG_AP:
+            _handleWifiConfigAp(msg);
+
         default:
             break;
         }
@@ -526,6 +529,19 @@ void MockLink::_handleWifiNetworkConnect(const mavlink_message_t &msg)
 
     _currentWifiStatus = WIFI_STATE_CLIENT;
     _handleRequestWifiStatus(mavlink_command_long_t());
+}
+
+void MockLink::_handleWifiConfigAp(mavlink_message_t const& msg)
+{
+    Q_UNUSED(msg);
+
+    mavlink_message_t wifiAck;
+    mavlink_msg_wifi_ack_pack_chan(_vehicleSystemId,
+                                   MAV_COMP_ID_WIFI, _mavlinkChannel,
+                                   &wifiAck, MAVLINK_MSG_ID_WIFI_CONFIG_AP, 0);
+
+    respondWithMavlinkMessage(wifiAck);
+
 }
 
 void MockLink::_setParamFloatUnionIntoMap(int componentId, const QString& paramName, float paramFloat)
