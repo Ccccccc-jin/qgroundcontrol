@@ -197,3 +197,11 @@ QString WifiManagerBase::securityTypeAsString(int secType) const
     static auto secTypeMeta = QMetaEnum::fromType<WifiNetworkInfo::SecurityType>();
     return secTypeMeta.valueToKey(static_cast<WifiNetworkInfo::SecurityType>(secType));
 }
+
+
+void WifiManagerBase::_setErrorString(QString errorString)
+{
+    qWarning() << errorString;
+    _errorString = std::move(errorString);
+    qgcApp()->showMessage("WiFi: " + errorString);
+}

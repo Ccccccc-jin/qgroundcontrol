@@ -3,6 +3,7 @@
 
 #include <QtCore>
 #include "WifiNetworksList.h"
+#include "QGCApplication.h"
 
 
 class WifiManagerBase : public QObject
@@ -70,10 +71,7 @@ protected:
         emit wifiStateChanged();
     }
 
-    void _setErrorString(QString errorString) {
-        qWarning() << errorString;
-        _errorString = std::move(errorString);
-    }
+    void _setErrorString(QString errorString);
 
     void _setActiveNetworkSsid(QString activeNetworkSsid) {
         _activeNetworkSsid = std::move(activeNetworkSsid);
