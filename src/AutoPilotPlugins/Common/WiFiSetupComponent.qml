@@ -28,6 +28,10 @@ SetupPage {
     id:             wifiPage
     pageComponent:  pageComponent
 
+    function colouredText(color, txt) {
+        return "<font color=\"" + color + "\">" + txt + "</font>"
+    }
+
     property var corePlugin: QGroundControl.corePlugin
     FactPanelController { id: factController; factPanel: wifiPage }
 
@@ -382,9 +386,6 @@ SetupPage {
                                     title:           qsTr("Delete network: %1")
                                         .arg(savedNetworksListView.currentListElement())
 
-                                    function colouredText(color, txt) {
-                                        return "<font color=\"" + color + "\">" + txt + "</font>"
-                                    }
 
                                     text: controller.activeNetwork === savedNetworksListView.currentListElement() ?
                                          colouredText("orange", "Warning")
@@ -444,7 +445,6 @@ SetupPage {
                     }
                 }
 
-
                 Item {
                     anchors { left: parent.left; right: parent.right }
                     height: _margins / 2
@@ -462,7 +462,7 @@ SetupPage {
                 Rectangle {
                     id: wifiSettings
                     anchors { left: parent.left; right: parent.right }
-                    height:  wifiChannelTxtField.y + wifiChannelTxtField.height + 2 * _margins
+                    height:  openDialogBtnItem.y + openDialogBtnItem.height + 2 * _margins
                     color:   palette.windowShade
                     visible: false
 
@@ -490,8 +490,126 @@ SetupPage {
                             fact: wifiSettings.channel
                         }
 
+                        QGCLabel { text: qsTr("Hotspot configuration:") }
+
+                        Item {
+                            id: openDialogBtnItem
+                            anchors.right: parent.right
+                            width: wifiChannelTxtField.width
+                            height: wifiChannelTxtField.height
+
+                            QGCButton {
+                                text: "Open dialog"
+                                anchors.fill: parent
+
+                                onClicked: {
+                                var dialogTitle = "Hotspot preferences"
+                                showDialog(apSettingsComponent,
+                                       dialogTitle, qgcView.showDialogDefaultWidth,
+                                       StandardButton.Ok | StandardButton.Cancel)
+
+                                }
+                            }
+                        }
                     }
                 }
+            }
+
+            Component {
+                id: apSettingsComponent
+
+                QGCViewDialog {
+                    id: apSettingsDialog
+                    anchors.fill: parent
+
+                    function accept() {
+                        if (controller.validatePassword(passwdTxtField.text)) {
+                            if (passwdTxtField.text === repeatPasswdTxtField.text) {
+                                hideDialog()
+                            } else {
+                                infoLabel.text = "Passwords is not equal"
+                            }
+                        } else {
+                            infoLabel.text = "Invalid password. Password should contain at least 8 characters"
+                        }
+                    }
+
+                    function reject() {
+                        hideDialog()
+                    }
+
+                    QGCFlickable {
+                        anchors.fill: parent
+                        contentHeight: apSettingsColumn.height
+
+                        Column {
+                            id: apSettingsColumn
+                            anchors  { left: parent.left; right: parent.right; margins: _margins }
+                            spacing: _margins
+
+                            QGCLabel {
+                                text: "Change a password of WiFi access point"
+                            }
+
+                            Item {
+                                anchors { left: parent.left; right: parent.right }
+                                height: _margins
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: Math.max(passwdLabel.height, passwdTxtField.height)
+
+                                QGCLabel {
+                                    id:   passwdLabel
+                                    text: qsTr("Password:")
+                                    anchors.left: parent.left
+                                }
+
+                                QGCTextField {
+                                    id: passwdTxtField
+                                    anchors.verticalCenter: passwdLabel.verticalCenter
+                                    anchors.right: parent.right
+                                    maximumLength: controller.passwdMaxLength
+                                    echoMode:      TextInput.Password
+                                    validator:     RegExpValidator {
+                                        regExp: /[\0040-\0176]*/
+                                    }
+                                }
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: Math.max(repeatPasswdLabel.height, repeatPasswdTxtField.height)
+
+                                QGCLabel {
+                                    id:   repeatPasswdLabel
+                                    text: qsTr("Repeat password:")
+                                    anchors.left: parent.left
+                                }
+
+                                QGCTextField {
+                                    id: repeatPasswdTxtField
+                                    anchors.verticalCenter: repeatPasswdLabel.verticalCenter
+                                    anchors.right: parent.right
+                                    maximumLength: controller.passwdMaxLength
+                                    echoMode:      TextInput.Password
+                                    validator:     RegExpValidator {
+                                        regExp: /[\0040-\0176]*/
+                                    }
+                                }
+                            }
+
+                            QGCLabel { text: "Warning"; color: "orange"; visible: infoLabel.text !== "" }
+                            QGCLabel {
+                                id:       infoLabel
+                                width:    parent.width
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+                }
+
             }
 
             Component {
