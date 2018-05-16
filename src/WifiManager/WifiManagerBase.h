@@ -37,6 +37,8 @@ public:
     Q_INVOKABLE int passwordMaxLength(void);
     Q_INVOKABLE int passwordMinLength(void);
 
+    Q_INVOKABLE bool configureAccessPoint(QString ssid, QString passwd);
+
     Q_INVOKABLE bool switchToAccessPoint(void);
     Q_INVOKABLE bool switchToClient(QString const& ssid);
 
@@ -98,6 +100,7 @@ protected:
 private:
     // Keep implemetation of logic for children
 
+    virtual bool _configureAccessPoint(QString ssid, QString passwd) = 0;
     virtual bool _switchToAccessPoint(void) = 0;
     virtual bool _switchToClient(QString const& ssid) = 0;
 
