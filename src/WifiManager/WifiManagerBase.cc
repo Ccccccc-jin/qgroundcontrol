@@ -50,10 +50,17 @@ void WifiManagerBase::setDefaultNetworkSsid(QString ssid)
 
 bool WifiManagerBase::configureAccessPoint(QString ssid, QString passwd)
 {
-    if (!validatePassword(passwd)) {
+    if (passwd.isEmpty() && ssid.isEmpty()) {
+        _setErrorString("Password and SSID are empty");
+        return false;
+
+    } else if (!passwd.isEmpty() && !validatePassword(passwd)) {
         _setErrorString("Password is not valid");
+        return false;
+
     } else if (!ssid.isEmpty() && ssid.length() > ssidMaxLength()) {
         _setErrorString(QString("Ssid is longer than %1").arg(ssid));
+        return false;
     }
 
     return _configureAccessPoint(std::move(ssid), std::move(passwd));
