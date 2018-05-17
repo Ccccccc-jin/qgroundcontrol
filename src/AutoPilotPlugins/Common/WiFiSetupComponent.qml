@@ -640,7 +640,7 @@ SetupPage {
                                     id: passwdTxtField
                                     anchors.verticalCenter: passwdLabel.verticalCenter
                                     anchors.right: parent.right
-                                    maximumLength: _wifiManager.ssidMaxLength()
+                                    maximumLength: _wifiManager.passwordMaxLength()
                                     echoMode:      TextInput.Password
                                     validator:     RegExpValidator {
                                         regExp: /[\0040-\0176]*/
@@ -662,7 +662,7 @@ SetupPage {
                                     id: repeatPasswdTxtField
                                     anchors.verticalCenter: repeatPasswdLabel.verticalCenter
                                     anchors.right: parent.right
-                                    maximumLength: _wifiManager.ssidMaxLength()
+                                    maximumLength: _wifiManager.passwordMaxLength()
                                     echoMode:      TextInput.Password
                                     validator:     RegExpValidator {
                                         regExp: /[\0040-\0176]*/
