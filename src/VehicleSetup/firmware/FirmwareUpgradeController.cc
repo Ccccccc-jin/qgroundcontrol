@@ -313,6 +313,8 @@ void FirmwareUpgradeController::initializeDevice(void)
         updaterPath = env.value(appimageVarName);
         args << "--fwupg";
     }
+#elif defined(Q_OS_WIN)
+    updaterPath.append(".exe");
 #endif
 
     _connection->establish(updaterPath, args);
