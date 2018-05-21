@@ -621,6 +621,7 @@ HEADERS += \
     src/GPS/GPSPositionMessage.h \
     src/GPS/GPSProvider.h \
     src/GPS/RTCM/RTCMMavlink.h \
+    src/GPS/RTCM/RtcmHeaderParser.h \
     src/GPS/definitions.h \
     src/GPS/satellite_info.h \
     src/GPS/vehicle_gps_position.h \
@@ -785,6 +786,7 @@ SOURCES += \
     src/GPS/GPSManager.cc \
     src/GPS/GPSProvider.cc \
     src/GPS/RTCM/RTCMMavlink.cc \
+    src/GPS/RTCM/RtcmHeaderParser.cc \
     src/Joystick/JoystickSDL.cc \
     src/QGCQFileDialog.cc \
     src/RunGuard.cc \
