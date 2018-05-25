@@ -6,11 +6,15 @@
 template<typename T, std::size_t N>
 struct RtcmField {
     T data;
-    enum { BitSize = N };
+    enum : char { BitSize = N };
 };
+
+class BitStream;
 
 struct RtcmPreamble
 {
+    static constexpr uint32_t preambleByteSize() { return 3; }
+
     RtcmField<char,      8> preamble;
     RtcmField<char,      6> reserved;
     RtcmField<uint16_t, 10> length;
@@ -25,7 +29,7 @@ struct RtcmHeader
     RtcmField<ushort, 12> refStationId;
     RtcmField<uint,   30> epochTime;
     RtcmField<bool,    1> syncGnssFlag;
-    RtcmField<char,    5> sattCount;
+    RtcmField<uint8_t, 5> sattCount;
     RtcmField<bool,    1> smoothIndicator;
     RtcmField<char,    3> smoothInterval;
 
@@ -36,7 +40,7 @@ struct RtcmHeader
 struct Rtcm1002
 {
     static constexpr ushort messageId() { return 1002; }
-    static constexpr QString system() { return "GPS"; }
+    static QString system() { return "GPS"; }
 
     RtcmField<char,      6> sattId;
     RtcmField<bool,      1> codeIndicator;
@@ -53,7 +57,7 @@ struct Rtcm1002
 struct Rtcm1010
 {
     static constexpr ushort messageId() { return 1010; }
-    static constexpr QString system() { return "GLONASS"; }
+    static QString system() { return "GLONASS"; }
 
     RtcmField<char,      6> sattId;
     RtcmField<bool,      1> codeIndicator;
@@ -76,13 +80,29 @@ public:
     { }
 
     template<typename T, std::size_t N>
-    BitStream& fill(RtcmField<T, N>* field, std::size_t bitCount = 0)
+    BitStream& fillField(RtcmField<T, N>* field, std::size_t bitCount = 0)
     {
         auto offset = bitCount == 0 ?
-                    field->BitSize : bitCount;
+                    static_cast<std::size_t>(field->BitSize) : bitCount;
 
         field->data = static_cast<T>(_getbitu(_buffer, _pos, offset));
-        pos += offset;
+        _pos += offset;
+        return *this;
+    }
+
+    BitStream& fillArray(QByteArray* array, std::size_t bytesCount)
+    {
+        auto bytePos = _pos / 8;
+        Q_ASSERT(bytePos + bytesCount<= static_cast<std::size_t>(_buffer.size()));
+
+        for (auto i = bytePos; i < bytePos + bytesCount; i++) {
+            char c = _buffer[(uint)i];
+            array->append(c);
+        }
+
+        _pos += bytesCount * 8;
+
+        return *this;
     }
 
 private:
@@ -98,7 +118,30 @@ private:
     }
 
     QByteArray _buffer;
-    qint64 _pos;
+    std::size_t _pos;
+};
+
+
+class RtcmHeaderParser : public QObject
+{
+    Q_OBJECT
+public:
+    RtcmHeaderParser(QObject* parent = nullptr);
+
+public slots:
+    void onRtcmMessageReceived(QByteArray buffer);
+
+signals:
+    void sattsCountChanged(uint sattsCount);
+
+private:
+    void _sattsCountChanged(void);
+    void _parsePayload(QByteArray payload);
+
+    struct {
+        uint gpsSatts;
+        uint glonassSatts;
+    } _sattelitesCount;
 };
 
 #endif
