@@ -8735,6 +8735,18 @@
 <param humanName="First Relay Pin" name="RELAY_PIN" documentation="Digital pin number for first relay control. This is the pin used for camera control." user="Standard">
 <values>
 <value code="-1">Disabled</value>
+<value code="0">Edge PWM1 pin</value>
+<value code="1">Edge PWM2 pin</value>
+<value code="2">Edge PWM3 pin</value>
+<value code="3">Edge PWM4 pin</value>
+<value code="4">Edge PWM5 pin</value>
+<value code="5">Edge PWM6 pin</value>
+<value code="6">Edge PWM7 pin</value>
+<value code="7">Edge PWM8 pin</value>
+<value code="8">Edge PWM9 pin</value>
+<value code="9">Edge PWM10 pin</value>
+<value code="10">Edge PWM11 pin</value>
+<value code="11">Edge PWM12 pin</value>
 <value code="13">APM2 A9 pin</value>
 <value code="47">APM1 relay</value>
 <value code="50">Pixhawk AUXOUT1</value>
@@ -8754,6 +8766,18 @@
 <param humanName="Second Relay Pin" name="RELAY_PIN2" documentation="Digital pin number for 2nd relay control." user="Standard">
 <values>
 <value code="-1">Disabled</value>
+<value code="0">Edge PWM1 pin</value>
+<value code="1">Edge PWM2 pin</value>
+<value code="2">Edge PWM3 pin</value>
+<value code="3">Edge PWM4 pin</value>
+<value code="4">Edge PWM5 pin</value>
+<value code="5">Edge PWM6 pin</value>
+<value code="6">Edge PWM7 pin</value>
+<value code="7">Edge PWM8 pin</value>
+<value code="8">Edge PWM9 pin</value>
+<value code="9">Edge PWM10 pin</value>
+<value code="10">Edge PWM11 pin</value>
+<value code="11">Edge PWM12 pin</value>
 <value code="13">APM2 A9 pin</value>
 <value code="47">APM1 relay</value>
 <value code="50">Pixhawk AUXOUT1</value>
@@ -8773,6 +8797,18 @@
 <param humanName="Third Relay Pin" name="RELAY_PIN3" documentation="Digital pin number for 3rd relay control." user="Standard">
 <values>
 <value code="-1">Disabled</value>
+<value code="0">Edge PWM1 pin</value>
+<value code="1">Edge PWM2 pin</value>
+<value code="2">Edge PWM3 pin</value>
+<value code="3">Edge PWM4 pin</value>
+<value code="4">Edge PWM5 pin</value>
+<value code="5">Edge PWM6 pin</value>
+<value code="6">Edge PWM7 pin</value>
+<value code="7">Edge PWM8 pin</value>
+<value code="8">Edge PWM9 pin</value>
+<value code="9">Edge PWM10 pin</value>
+<value code="10">Edge PWM11 pin</value>
+<value code="11">Edge PWM12 pin</value>
 <value code="13">APM2 A9 pin</value>
 <value code="47">APM1 relay</value>
 <value code="50">Pixhawk AUXOUT1</value>
@@ -8792,6 +8828,18 @@
 <param humanName="Fourth Relay Pin" name="RELAY_PIN4" documentation="Digital pin number for 4th relay control." user="Standard">
 <values>
 <value code="-1">Disabled</value>
+<value code="0">Edge PWM1 pin</value>
+<value code="1">Edge PWM2 pin</value>
+<value code="2">Edge PWM3 pin</value>
+<value code="3">Edge PWM4 pin</value>
+<value code="4">Edge PWM5 pin</value>
+<value code="5">Edge PWM6 pin</value>
+<value code="6">Edge PWM7 pin</value>
+<value code="7">Edge PWM8 pin</value>
+<value code="8">Edge PWM9 pin</value>
+<value code="9">Edge PWM10 pin</value>
+<value code="10">Edge PWM11 pin</value>
+<value code="11">Edge PWM12 pin</value>
 <value code="13">APM2 A9 pin</value>
 <value code="47">APM1 relay</value>
 <value code="50">Pixhawk AUXOUT1</value>
