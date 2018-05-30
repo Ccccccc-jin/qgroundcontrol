@@ -39,6 +39,7 @@ void GPSManager::connectGPS(const QString& device)
     _rtcmMavlink = new RTCMMavlink(*_toolbox);
 
     connect(_gpsProvider, &GPSProvider::RTCMDataUpdate, _rtcmMavlink, &RTCMMavlink::RTCMDataUpdate);
+    connect(_rtcmMavlink, &RTCMMavlink::satteliteUpdate, this, &GPSManager::satelliteUpdate);
 
     //test: connect to position update
     connect(_gpsProvider, &GPSProvider::positionUpdate, this, &GPSManager::GPSPositionUpdate);
