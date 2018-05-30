@@ -38,17 +38,6 @@ static uint32_t crc24tab[] = {
 namespace impl {
     constexpr char rtcmPreamble(void) { return 0xD3; }
 
-    static uint getbitu(QByteArray const& buff, uint pos, uint len)
-    {
-        uint bits = 0;
-        uint i;
-
-        for (i = pos; i < pos + len; i++)
-            bits = (uint) ((bits << 1) + ((buff[i/8] >> (int) (7 - i%8)) & 1u));
-
-        return bits;
-    }
-
     enum RTCM : uint32_t {
         Preamble = 0xD3
     };
