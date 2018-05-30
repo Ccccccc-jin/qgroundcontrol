@@ -2,11 +2,7 @@
 
 
 namespace impl {
-    constexpr char rtcmPreamble(void) { return 0xD3; }
-
-    enum RTCM : uint32_t {
-        Preamble = 0xD3
-    };
+    static constexpr char RTCM_PREAMBLE = 0xD3;
 
     enum MsgType {
         GPS_1002 = 1002,
@@ -107,7 +103,7 @@ RtcmHeaderParser::RtcmHeaderParser(QObject* parent)
 
 void RtcmHeaderParser::onRtcmMessageReceived(QByteArray buffer)
 {
-    if (buffer[0] != impl::RTCM::Preamble) {
+    if (buffer[0] != impl::RTCM_PREAMBLE) {
         qWarning() << "Is not rtcm message";
         return;
     }

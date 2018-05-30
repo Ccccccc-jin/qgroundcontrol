@@ -68,10 +68,9 @@ public:
     {
         auto offset = bitCount == 0 ?
                     static_cast<std::size_t>(field->BitSize) : bitCount;
-        /*qDebug() << "Field bit size: " << offset;
-        qDebug() << "Current bit pos: " << _bitPos;
-        qDebug() << "Buffer size: " << _buffer.length();*/
-        Q_ASSERT((offset + _bitPos) / 8 <= _buffer.length());
+        auto bufSize = static_cast<std::size_t>(_buffer.length());
+
+        Q_ASSERT((offset + _bitPos) / 8 <= bufSize);
 
         field->data = static_cast<T>(_getbitu(_buffer, _bitPos, offset));
         _bitPos += offset;
@@ -80,11 +79,8 @@ public:
 
     BitStream& fillArray(QByteArray* array, std::size_t bytesCount)
     {
-        /*qDebug() << "Field byte size: " << bytesCount;
-        qDebug() << "Current bit pos: " << _bitPos;
-        qDebug() << "Buffer size: " << _buffer.length();*/
         auto bytePos = _bitPos / 8;
-        Q_ASSERT(bytePos + bytesCount<= static_cast<std::size_t>(_buffer.size()));
+        Q_ASSERT(bytePos + bytesCount <= static_cast<std::size_t>(_buffer.size()));
 
         for (auto i = bytePos; i < bytePos + bytesCount; i++) {
             char c = _buffer[(uint)i];
