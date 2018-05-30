@@ -50,7 +50,6 @@ struct MSMHeader {
     RtcmField<uint8_t,   3> smoothInterval;
     RtcmField<uint64_t, 64> satelliteMask;
     RtcmField<uint32_t, 32> signalMask;
-    RtcmField<uint64_t, 64> cellMask;
 
     MSMHeader(BitStream& bstream);
 };

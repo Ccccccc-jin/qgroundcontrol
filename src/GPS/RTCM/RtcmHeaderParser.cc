@@ -91,8 +91,7 @@ MSMHeader::MSMHeader(BitStream& bstream)
            .fillField(&smoothIndicator)
            .fillField(&smoothInterval)
            .fillField(&satelliteMask)
-           .fillField(&signalMask)
-           .fillField(&cellMask);
+           .fillField(&signalMask);
 }
 
 
@@ -132,7 +131,7 @@ void RtcmHeaderParser::onRtcmMessageReceived(QByteArray buffer)
 }
 
 
-void RtcmHeaderParser::_sattsCountChanged()
+void RtcmHeaderParser::_satsCountChanged()
 {
     auto totalSattsCount =
         _satellitesCount.glonassSats +
@@ -142,9 +141,9 @@ void RtcmHeaderParser::_sattsCountChanged()
         _satellitesCount.qzssSats +
         _satellitesCount.sbasSats;
 
-    qDebug() << "total satts count: " <<  totalSattsCount;
+    qDebug() << "total sats count: " <<  totalSattsCount;
 
-    emit sattsCountChanged(totalSattsCount);
+    emit satsCountChanged(totalSattsCount);
 }
 
 
@@ -165,6 +164,8 @@ static uint8_t getSatsCount(uint64_t satMask)
 
 void RtcmHeaderParser::_parsePayload(QByteArray payload)
 {
+    qDebug() << "Payload size" << payload.size();
+
     auto payloadBstream = BitStream{std::move(payload)};
 
     RtcmField<uint16_t, 12> msgid;
@@ -177,11 +178,11 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
         case MsgType::GPS_1002: {
             auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
             auto currentSatCount = rtcmHeader.satsCount.data;
-            qDebug() << QString("rtcm: GPS satts count %1").arg(currentSatCount);
+            qDebug() << QString("rtcm: GPS sats count %1").arg(currentSatCount);
 
             if (_satellitesCount.gpsSats != currentSatCount) {
                 _satellitesCount.gpsSats = currentSatCount;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
@@ -189,11 +190,11 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
         case MsgType::GLONASS_1010: {
             auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
             auto currentSatCount = rtcmHeader.satsCount.data;
-            qDebug() << QString("rtcm: GLONASS satts count %1").arg(currentSatCount);
+            qDebug() << QString("rtcm: GLONASS sats count %1").arg(currentSatCount);
 
             if (_satellitesCount.glonassSats != currentSatCount) {
                 _satellitesCount.glonassSats = currentSatCount;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
@@ -202,11 +203,11 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
             auto msmHeader = MSMHeader{payloadBstream};
             auto currentSatsCount = ::getSatsCount(msmHeader.satelliteMask.data);
 
-            qDebug() << "rtcm: Galileo satts count: " << currentSatsCount;
+            qDebug() << "rtcm: Galileo sats count: " << currentSatsCount;
 
             if (currentSatsCount != _satellitesCount.galileoSats) {
                 _satellitesCount.galileoSats = currentSatsCount ;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
@@ -219,7 +220,7 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
 
             if (currentSatsCount != _satellitesCount.sbasSats) {
                 _satellitesCount.sbasSats = currentSatsCount ;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
@@ -232,7 +233,7 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
 
             if (currentSatsCount != _satellitesCount.qzssSats) {
                 _satellitesCount.qzssSats = currentSatsCount ;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
@@ -245,7 +246,7 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
 
             if (currentSatsCount != _satellitesCount.beidouSats) {
                 _satellitesCount.beidouSats = currentSatsCount ;
-                _sattsCountChanged();
+                _satsCountChanged();
             }
             break;
         }
