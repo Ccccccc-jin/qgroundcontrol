@@ -99,8 +99,7 @@ MSMHeader::MSMHeader(BitStream& bstream)
 
 
 RtcmHeaderParser::RtcmHeaderParser(QObject* parent)
-    : QObject(parent),
-      _sattelitesCount{0, 0}
+    : QObject(parent)
 { }
 
 
