@@ -115,31 +115,6 @@ MSMHeader::MSMHeader(BitStream& bstream)
 }
 
 
-Rtcm1002::Rtcm1002(BitStream& bstream)
-{
-    bstream.fillField(&sattId)
-           .fillField(&codeIndicator)
-           .fillField(&pseudorange)
-           .fillField(&phaserange)
-           .fillField(&lockTimeIndicator)
-           .fillField(&ambiguity)
-           .fillField(&cnr);
-}
-
-
-Rtcm1010::Rtcm1010(BitStream& bstream)
-{
-    bstream.fillField(&sattId)
-           .fillField(&codeIndicator)
-           .fillField(&sattFreqChannelNumber)
-           .fillField(&pseudorange)
-           .fillField(&phaserange)
-           .fillField(&lockTimeIndicator)
-           .fillField(&ambiguity)
-           .fillField(&cnr);
-}
-
-
 RtcmHeaderParser::RtcmHeaderParser(QObject* parent)
     : QObject(parent),
       _sattelitesCount{0, 0}
