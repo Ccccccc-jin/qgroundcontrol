@@ -15,6 +15,7 @@
 
 #include "QGCToolbox.h"
 #include "MAVLinkProtocol.h"
+#include "RtcmHeaderParser.h"
 
 /**
  ** class RTCMMavlink
@@ -30,10 +31,14 @@ public:
 public slots:
     void RTCMDataUpdate(QByteArray message);
 
+signals:
+    void satteliteUpdate(uint sattCount);
+
 private:
     void sendMessageToVehicle(const mavlink_gps_rtcm_data_t& msg);
 
     QGCToolbox& _toolbox;
     QElapsedTimer _bandwidthTimer;
     int _bandwidthByteCounter = 0;
+    RtcmHeaderParser _rtcmParser;
 };
