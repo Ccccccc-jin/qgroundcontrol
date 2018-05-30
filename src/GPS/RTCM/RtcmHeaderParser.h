@@ -129,13 +129,22 @@ private:
     void _sattsCountChanged(void);
     void _parsePayload(QByteArray payload);
 
-    struct {
+    struct Satts {
         uint gpsSatts;
         uint glonassSatts;
         uint sbasSatts;
         uint beidouSatts;
         uint qzssSatts;
         uint galileoSatts;
+
+        Satts()
+            : gpsSatts{0},
+              glonassSatts{0},
+              sbasSatts{0},
+              beidouSatts{0},
+              qzssSatts{0},
+              galileoSatts{0}
+        { }
     } _sattelitesCount;
 };
 
