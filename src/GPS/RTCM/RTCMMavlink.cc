@@ -19,7 +19,7 @@ RTCMMavlink::RTCMMavlink(QGCToolbox& toolbox)
     : _toolbox(toolbox)
 {
     _bandwidthTimer.start();
-    QObject::connect(&_rtcmParser, &RtcmHeaderParser::sattsCountChanged,
+    QObject::connect(&_rtcmParser, &RtcmHeaderParser::satsCountChanged,
                      this,         &RTCMMavlink::satteliteUpdate);
 }
 

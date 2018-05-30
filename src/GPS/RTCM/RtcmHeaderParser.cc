@@ -75,7 +75,7 @@ RtcmHeader::RtcmHeader(BitStream& bstream, uint msgid)
     bstream.fillField(&refStationId)
            .fillField(&epochTime, epochTimeBitSize)
            .fillField(&syncGnssFlag)
-           .fillField(&sattCount)
+           .fillField(&satsCount)
            .fillField(&smoothIndicator)
            .fillField(&smoothInterval);
 }
@@ -92,9 +92,8 @@ MSMHeader::MSMHeader(BitStream& bstream)
            .fillField(&extClkInd)
            .fillField(&smoothIndicator)
            .fillField(&smoothInterval)
-           .fillField(&satteliteMask)
-           .fillField(&signalMask)
-           .fillField(&cellMask);
+           .fillField(&satelliteMask)
+           .fillField(&signalMask);
 }
 
 
@@ -134,33 +133,32 @@ void RtcmHeaderParser::onRtcmMessageReceived(QByteArray buffer)
 }
 
 
-void RtcmHeaderParser::_sattsCountChanged()
+void RtcmHeaderParser::_satsCountChanged()
 {
     auto totalSattsCount =
-        _sattelitesCount.glonassSatts +
-        _sattelitesCount.gpsSatts +
-        _sattelitesCount.galileoSatts +
-        _sattelitesCount.beidouSatts +
-        _sattelitesCount.qzssSatts +
-        _sattelitesCount.sbasSatts;
+        _satellitesCount.glonassSats +
+        _satellitesCount.gpsSats +
+        _satellitesCount.galileoSats +
+        _satellitesCount.beidouSats +
+        _satellitesCount.qzssSats +
+        _satellitesCount.sbasSats;
 
-    qDebug() << "total satts count: " <<  totalSattsCount;
+    qDebug() << "total sats count: " <<  totalSattsCount;
 
-    emit sattsCountChanged(totalSattsCount);
+    emit satsCountChanged(totalSattsCount);
 }
 
 
-static uint8_t getSattsCount(uint64_t sattMask)
+static uint8_t getSatsCount(uint64_t satMask)
 {
-    auto bitNum= 0x01ul;
+    auto mask = 0x01ul;
     auto count = 0u;
 
-    qDebug() << "Satt mask: " << sattMask;
+    qDebug() << "Sat mask: " << satMask;
 
     for (auto i = 0ul; i < 64; i++) {
-        bitNum <<= 1;
-        if (bitNum & sattMask) { count++; }
-
+        if (mask & satMask) { count++; }
+        satMask >>= 1;
     }
     return count;
 }
@@ -168,6 +166,8 @@ static uint8_t getSattsCount(uint64_t sattMask)
 
 void RtcmHeaderParser::_parsePayload(QByteArray payload)
 {
+    qDebug() << "Payload size" << payload.size();
+
     auto payloadBstream = BitStream{std::move(payload)};
 
     RtcmField<uint16_t, 12> msgid;
@@ -179,76 +179,76 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
     switch(static_cast<MsgType>(msgid.data)) {
         case MsgType::GPS_1002: {
             auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
-            auto currentSattCount = rtcmHeader.sattCount.data;
-            qDebug() << QString("rtcm: GPS satts count %1").arg(currentSattCount);
+            auto currentSatCount = rtcmHeader.satsCount.data;
+            qDebug() << QString("rtcm: GPS sats count %1").arg(currentSatCount);
 
-            if (_sattelitesCount.gpsSatts != currentSattCount) {
-                _sattelitesCount.gpsSatts = currentSattCount;
-                _sattsCountChanged();
+            if (_satellitesCount.gpsSats != currentSatCount) {
+                _satellitesCount.gpsSats = currentSatCount;
+                _satsCountChanged();
             }
             break;
         }
 
         case MsgType::GLONASS_1010: {
             auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
-            auto currentSattCount = rtcmHeader.sattCount.data;
-            qDebug() << QString("rtcm: GLONASS satts count %1").arg(currentSattCount);
+            auto currentSatCount = rtcmHeader.satsCount.data;
+            qDebug() << QString("rtcm: GLONASS sats count %1").arg(currentSatCount);
 
-            if (_sattelitesCount.glonassSatts != currentSattCount) {
-                _sattelitesCount.glonassSatts = currentSattCount;
-                _sattsCountChanged();
+            if (_satellitesCount.glonassSats != currentSatCount) {
+                _satellitesCount.glonassSats = currentSatCount;
+                _satsCountChanged();
             }
             break;
         }
 
         case MsgType::GALILEO_1097: {
             auto msmHeader = MSMHeader{payloadBstream};
-            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+            auto currentSatsCount = ::getSatsCount(msmHeader.satelliteMask.data);
 
-            qDebug() << "rtcm: Galileo satts count: " << currentSattsCount;
+            qDebug() << "rtcm: Galileo sats count: " << currentSatsCount;
 
-            if (currentSattsCount != _sattelitesCount.galileoSatts) {
-                _sattelitesCount.galileoSatts = currentSattsCount ;
-                _sattsCountChanged();
+            if (currentSatsCount != _satellitesCount.galileoSats) {
+                _satellitesCount.galileoSats = currentSatsCount ;
+                _satsCountChanged();
             }
             break;
         }
 
         case MsgType::SBAS_1107: {
             auto msmHeader = MSMHeader{payloadBstream};
-            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+            auto currentSatsCount = ::getSatsCount(msmHeader.satelliteMask.data);
 
-            qDebug() << "rtcm: SBAS satts count: " << currentSattsCount;
+            qDebug() << "rtcm: SBAS satts count: " << currentSatsCount;
 
-            if (currentSattsCount != _sattelitesCount.sbasSatts) {
-                _sattelitesCount.sbasSatts = currentSattsCount ;
-                _sattsCountChanged();
+            if (currentSatsCount != _satellitesCount.sbasSats) {
+                _satellitesCount.sbasSats = currentSatsCount ;
+                _satsCountChanged();
             }
             break;
         }
 
         case MsgType::QZSS_1117: {
             auto msmHeader = MSMHeader{payloadBstream};
-            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+            auto currentSatsCount = ::getSatsCount(msmHeader.satelliteMask.data);
 
-            qDebug() << "rtcm: QZSS satts count: " << currentSattsCount;
+            qDebug() << "rtcm: QZSS satts count: " << currentSatsCount;
 
-            if (currentSattsCount != _sattelitesCount.qzssSatts) {
-                _sattelitesCount.qzssSatts = currentSattsCount ;
-                _sattsCountChanged();
+            if (currentSatsCount != _satellitesCount.qzssSats) {
+                _satellitesCount.qzssSats = currentSatsCount ;
+                _satsCountChanged();
             }
             break;
         }
 
         case MsgType::BEIDOU_1127: {
             auto msmHeader = MSMHeader{payloadBstream};
-            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+            auto currentSatsCount = ::getSatsCount(msmHeader.satelliteMask.data);
 
-            qDebug() << "rtcm: BeiDou satts count: " << currentSattsCount;
+            qDebug() << "rtcm: BeiDou satts count: " << currentSatsCount;
 
-            if (currentSattsCount != _sattelitesCount.beidouSatts) {
-                _sattelitesCount.beidouSatts = currentSattsCount ;
-                _sattsCountChanged();
+            if (currentSatsCount != _satellitesCount.beidouSats) {
+                _satellitesCount.beidouSats = currentSatsCount ;
+                _satsCountChanged();
             }
             break;
         }

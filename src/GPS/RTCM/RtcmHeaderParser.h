@@ -28,7 +28,7 @@ struct RtcmHeader
     RtcmField<uint16_t, 12> refStationId;
     RtcmField<uint32_t, 30> epochTime;
     RtcmField<uint8_t,   1> syncGnssFlag;
-    RtcmField<uint8_t,   5> sattCount;
+    RtcmField<uint8_t,   5> satsCount;
     RtcmField<uint8_t,   1> smoothIndicator;
     RtcmField<uint8_t,   3> smoothInterval;
 
@@ -48,9 +48,8 @@ struct MSMHeader {
 
     RtcmField<uint8_t,   1> smoothIndicator;
     RtcmField<uint8_t,   3> smoothInterval;
-    RtcmField<uint64_t, 64> satteliteMask;
+    RtcmField<uint64_t, 64> satelliteMask;
     RtcmField<uint32_t, 32> signalMask;
-    RtcmField<uint64_t, 64> cellMask;
 
     MSMHeader(BitStream& bstream);
 };
@@ -126,22 +125,22 @@ private:
     void _parsePayload(QByteArray payload);
 
     struct Satts {
-        uint gpsSatts;
-        uint glonassSatts;
-        uint sbasSatts;
-        uint beidouSatts;
-        uint qzssSatts;
-        uint galileoSatts;
+        uint gpsSats;
+        uint glonassSats;
+        uint sbasSats;
+        uint beidouSats;
+        uint qzssSats;
+        uint galileoSats;
 
         Satts()
-            : gpsSatts{0},
-              glonassSatts{0},
-              sbasSatts{0},
-              beidouSatts{0},
-              qzssSatts{0},
-              galileoSatts{0}
+            : gpsSats{0},
+              glonassSats{0},
+              sbasSats{0},
+              beidouSats{0},
+              qzssSats{0},
+              galileoSats{0}
         { }
-    } _sattelitesCount;
+    } _satellitesCount;
 };
 
 #endif
