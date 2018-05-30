@@ -15,8 +15,8 @@ struct RtcmPreamble
 {
     static constexpr uint32_t preambleByteSize() { return 3; }
 
-    RtcmField<char,      8> preamble;
-    RtcmField<char,      6> reserved;
+    RtcmField<uint8_t,   8> preamble;
+    RtcmField<uint8_t,   6> reserved;
     RtcmField<uint16_t, 10> length;
 
     RtcmPreamble(BitStream& bstream);
@@ -25,15 +25,34 @@ struct RtcmPreamble
 
 struct RtcmHeader
 {
-    RtcmField<ushort, 12> msgid;
-    RtcmField<ushort, 12> refStationId;
-    RtcmField<uint,   30> epochTime;
-    RtcmField<bool,    1> syncGnssFlag;
-    RtcmField<uint8_t, 5> sattCount;
-    RtcmField<bool,    1> smoothIndicator;
-    RtcmField<char,    3> smoothInterval;
+    RtcmField<uint16_t, 12> refStationId;
+    RtcmField<uint32_t, 30> epochTime;
+    RtcmField<uint8_t,   1> syncGnssFlag;
+    RtcmField<uint8_t,   5> sattCount;
+    RtcmField<uint8_t,   1> smoothIndicator;
+    RtcmField<uint8_t,   3> smoothInterval;
 
-    RtcmHeader(BitStream& bstream);
+    RtcmHeader(BitStream& bstream, uint msgid);
+};
+
+
+struct MSMHeader {
+    RtcmField<uint16_t, 12> refStationId;
+    RtcmField<uint32_t, 30> epochTime;
+    RtcmField<uint8_t,   1> multMsgBit;
+
+    RtcmField<uint8_t,   3> iods;
+    RtcmField<uint8_t,   7> reserved;
+    RtcmField<uint8_t,   2> clkInd;
+    RtcmField<uint8_t,   2> extClkInd;
+
+    RtcmField<uint8_t,   1> smoothIndicator;
+    RtcmField<uint8_t,   3> smoothInterval;
+    RtcmField<uint64_t, 64> satteliteMask;
+    RtcmField<uint32_t, 32> signalMask;
+    RtcmField<uint64_t, 64> cellMask;
+
+    MSMHeader(BitStream& bstream);
 };
 
 
@@ -42,10 +61,10 @@ struct Rtcm1002
     static constexpr ushort messageId() { return 1002; }
     static QString system() { return "GPS"; }
 
-    RtcmField<char,      6> sattId;
-    RtcmField<bool,      1> codeIndicator;
+    RtcmField<uint8_t,   6> sattId;
+    RtcmField<uint8_t,   1> codeIndicator;
     RtcmField<uint32_t, 24> pseudorange;
-    RtcmField<int32_t,  20> phaserange;
+    RtcmField<uint32_t, 20> phaserange;
     RtcmField<uint8_t,   7> lockTimeIndicator;
     RtcmField<uint8_t,   8> ambiguity;
     RtcmField<uint8_t,   8> cnr;
@@ -76,7 +95,7 @@ class BitStream {
 public:
     BitStream(QByteArray array)
         : _buffer(std::move(array)),
-          _pos(0)
+          _bitPos(0)
     { }
 
     template<typename T, std::size_t N>
@@ -84,15 +103,22 @@ public:
     {
         auto offset = bitCount == 0 ?
                     static_cast<std::size_t>(field->BitSize) : bitCount;
+        /*qDebug() << "Field bit size: " << offset;
+        qDebug() << "Current bit pos: " << _bitPos;
+        qDebug() << "Buffer size: " << _buffer.length();*/
+        Q_ASSERT((offset + _bitPos) / 8 <= _buffer.length());
 
-        field->data = static_cast<T>(_getbitu(_buffer, _pos, offset));
-        _pos += offset;
+        field->data = static_cast<T>(_getbitu(_buffer, _bitPos, offset));
+        _bitPos += offset;
         return *this;
     }
 
     BitStream& fillArray(QByteArray* array, std::size_t bytesCount)
     {
-        auto bytePos = _pos / 8;
+        /*qDebug() << "Field byte size: " << bytesCount;
+        qDebug() << "Current bit pos: " << _bitPos;
+        qDebug() << "Buffer size: " << _buffer.length();*/
+        auto bytePos = _bitPos / 8;
         Q_ASSERT(bytePos + bytesCount<= static_cast<std::size_t>(_buffer.size()));
 
         for (auto i = bytePos; i < bytePos + bytesCount; i++) {
@@ -100,7 +126,7 @@ public:
             array->append(c);
         }
 
-        _pos += bytesCount * 8;
+        _bitPos += bytesCount * 8;
 
         return *this;
     }
@@ -118,7 +144,7 @@ private:
     }
 
     QByteArray _buffer;
-    std::size_t _pos;
+    std::size_t _bitPos;
 };
 
 
@@ -141,6 +167,10 @@ private:
     struct {
         uint gpsSatts;
         uint glonassSatts;
+        uint sbasSatts;
+        uint beidouSatts;
+        uint qzssSatts;
+        uint galileoSatts;
     } _sattelitesCount;
 };
 
