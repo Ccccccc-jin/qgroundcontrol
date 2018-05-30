@@ -19,10 +19,15 @@ RTCMMavlink::RTCMMavlink(QGCToolbox& toolbox)
     : _toolbox(toolbox)
 {
     _bandwidthTimer.start();
+    QObject::connect(&_rtcmParser, &RtcmHeaderParser::sattsCountChanged,
+                     this,         &RTCMMavlink::satteliteUpdate);
 }
 
 void RTCMMavlink::RTCMDataUpdate(QByteArray message)
 {
+    qDebug() << "Got rtcm msg";
+    _rtcmParser.onRtcmMessageReceived(message);
+
     /* statistics */
     _bandwidthByteCounter += message.size();
     qint64 elapsed = _bandwidthTimer.elapsed();
