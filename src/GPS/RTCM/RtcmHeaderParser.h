@@ -56,41 +56,6 @@ struct MSMHeader {
 };
 
 
-struct Rtcm1002
-{
-    static constexpr ushort messageId() { return 1002; }
-    static QString system() { return "GPS"; }
-
-    RtcmField<uint8_t,   6> sattId;
-    RtcmField<uint8_t,   1> codeIndicator;
-    RtcmField<uint32_t, 24> pseudorange;
-    RtcmField<uint32_t, 20> phaserange;
-    RtcmField<uint8_t,   7> lockTimeIndicator;
-    RtcmField<uint8_t,   8> ambiguity;
-    RtcmField<uint8_t,   8> cnr;
-
-    Rtcm1002(BitStream& bstream);
-};
-
-
-struct Rtcm1010
-{
-    static constexpr ushort messageId() { return 1010; }
-    static QString system() { return "GLONASS"; }
-
-    RtcmField<char,      6> sattId;
-    RtcmField<bool,      1> codeIndicator;
-    RtcmField<uint8_t,   5> sattFreqChannelNumber;
-    RtcmField<uint32_t, 25> pseudorange;
-    RtcmField<int32_t,  20> phaserange;
-    RtcmField<uint8_t,   7> lockTimeIndicator;
-    RtcmField<uint8_t,   8> ambiguity;
-    RtcmField<uint8_t,   8> cnr;
-
-    Rtcm1010(BitStream& bstream);
-};
-
-
 class BitStream {
 public:
     BitStream(QByteArray array)
