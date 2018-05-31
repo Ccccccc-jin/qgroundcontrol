@@ -92,13 +92,13 @@ public:
     }
 
 private:
-    static uint _getbitu(QByteArray const& buff, uint pos, uint len)
+    static uint64_t _getbitu(QByteArray const& buff, uint64_t pos, uint len)
     {
-        uint bits = 0;
-        uint i;
+        uint64_t bits = 0;
+        uint64_t i;
 
         for (i = pos; i < pos + len; i++)
-            bits = (uint) ((bits << 1) + ((buff[i/8] >> (int) (7 - i%8)) & 1u));
+            bits = (uint64_t) ((bits << 1) + ((buff[(uint)i/8] >> (int) (7 - i%8)) & 1u));
 
         return bits;
     }
@@ -118,10 +118,10 @@ public slots:
     void onRtcmMessageReceived(QByteArray buffer);
 
 signals:
-    void sattsCountChanged(uint sattsCount);
+    void satsCountChanged(uint sattsCount);
 
 private:
-    void _sattsCountChanged(void);
+    void _satsCountChanged(void);
     void _parsePayload(QByteArray payload);
 
     struct Satts {

@@ -70,8 +70,10 @@ RtcmPreamble::RtcmPreamble(BitStream& bstream)
 
 RtcmHeader::RtcmHeader(BitStream& bstream, uint msgid)
 {
+    auto epochTimeBitSize = msgid >= 1009 && msgid <= 1012 ? 27 : 30;
+
     bstream.fillField(&refStationId)
-           .fillField(&epochTime, msgid <= 1012 || msgid >= 1009 ? 27 : 0)
+           .fillField(&epochTime, epochTimeBitSize)
            .fillField(&syncGnssFlag)
            .fillField(&satsCount)
            .fillField(&smoothIndicator)
@@ -126,7 +128,7 @@ void RtcmHeaderParser::onRtcmMessageReceived(QByteArray buffer)
         qWarning() << "Message is not correct";
     } else {
         qInfo() << "Message is correct";
-        _parsePayload(std::move(payload));
+        _parsePayload(payload);
     }
 }
 
@@ -164,9 +166,7 @@ static uint8_t getSatsCount(uint64_t satMask)
 
 void RtcmHeaderParser::_parsePayload(QByteArray payload)
 {
-    qDebug() << "Payload size" << payload.size();
-
-    auto payloadBstream = BitStream{std::move(payload)};
+    auto payloadBstream = BitStream{payload};
 
     RtcmField<uint16_t, 12> msgid;
     payloadBstream.fillField(&msgid);
