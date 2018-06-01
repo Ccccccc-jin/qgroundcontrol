@@ -21,6 +21,8 @@ RTCMMavlink::RTCMMavlink(QGCToolbox& toolbox)
       _rtcmParser(new RtcmHeaderParser)
 {
     _bandwidthTimer.start();
+    QObject::connect(_rtcmParser.get(), &RtcmHeaderParser::availableGnssListChanged,
+                     this,              &RTCMMavlink::availableGnssListChanged);
     QObject::connect(_rtcmParser.get(), &RtcmHeaderParser::satsCountChanged,
                      this,              &RTCMMavlink::satteliteUpdate);
 }

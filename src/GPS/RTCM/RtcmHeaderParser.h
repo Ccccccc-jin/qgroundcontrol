@@ -129,7 +129,7 @@ public slots:
 
 signals:
     void satsCountChanged(uint sattsCount);
-    void availableGnssList(QStringList availableGnss);
+    void availableGnssListChanged(QStringList availableGnss);
 
 private:
     void _satsCountChanged(void);
