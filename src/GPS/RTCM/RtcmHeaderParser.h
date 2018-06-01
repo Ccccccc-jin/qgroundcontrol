@@ -114,33 +114,56 @@ class RtcmHeaderParser : public QObject
 public:
     RtcmHeaderParser(QObject* parent = nullptr);
 
+    enum GnssType : uint8_t {
+        GPS = 0,
+        GLONASS,
+        GALILEO,
+        SBAS,
+        QZSS,
+        BEIDOU
+    };
+    Q_ENUM(GnssType)
+
 public slots:
     void onRtcmMessageReceived(QByteArray buffer);
 
 signals:
     void satsCountChanged(uint sattsCount);
+    void availableGnssList(QStringList availableGnss);
 
 private:
     void _satsCountChanged(void);
     void _parsePayload(QByteArray payload);
+    void _parseMsmMessage(GnssType gnssType, BitStream bstream);
+    void _parseRtcmMessage(GnssType type, BitStream bstream, uint16_t msgid);
 
-    struct Satts {
-        uint gpsSats;
-        uint glonassSats;
-        uint sbasSats;
-        uint beidouSats;
-        uint qzssSats;
-        uint galileoSats;
+    struct GnssInfo {
+        GnssInfo() : _satsCount{0}, _refreshed{false} { }
 
-        Satts()
-            : gpsSats{0},
-              glonassSats{0},
-              sbasSats{0},
-              beidouSats{0},
-              qzssSats{0},
-              galileoSats{0}
-        { }
-    } _satellitesCount;
+        void setSatsCount(uint satsCount) {
+            _satsCount = satsCount;
+            _refreshed = true;
+        }
+
+        uint satsCount(void) const {
+            return _satsCount;
+        }
+
+        void setRefreshed(bool state) {
+            _refreshed = state;
+        }
+
+        bool refreshed(void) const {
+            return _refreshed;
+        }
+
+    private:
+        uint _satsCount;
+        bool _refreshed;
+    };
+
+    QMap<GnssType, GnssInfo> _gnssInfo;
+    QTimer _gpsInfoRefreshTimer;
 };
 
 #endif
