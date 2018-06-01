@@ -190,7 +190,7 @@ void RtcmHeaderParser::_satsCountChanged()
     }
 
     emit satsCountChanged(totalSattsCount);
-    emit availableGnssList(gnssList);
+    emit availableGnssListChanged(gnssList);
 }
 
 

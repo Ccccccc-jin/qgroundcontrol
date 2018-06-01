@@ -36,6 +36,7 @@ signals:
     void onDisconnect();
     void surveyInStatus(float duration, float accuracyMM, bool valid, bool active);
     void satelliteUpdate(int numSats);
+    void availableGnssListChanged(QStringList list);
 
 private slots:
     void GPSPositionUpdate(GPSPositionMessage msg);

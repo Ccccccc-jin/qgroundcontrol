@@ -53,6 +53,7 @@ public:
     Q_PROPERTY(QGCCorePlugin*       corePlugin          READ corePlugin             CONSTANT)
     Q_PROPERTY(SettingsManager*     settingsManager     READ settingsManager        CONSTANT)
     Q_PROPERTY(FactGroup*           gpsRtk              READ gpsRtkFactGroup        CONSTANT)
+    Q_PROPERTY(QString              gnssList            READ gnssList               NOTIFY gnssListChanged)
 
     Q_PROPERTY(int      supportedFirmwareCount          READ supportedFirmwareCount CONSTANT)
 
@@ -142,6 +143,7 @@ public:
     QGCCorePlugin*          corePlugin          ()  { return _corePlugin; }
     SettingsManager*        settingsManager     ()  { return _settingsManager; }
     FactGroup*              gpsRtkFactGroup     ()  { return &_gpsRtkFactGroup; }
+    QString                 gnssList            ()  { return _gnssList.join(", "); }
     static QGeoCoordinate   flightMapPosition   ();
     static double           flightMapZoom       ();
 
@@ -182,6 +184,7 @@ signals:
     void flightMapPositionChanged       (QGeoCoordinate flightMapPosition);
     void flightMapZoomChanged           (double flightMapZoom);
     void skipSetupPageChanged           ();
+    void gnssListChanged                ();
 
 private slots:
     void _onGPSConnect();
@@ -202,6 +205,7 @@ private:
     FirmwarePluginManager*  _firmwarePluginManager;
     SettingsManager*        _settingsManager;
     GPSRTKFactGroup         _gpsRtkFactGroup;
+    QStringList             _gnssList;
 
     bool                    _skipSetupPage;
 

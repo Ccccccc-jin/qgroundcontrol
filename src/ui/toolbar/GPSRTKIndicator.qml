@@ -68,13 +68,18 @@ Item {
                         }
                     QGCLabel {
                         // during survey-in show the current accuracy, after that show the final accuracy
+                        visible: false // temporary is not visible
                         text: QGroundControl.gpsRtk.valid.value ? qsTr("Accuracy:") : qsTr("Current Accuracy:")
                         }
                     QGCLabel {
+                        visible: false // temporary is not visible
                         text: QGroundControl.gpsRtk.currentAccuracy.valueString + " " + QGroundControl.appSettingsDistanceUnitsString
                         }
                     QGCLabel { text: qsTr("Satellites:") }
                     QGCLabel { text: QGroundControl.gpsRtk.numSatellites.value }
+
+                    QGCLabel { text: qsTr("GNSS:");           visible: QGroundControl.gnssList !== "" }
+                    QGCLabel { text: QGroundControl.gnssList; visible: QGroundControl.gnssList !== "" }
                 }
             }
 
