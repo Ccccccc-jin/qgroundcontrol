@@ -12,21 +12,26 @@
 
 #include "MultiVehicleManager.h"
 #include "Vehicle.h"
+#include "RtcmHeaderParser.h"
 
 #include <cstdio>
 
 RTCMMavlink::RTCMMavlink(QGCToolbox& toolbox)
-    : _toolbox(toolbox)
+    : _toolbox(toolbox),
+      _rtcmParser(new RtcmHeaderParser)
 {
     _bandwidthTimer.start();
-    QObject::connect(&_rtcmParser, &RtcmHeaderParser::satsCountChanged,
-                     this,         &RTCMMavlink::satteliteUpdate);
+    QObject::connect(_rtcmParser.get(), &RtcmHeaderParser::satsCountChanged,
+                     this,              &RTCMMavlink::satteliteUpdate);
 }
+
+RTCMMavlink::~RTCMMavlink()
+{ }
 
 void RTCMMavlink::RTCMDataUpdate(QByteArray message)
 {
     qDebug() << "Got rtcm msg";
-    _rtcmParser.onRtcmMessageReceived(message);
+    _rtcmParser->onRtcmMessageReceived(message);
 
     /* statistics */
     _bandwidthByteCounter += message.size();

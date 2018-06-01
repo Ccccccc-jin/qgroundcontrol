@@ -12,10 +12,12 @@
 
 #include <QObject>
 #include <QElapsedTimer>
+#include <memory>
 
 #include "QGCToolbox.h"
 #include "MAVLinkProtocol.h"
-#include "RtcmHeaderParser.h"
+
+class RtcmHeaderParser;
 
 /**
  ** class RTCMMavlink
@@ -26,6 +28,7 @@ class RTCMMavlink : public QObject
     Q_OBJECT
 public:
     RTCMMavlink(QGCToolbox& toolbox);
+    ~RTCMMavlink();
     //TODO: API to select device(s)?
 
 public slots:
@@ -40,5 +43,5 @@ private:
     QGCToolbox& _toolbox;
     QElapsedTimer _bandwidthTimer;
     int _bandwidthByteCounter = 0;
-    RtcmHeaderParser _rtcmParser;
+    std::unique_ptr<RtcmHeaderParser> _rtcmParser;
 };
