@@ -70,6 +70,9 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
        connect(gpsManager, &GPSManager::onDisconnect, this, &QGroundControlQmlGlobal::_onGPSDisconnect);
        connect(gpsManager, &GPSManager::surveyInStatus, this, &QGroundControlQmlGlobal::_GPSSurveyInStatus);
        connect(gpsManager, &GPSManager::satelliteUpdate, this, &QGroundControlQmlGlobal::_GPSNumSatellites);
+       connect(gpsManager, &GPSManager::availableGnssListChanged,
+               [this] (QStringList list) { _gnssList = list; }
+       );
    }
 #endif /* __mobile__ */
 }

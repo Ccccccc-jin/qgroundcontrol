@@ -36,6 +36,7 @@ public slots:
 
 signals:
     void satteliteUpdate(uint sattCount);
+    void availableGnssListChanged(QStringList list);
 
 private:
     void sendMessageToVehicle(const mavlink_gps_rtcm_data_t& msg);
