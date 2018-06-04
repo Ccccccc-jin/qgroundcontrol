@@ -15,8 +15,8 @@ struct RtcmPreamble
 {
     static constexpr uint32_t preambleByteSize() { return 3; }
 
-    RtcmField<char,      8> preamble;
-    RtcmField<char,      6> reserved;
+    RtcmField<uint8_t,   8> preamble;
+    RtcmField<uint8_t,   6> reserved;
     RtcmField<uint16_t, 10> length;
 
     RtcmPreamble(BitStream& bstream);
@@ -25,15 +25,34 @@ struct RtcmPreamble
 
 struct RtcmHeader
 {
-    RtcmField<ushort, 12> msgid;
-    RtcmField<ushort, 12> refStationId;
-    RtcmField<uint,   30> epochTime;
-    RtcmField<bool,    1> syncGnssFlag;
-    RtcmField<uint8_t, 5> sattCount;
-    RtcmField<bool,    1> smoothIndicator;
-    RtcmField<char,    3> smoothInterval;
+    RtcmField<uint16_t, 12> refStationId;
+    RtcmField<uint32_t, 30> epochTime;
+    RtcmField<uint8_t,   1> syncGnssFlag;
+    RtcmField<uint8_t,   5> sattCount;
+    RtcmField<uint8_t,   1> smoothIndicator;
+    RtcmField<uint8_t,   3> smoothInterval;
 
-    RtcmHeader(BitStream& bstream);
+    RtcmHeader(BitStream& bstream, uint msgid);
+};
+
+
+struct MSMHeader {
+    RtcmField<uint16_t, 12> refStationId;
+    RtcmField<uint32_t, 30> epochTime;
+    RtcmField<uint8_t,   1> multMsgBit;
+
+    RtcmField<uint8_t,   3> iods;
+    RtcmField<uint8_t,   7> reserved;
+    RtcmField<uint8_t,   2> clkInd;
+    RtcmField<uint8_t,   2> extClkInd;
+
+    RtcmField<uint8_t,   1> smoothIndicator;
+    RtcmField<uint8_t,   3> smoothInterval;
+    RtcmField<uint64_t, 64> satteliteMask;
+    RtcmField<uint32_t, 32> signalMask;
+    RtcmField<uint64_t, 64> cellMask;
+
+    MSMHeader(BitStream& bstream);
 };
 
 
@@ -109,6 +128,10 @@ private:
     struct {
         uint gpsSatts;
         uint glonassSatts;
+        uint sbasSatts;
+        uint beidouSatts;
+        uint qzssSatts;
+        uint galileoSatts;
     } _sattelitesCount;
 };
 
