@@ -84,6 +84,7 @@ public:
 
     Q_INVOKABLE void bootAsAccessPoint     (void);
     Q_INVOKABLE void bootAsClient          (QString const& netwkName);
+    Q_INVOKABLE void configureAccessPoint  (QString ssid, QString passwd);
 
     Q_INVOKABLE void requestWifiStatus(void);
     Q_INVOKABLE void updateNetwokrsList(void);

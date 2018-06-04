@@ -185,6 +185,23 @@ void WiFiSetupComponentController::bootAsClient(QString const& name)
 }
 
 
+void WiFiSetupComponentController::configureAccessPoint(QString ssid, QString passwd)
+{
+    auto rawSsid = impl::toRawString(std::move(ssid), impl::SSID_LENGTH);
+    auto rawPasswd = impl::toRawString(std::move(passwd), impl::PASSWD_LENGTH);
+
+    auto msg = mavlink_message_t{};
+
+    ::mavlink_msg_wifi_config_ap_pack(impl::mavlinkProtocol().getSystemId(),
+                                      impl::mavlinkProtocol().getComponentId(),
+                                      &msg,
+                                      rawSsid.data(),
+                                      rawPasswd.data());
+
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
+}
+
+
 void WiFiSetupComponentController::saveNetworkToEdge(QString const& name, int type, QString const& psw)
 {
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(),
