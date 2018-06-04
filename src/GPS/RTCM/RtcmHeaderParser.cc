@@ -6,7 +6,11 @@ namespace impl {
 
     enum MsgType {
         GPS_1002 = 1002,
-        GLONASS_1010 = 1010
+        GLONASS_1010 = 1010,
+        GALILEO_1097 = 1097,
+        SBAS_1107 = 1107,
+        QZSS_1117 = 1117,
+        BEIDOU_1127 = 1127
     };
 
     static constexpr uint32_t crc24tab[] = {
@@ -64,7 +68,7 @@ RtcmPreamble::RtcmPreamble(BitStream& bstream)
 }
 
 
-RtcmHeader::RtcmHeader(BitStream& bstream)
+RtcmHeader::RtcmHeader(BitStream& bstream, uint msgid)
 {
     auto epochTimeBitSize = msgid >= 1009 && msgid <= 1012 ? 27 : 30;
 
@@ -74,6 +78,23 @@ RtcmHeader::RtcmHeader(BitStream& bstream)
            .fillField(&sattCount)
            .fillField(&smoothIndicator)
            .fillField(&smoothInterval);
+}
+
+
+MSMHeader::MSMHeader(BitStream& bstream)
+{
+    bstream.fillField(&refStationId)
+           .fillField(&epochTime)
+           .fillField(&multMsgBit)
+           .fillField(&iods)
+           .fillField(&reserved)
+           .fillField(&clkInd)
+           .fillField(&extClkInd)
+           .fillField(&smoothIndicator)
+           .fillField(&smoothInterval)
+           .fillField(&satteliteMask)
+           .fillField(&signalMask)
+           .fillField(&cellMask);
 }
 
 
@@ -90,34 +111,26 @@ void RtcmHeaderParser::onRtcmMessageReceived(QByteArray buffer)
         return;
     }
 
-    auto bufferCopy = buffer;
-
     auto bstream = BitStream{buffer};
     auto preamble = RtcmPreamble{bstream};
 
-    // Info
-    qDebug() << QString("Received buffer[%1] with RTCM message")
-                    .arg(buffer.size());
-    qDebug() << "rtcm: Preamble size: " << preamble.preambleByteSize();
-    qDebug() << "rtcm: Message length: " << preamble.length.data;
-
     auto payload = QByteArray{};
-    payload.reserve(preamble.length.data);
-    bstream.fillArray(&payload, preamble.length.data);
+    auto preambleLength = preamble.length.data;
+    payload.reserve(preambleLength);
+    bstream.fillArray(&payload, preambleLength);
 
-    _parsePayload(std::move(payload));
+    constexpr auto crcFieldByteSize = 3;
+    auto payloadLength = buffer.size() - crcFieldByteSize;
 
-    auto payloadLength = preamble.length.data + preamble.preambleByteSize();
     auto computedCrc24 = impl::crc24q(buffer, payloadLength, 0);
     auto crc24 = RtcmField<uint32_t, crcFieldByteSize * 8>{};
-
     bstream.fillField(&crc24);
 
     if (crc24.data != computedCrc24) {
         qWarning() << "Message is not correct";
     } else {
         qInfo() << "Message is correct";
-        _parsePayload(payload);
+        _parsePayload(std::move(payload));
     }
 }
 
@@ -126,17 +139,37 @@ void RtcmHeaderParser::_sattsCountChanged()
 {
     auto totalSattsCount =
         _sattelitesCount.glonassSatts +
-        _sattelitesCount.gpsSatts;
+        _sattelitesCount.gpsSatts +
+        _sattelitesCount.galileoSatts +
+        _sattelitesCount.beidouSatts +
+        _sattelitesCount.qzssSatts +
+        _sattelitesCount.sbasSatts;
 
     qDebug() << "total satts count: " <<  totalSattsCount;
 
-    //emit sattsCountChanged(totalSattsCount);
+    emit sattsCountChanged(totalSattsCount);
+}
+
+
+static uint8_t getSattsCount(uint64_t sattMask)
+{
+    auto bitNum= 0x01ul;
+    auto count = 0u;
+
+    qDebug() << "Satt mask: " << sattMask;
+
+    for (auto i = 0ul; i < 64; i++) {
+        bitNum <<= 1;
+        if (bitNum & sattMask) { count++; }
+
+    }
+    return count;
 }
 
 
 void RtcmHeaderParser::_parsePayload(QByteArray payload)
 {
-    auto payloadBstream = BitStream{payload};
+    auto payloadBstream = BitStream{std::move(payload)};
 
     RtcmField<uint16_t, 12> msgid;
     payloadBstream.fillField(&msgid);
@@ -144,9 +177,9 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
     qDebug() << "rtcm: Received: " << msgid.data;
 
     using MsgType = impl::MsgType;
-    switch(static_cast<MsgType>(rtcmHeader.msgid.data)) {
+    switch(static_cast<MsgType>(msgid.data)) {
         case MsgType::GPS_1002: {
-            qDebug() << QString("rtcm: %1 Received").arg(MsgType::GPS_1002);
+            auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
             auto currentSattCount = rtcmHeader.sattCount.data;
             qDebug() << QString("rtcm: GPS satts count %1").arg(currentSattCount);
 
@@ -154,10 +187,11 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
                 _sattelitesCount.gpsSatts = currentSattCount;
                 _sattsCountChanged();
             }
+            break;
         }
 
         case MsgType::GLONASS_1010: {
-            qDebug() << QString("rtcm: %1 Received").arg(MsgType::GLONASS_1010);
+            auto rtcmHeader = RtcmHeader{payloadBstream, msgid.data};
             auto currentSattCount = rtcmHeader.sattCount.data;
             qDebug() << QString("rtcm: GLONASS satts count %1").arg(currentSattCount);
 
@@ -165,6 +199,64 @@ void RtcmHeaderParser::_parsePayload(QByteArray payload)
                 _sattelitesCount.glonassSatts = currentSattCount;
                 _sattsCountChanged();
             }
+            break;
+        }
+
+        case MsgType::GALILEO_1097: {
+            auto msmHeader = MSMHeader{payloadBstream};
+            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+
+            qDebug() << "rtcm: Galileo satts count: " << currentSattsCount;
+
+            if (currentSattsCount != _sattelitesCount.galileoSatts) {
+                _sattelitesCount.galileoSatts = currentSattsCount ;
+                _sattsCountChanged();
+            }
+            break;
+        }
+
+        case MsgType::SBAS_1107: {
+            auto msmHeader = MSMHeader{payloadBstream};
+            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+
+            qDebug() << "rtcm: SBAS satts count: " << currentSattsCount;
+
+            if (currentSattsCount != _sattelitesCount.sbasSatts) {
+                _sattelitesCount.sbasSatts = currentSattsCount ;
+                _sattsCountChanged();
+            }
+            break;
+        }
+
+        case MsgType::QZSS_1117: {
+            auto msmHeader = MSMHeader{payloadBstream};
+            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+
+            qDebug() << "rtcm: QZSS satts count: " << currentSattsCount;
+
+            if (currentSattsCount != _sattelitesCount.qzssSatts) {
+                _sattelitesCount.qzssSatts = currentSattsCount ;
+                _sattsCountChanged();
+            }
+            break;
+        }
+
+        case MsgType::BEIDOU_1127: {
+            auto msmHeader = MSMHeader{payloadBstream};
+            auto currentSattsCount = ::getSattsCount(msmHeader.satteliteMask.data);
+
+            qDebug() << "rtcm: BeiDou satts count: " << currentSattsCount;
+
+            if (currentSattsCount != _sattelitesCount.beidouSatts) {
+                _sattelitesCount.beidouSatts = currentSattsCount ;
+                _sattsCountChanged();
+            }
+            break;
+        }
+
+        default: {
+            qWarning() << "rtcm: Unrecognised message: "
+                       << msgid.data;
         }
     }
 }
