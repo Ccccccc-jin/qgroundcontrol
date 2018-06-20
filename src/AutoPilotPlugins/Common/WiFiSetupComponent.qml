@@ -483,8 +483,10 @@ SetupPage {
                             fact: wifiSettings.txPowerFact
                         }
 
-                        QGCLabel { text: qsTr("Channel:") }
+                        // Temporary unused
+                        QGCLabel { visible: false; text: qsTr("Channel:") }
                         FactTextField {
+                            visible: false
                             anchors.right: parent.right
                             id:   wifiChannelTxtField
                             fact: wifiSettings.channel
