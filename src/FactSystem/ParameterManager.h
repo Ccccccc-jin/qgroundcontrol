@@ -143,6 +143,7 @@ private:
     void _writeLocalParamCache(int vehicleId, int componentId);
     void _tryCacheHashLoad(int vehicleId, int componentId, QVariant hash_value);
     void _addMetaDataToDefaultComponent(void);
+    void _addMetaDataToComponent(int compid);
     QString _remapParamNameToVersion(const QString& paramName);
     void _loadOfflineEditingParams(void);
     QString _logVehiclePrefix(int componentId = -1);

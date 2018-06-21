@@ -316,11 +316,7 @@ void ParameterManager::_parameterUpdate(int vehicleId, int componentId, QString 
     }
 
     if (componentParamsComplete) {
-        if (componentId == _vehicle->defaultComponentId()) {
-            // Add meta data to default component. We need to do this before we setup the group map since group
-            // map requires meta data.
-            _addMetaDataToDefaultComponent();
-        }
+        _addMetaDataToComponent(componentId);
 
         // When we are getting the very last component param index, reset the group maps to update for the
         // new params. By handling this here, we can pick up components which finish up later than the default
@@ -995,24 +991,28 @@ FactMetaData::ValueType_t ParameterManager::_mavTypeToFactType(MAV_PARAM_TYPE ma
 
 void ParameterManager::_addMetaDataToDefaultComponent(void)
 {
-     if (_parameterMetaData) {
-         return;
-     }
+    _addMetaDataToComponent(_vehicle->defaultComponentId());
+}
 
-     QString metaDataFile;
-     int majorVersion, minorVersion;
+void ParameterManager::_addMetaDataToComponent(int compid)
+{
+    if (!_parameterMetaData) {
+         QString metaDataFile;
+         int majorVersion, minorVersion;
 
-     // Load best parameter meta data set
-     metaDataFile = parameterMetaDataFile(_vehicle, _vehicle->firmwareType(), _parameterSetMajorVersion, majorVersion, minorVersion);
-     qCDebug(ParameterManagerLog) << "Adding meta data to Vehicle file:major:minor" << metaDataFile << majorVersion << minorVersion;
+         // Load best parameter meta data set
+         metaDataFile = parameterMetaDataFile(_vehicle, _vehicle->firmwareType(), _parameterSetMajorVersion, majorVersion, minorVersion);
+         qCDebug(ParameterManagerLog) << "Adding meta data to Vehicle file:major:minor" << metaDataFile << majorVersion << minorVersion;
 
-     _parameterMetaData = _vehicle->firmwarePlugin()->loadParameterMetaData(metaDataFile);
+         _parameterMetaData = _vehicle->firmwarePlugin()->loadParameterMetaData(metaDataFile);
+    }
 
     // Loop over all parameters in default component adding meta data
-    QVariantMap& factMap = _mapParameterName2Variant[_vehicle->defaultComponentId()];
+    QVariantMap& factMap = _mapParameterName2Variant[compid];
     foreach (const QString& key, factMap.keys()) {
         _vehicle->firmwarePlugin()->addMetaDataToFact(_parameterMetaData, factMap[key].value<Fact*>(), _vehicle->vehicleType());
     }
+
 }
 
 void ParameterManager::_checkInitialLoadComplete(void)
