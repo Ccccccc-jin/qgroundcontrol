@@ -5333,4 +5333,15 @@
 <field name="Increment">0.001</field>
 </param>
 </parameters>
+<parameters name="WIFI_">
+<param humanName="Tx Power" name="WIFI_TX_POWER" documentation="">
+<field name="Range">10 30</field>
+<field name="Increment">0.5</field>
+<field name="Units">dBm</field>
+</param>
+<param humanName="Wifi channel" name="WIFI_CHANNEL" documentation="">
+<field name="Range">0 151</field>
+<field name="Increment">0.5</field>
+</param>
+</parameters>
 </libraries></paramfile>
