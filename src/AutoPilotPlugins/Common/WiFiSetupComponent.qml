@@ -467,7 +467,6 @@ SetupPage {
                     visible: false
 
                     property Fact txPowerFact: factController.getParameterFact(controller.componentId, "WIFI_TX_POWER")
-                    property Fact channel:     factController.getParameterFact(controller.componentId, "WIFI_CHANNEL")
 
                     GridLayout {
                         anchors {
@@ -483,22 +482,13 @@ SetupPage {
                             fact: wifiSettings.txPowerFact
                         }
 
-                        // Temporary unused
-                        QGCLabel { visible: false; text: qsTr("Channel:") }
-                        FactTextField {
-                            visible: false
-                            anchors.right: parent.right
-                            id:   wifiChannelTxtField
-                            fact: wifiSettings.channel
-                        }
-
                         QGCLabel { text: qsTr("Hotspot configuration:") }
 
                         Item {
                             id: openDialogBtnItem
                             anchors.right: parent.right
-                            width: wifiChannelTxtField.width
-                            height: wifiChannelTxtField.height
+                            width: wifiTxPowerTxtField.width
+                            height: wifiTxPowerTxtField.height
 
                             QGCButton {
                                 text: "Open dialog"
