@@ -316,7 +316,11 @@ void ParameterManager::_parameterUpdate(int vehicleId, int componentId, QString 
     }
 
     if (componentParamsComplete) {
-        _addMetaDataToComponent(componentId);
+        if (componentId == _vehicle->defaultComponentId()) {
+            for (auto const& compid : _mapParameterName2Variant.keys()) {
+                _addMetaDataToComponent(compid);
+            }
+        }
 
         // When we are getting the very last component param index, reset the group maps to update for the
         // new params. By handling this here, we can pick up components which finish up later than the default
