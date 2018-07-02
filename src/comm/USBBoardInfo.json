@@ -28,6 +28,7 @@
         { "vendorID": 5446, "productID": 424,        "boardClass": "RTK GPS",    "name": "RTK GPS",              "comment": "Ublox RTK GPS" },
         { "vendorID": 32903, "productID": 2718,      "boardClass": "RTK GPS",    "name": "RTK GPS",              "comment": "Emlid Reach" },
         { "vendorID": 12338, "productID": 1,         "boardClass": "RTK GPS",    "name": "RTK GPS",              "comment": "Emlid Reach+" },
+        { "vendorID": 12338, "productID": 16,        "boardClass": "RTK GPS",    "name": "RTK GPS",              "comment": "Emlid Reach+" },
 
         { "vendorID": 8352, "productID": 16732,     "boardClass": "OpenPilot",  "name": "OpenPilot OPLink" },
         { "vendorID": 8352, "productID": 16733,     "boardClass": "OpenPilot",  "name": "OpenPilot CC3D" },
