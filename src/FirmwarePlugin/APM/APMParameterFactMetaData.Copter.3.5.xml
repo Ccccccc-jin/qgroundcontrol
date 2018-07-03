@@ -11674,5 +11674,12 @@
 <field name="Range">0 151</field>
 <field name="Increment">0.5</field>
 </param>
+<param humanName="Wi-Fi RSSI Failsafe Enable" name="WIFI_FS_ENABLE" documentation="Controls RSSI level for RTL.">
+<values>
+<value code="0">Disabled</value>
+<value code="1">Low</value>
+<value code="2">Medium</value>
+</values>
+</param>
 </parameters>
 </libraries></paramfile>
