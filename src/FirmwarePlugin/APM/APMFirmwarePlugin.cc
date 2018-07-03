@@ -819,8 +819,8 @@ QString APMFirmwarePlugin::internalParameterMetaDataFile(Vehicle* vehicle)
             case 1:
                 return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.0.xml");
             case 2:
-            case 3:
                 return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.2.xml");
+            case 3:
             case 4:
             default:
                 return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.4.xml");
