@@ -207,6 +207,7 @@ SetupPage {
                     property Fact _failsafeThrEnable:   controller.getParameterFact(-1, "THR_FAILSAFE")
                     property Fact _failsafeThrValue:    controller.getParameterFact(-1, "THR_FS_VALUE")
                     property Fact _failsafeGCSEnable:   controller.getParameterFact(-1, "FS_GCS_ENABL")
+                    property Fact _failsafeWiFiEnable:  controller.getParameterFact(243, "WIFI_FS_ENABLE")
 
                     QGCLabel {
                         text:       qsTr("Failsafe Triggers")
@@ -245,6 +246,15 @@ SetupPage {
                                 checked:    _failsafeGCSEnable.value != 0
                                 onClicked:  _failsafeGCSEnable.value = checked ? 1 : 0
                             }
+
+                            RowLayout {
+                                QGCLabel { text: qsTr("Wi-Fi RSSI failsafe:") }
+                                FactComboBox {
+                                    Layout.fillWidth:   true
+                                    fact:               _failsafeWiFiEnable
+                                    indexModel:         false
+                                }
+                            }
                         }
                     } // Rectangle - Failsafe trigger settings
                 } // Column - Failsafe trigger settings
@@ -265,6 +275,7 @@ SetupPage {
                     property Fact _failsafeThrValue:    controller.getParameterFact(-1, "FS_THR_VALUE")
                     property Fact _failsafeAction:      controller.getParameterFact(-1, "FS_ACTION")
                     property Fact _failsafeCrashCheck:  controller.getParameterFact(-1, "FS_CRASH_CHECK")
+                    property Fact _failsafeWiFiEnable:  controller.getParameterFact(243, "WIFI_FS_ENABLE")
 
                     QGCLabel {
                         id:         failsafeLabel
@@ -311,6 +322,13 @@ SetupPage {
                                 fact:               _failsafeCrashCheck
                                 indexModel:         false
                             }
+
+                            QGCLabel { text: qsTr("Wi-Fi RSSI failsafe:") }
+                            FactComboBox {
+                                Layout.fillWidth:   true
+                                fact:               _failsafeWiFiEnable
+                                indexModel:         false
+                            }
                         }
                     } // Rectangle - Failsafe Settings
                 } // Column - Failsafe Settings
@@ -332,6 +350,7 @@ SetupPage {
                     property Fact _failsafeBattVoltage:             controller.getParameterFact(-1, "r.BATT_LOW_VOLT", false /* reportMissing */)
                     property Fact _failsafeThrEnable:               controller.getParameterFact(-1, "FS_THR_ENABLE")
                     property Fact _failsafeThrValue:                controller.getParameterFact(-1, "FS_THR_VALUE")
+                    property Fact _failsafeWiFiEnable:              controller.getParameterFact(243, "WIFI_FS_ENABLE")
 
                     QGCLabel {
                         text:       qsTr("General Failsafe Triggers")
@@ -377,6 +396,13 @@ SetupPage {
                                     fact:               _failsafeThrValue
                                     showUnits:          true
                                     Layout.fillWidth:   true
+                                }
+
+                                QGCLabel { text: qsTr("Wi-Fi RSSI failsafe:") }
+                                FactComboBox {
+                                    Layout.fillWidth:   true
+                                    fact:               _failsafeWiFiEnable
+                                    indexModel:         false
                                 }
                             } // GridLayout
                         } // Column
