@@ -30,13 +30,11 @@ matrix:
           dist: trusty
           env: SPEC="${LINUX_SPEC}" CONFIG=installer
           sudo: required
-          if: branch = edge-3.2.4 OR type = pull_request
 
         - os: osx
           osx_image: xcode9
           env: SPEC="${OSX_SPEC}" CONFIG=installer
           sudo: required
-          if: branch = edge-3.2.4 OR type = pull_request
 
         # Debug jobs
         - os: linux
@@ -176,17 +174,17 @@ before_deploy:
   # create linux appimage
   # export QGC package dir for deploying
 
-  # - BUILD_TYPE="${CONFIG//installer/release}"
-  # - QGC_APP_DIR="${SHADOW_BUILD_DIR}/${BUILD_TYPE}"
-  # - export QGC_PKG_DIR="${QGC_APP_DIR}/package"
+  - BUILD_TYPE="${CONFIG//installer/release}"
+  - QGC_APP_DIR="${SHADOW_BUILD_DIR}/${BUILD_TYPE}"
+  - export QGC_PKG_DIR="${QGC_APP_DIR}/package"
 
-  # - cd "${TRAVIS_BUILD_DIR}" && mkdir -p "${QGC_PKG_DIR}"
+  - cd "${TRAVIS_BUILD_DIR}" && mkdir -p "${QGC_PKG_DIR}"
 
-  # - if [[ "${SPEC}" = "${LINUX_SPEC}" ]]; then
-  #      ./deploy/create_linux_appimage.sh "${TRAVIS_BUILD_DIR}" "${QGC_APP_DIR}" "${QGC_PKG_DIR}" &&
-  #      mv "${QGC_PKG_DIR}/QGroundControl.AppImage" "${QGC_PKG_DIR}/QGroundControl-${BUILD_TYPE}.AppImage"
-  #      ;
-  #  fi
+  - if [[ "${SPEC}" = "${LINUX_SPEC}" ]]; then
+      ./deploy/create_linux_appimage.sh "${TRAVIS_BUILD_DIR}" "${QGC_APP_DIR}" "${QGC_PKG_DIR}" &&
+      mv "${QGC_PKG_DIR}/QGroundControl.AppImage" "${QGC_PKG_DIR}/QGroundControl-${BUILD_TYPE}.AppImage"
+      ;
+    fi
 
   # make tarball with OSX debug app
   # - if [[ "${SPEC}" = "${OSX_SPEC}" && "${CONFIG}" = "debug" ]]; then
@@ -194,13 +192,13 @@ before_deploy:
   #      ;
   #   fi 
 
-
-# deploy:
-#   provider: gcs
-#   access_key_id: "GOOGFGG4SSDIIKZYJPVS"
-#   secret_access_key: "cY+T+1lUC8/EEu6vNPjVAOzzM7BqXIdJUP0ecbCT"
-#   bucket: "${BUCKET}"
-#   local_dir: "${QGC_PKG_DIR}"
-#   skip_cleanup: true
-#   on: 
-#     all_branches: true
+deploy:
+  provider: releases
+  api_key:
+    secure: O7iuimgYBMdySJNQV/+4D1GxPDWHTphE7RnK3U/i7n/FbXNBhATZRRKGFpwbB0U9GOfOBCDmzZ+6Ybst75dAwuwmIeNb4TSFDM4zt2o11ZtgEhrcxVk84XH18jFtpjzlqqvmrGOv2YaknbR+g2EKL9fNyWhTmjx96MxV9P9Hou47mnli2QFDyyTbb5Gv/cDYH1mDFJ9psnezYig0b/bmVn2QvFqB3t1Sbbryjtv2OXix8+Ns+yzSwcNDcpUWjeWW2+4DeXF3brM8y4Wc5SvPXekbaD+mn4S7E4QcnbX1w4fu6goPNCzaGLirMewfjgrQWhKWY6pwhJqGMX2mjrNjf4XrW2igfytYN5otJfmjubm/lASHEJvYlGK3gWQhdsErszUqXxGeAjfe8cCAWuvJPHwbqn+fjIufD7sD73TFcSMP0AL5/gNtcktek/OzE7p2r3FhdxlD56p2109EmMlCW9r9a8S+AOBgwF17pZbaDQOzsQkQF8veq+z2NaffdXDBr3OLAwcZhkZTTdtA32nt8BQgg6je5k7cMOnxVswGcODXFRTds7J+5Z3OOlKXM9RBRwnFTqz7isfyw3dJvq8wNK/5qIGQZzzZk3qdMVK5ciu2XtL5fp2g2n1mgW2weG2DdYF93MU8HzkmWYOkwkLw3UPqy591CRiwq1mb9yxmemA=
+  file_glob: true
+  file: ${QGC_PKG_DIR}/*
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $CONFIG = installer
